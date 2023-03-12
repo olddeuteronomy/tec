@@ -40,10 +40,10 @@ SOFTWARE.
 #include <condition_variable>
 #include <thread>
 
-#include "tec_def.hpp"
-#include "tec_utils.hpp"
-#include "tec_queue.hpp"
-#include "tec_trace.hpp"
+#include "tec/tec_def.hpp"
+#include "tec/tec_utils.hpp"
+#include "tec/tec_queue.hpp"
+#include "tec/tec_trace.hpp"
 
 
 namespace tec {
@@ -70,10 +70,8 @@ public:
 #endif
 
 #if __TEC_LONG__ == 64
-    //typedef uint64_t errcode_t;
     typedef uint64_t cmd_t;
 #elif __TEC_LONG__ == 32
-    //typedef uint32_t errcode_t;
     typedef uint32_t cmd_t;
 #endif
 
@@ -82,8 +80,6 @@ public:
     {
         OK = 0,
         ERR_MIN = 50000,
-        START_TIMEOUT,
-        TERMINATE_TIMEOUT,
         NO_THREAD,
         ERR_MAX
     };
@@ -96,7 +92,7 @@ public:
     {
         enum Command
         {
-            QUIT = 0
+            QUIT = 0  //!< RESERVED, do not use it directly.
         };
 
         cmd_t command;
@@ -106,13 +102,13 @@ public:
 
         //! Null message.
         static Message zero() { return{Command::QUIT, 0}; }
-        //! Terminate message loop and set exit code.
+        //! Terminate message loop.
         static Message terminate() { return zero(); }
     };
 
 protected:
 
-    //! Worker attributes.
+    //! Worker members.
     std::unique_ptr<std::thread> thread_;
     id_t thread_id_;
     Result result_;
@@ -143,15 +139,15 @@ public:
         , stat_time_init_{0}
         , stat_time_exec_{0}
         , stat_time_finalize_{0}
-        , params_(params)
+        , params_{params}
     {
     }
 
     //! Worker attributes
     inline id_t get_id() const { return thread_id_; }
     inline int get_exit_code() const { return result_.code(); }
-    const std::string& get_error_str() const { return result_.str(); }
-    Result get_result() const { return result_; }
+    inline const std::string& get_error_str() const { return result_.str(); }
+    inline Result get_result() const { return result_; }
 
     //! Statistics
     inline duration_t get_time_total() const { return stat_time_total_; }
@@ -234,8 +230,16 @@ private:
 
 public:
 
-    //! \brief Creates the worker thread in suspended state.
-    //! \return self&.
+    /**
+     *  \brief Create the worker thread in the "suspended" state.
+     *
+     *  The newly created worker thread now waits for sig_begin signalled.
+     *  Use run() to start the worker thread.
+     *
+     *  \param none
+     *  \return self&
+     *  \sa Worker::run()
+     */
     Worker& create()
     {
         TEC_ENTER("create()");
@@ -246,6 +250,15 @@ public:
     }
 
 
+    /**
+     *  \brief Start the worker thread with message polling.
+     *
+     *  Resumes the working thread by setting the sig_begin signal,
+     *  then waits for init() callback completed.
+     *
+     *  \param none
+     *  \return self&
+     */
     Worker& run()
     {
         TEC_ENTER("run()");
@@ -269,6 +282,14 @@ public:
     }
 
 
+    /**
+     *  \brief Send a user-defined message to the worker thread.
+     *
+     *  Returns false if no working thread exists.
+     *
+     *  \param msg a user-defined message to handle
+     *  \return bool
+     */
     bool send(const Message& msg)
     {
         if( thread_ )
@@ -283,6 +304,16 @@ public:
     }
 
 
+    /**
+     *  \brief Terminate the worker thread.
+     *
+     *  Sends Message::terminate message to the message queue
+     *  stopping the message polling, then waits for
+     *  sig_terminated signal to close the working thread.
+     *
+     *  \param none
+     *  \return self&
+     */
     Worker& terminate()
     {
         TEC_ENTER("terminate()");
@@ -313,12 +344,17 @@ public:
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     /**
-     *  \brief Calling on thread initialization.
+     *  \brief Called on worker initialization.
      *
-     *  TODO
+     *  NOTE: if init() returns Status different from OK,
+     *  finalize() callback *would not be called*.
      *
-     *  \param void
-     *  \return errcode_t
+     *  NOTE: Worker::get_exit_code() will return this Status.
+     *
+     *  \param none
+     *  \return Status::OK (0) if succeeded
+     *  \sa Worker::get_exit_code()
+     *  \sa Worker::finalize()
      */
     virtual Result init()
     {
@@ -326,12 +362,12 @@ public:
     }
 
     /**
-     *  \brief Called on user message.
+     *  \brief Called on user-defined message.
      *
-     *  TODO
+     *  Processes a user-defined message.
      *
-     *  \param msg *Message* user-defined message
-     *  \return void
+     *  \param msg _Message_ user-defined message
+     *  \return none
      */
     virtual void process(const Message& msg)
     {
@@ -341,11 +377,15 @@ public:
     /**
      *  \brief Called on exiting from the thread.
      *
-     *  TODO
+     *  NOTE: if init() returned Status different from OK,
+     *  this callback *is not called*.
      *
-     *  \param *exit_code* errcode_t Exit code
-     *  \return 0 if succeeded, Worker::Status otherwise
-     *  \sa Worker::get_exit_code
+     *  NOTE: Worker::get_exit_code() will return this Status.
+     *
+     *  \param none
+     *  \return Status::OK (0) if succeeded
+     *  \sa Worker::init()
+     *  \sa Worker::get_exit_code()
      */
     virtual Result finalize()
     {

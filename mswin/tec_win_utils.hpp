@@ -32,7 +32,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "../tec_def.hpp"
+#include "tec/tec_def.hpp"
 
 #if !defined (__TEC_WINDOWS__)
 #error This file can be used on MS Windows only!
@@ -47,7 +47,7 @@ SOFTWARE.
 #include <lmcons.h>
 
 
-#include "../tec_utils.hpp"
+#include "tec/tec_utils.hpp"
 
 
 namespace tec {

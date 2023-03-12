@@ -42,7 +42,7 @@ SOFTWARE.
 #include <condition_variable>
 #include <thread>
 
-#include "tec_def.hpp"
+#include "tec/tec_def.hpp"
 
 
 namespace tec

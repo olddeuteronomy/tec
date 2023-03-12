@@ -39,9 +39,11 @@ endif
 # Compilation parameters
 TARGET = $(TESTNAME)$(TARGET_SUFFIX)
 CPPFLAGS = -std=c++14 -Wall -pthread -O2
+INCLUDES = -I../../..
 OUTDIR = out
 
-# Enable tracing in release build
+# Enable tracing in release build, -v for verbose output (to list all include paths etc)
+# DEFS = -D_TEC_TRACE_RELEASE -v
 DEFS = -D_TEC_TRACE_RELEASE
 
 # Create output directory if needed
@@ -54,6 +56,6 @@ endif
 
 # Compile the target
 $(OUTDIR)/$(TARGET): test_$(TESTNAME).cpp
-	$(CC) $(CPPFLAGS) $(DEFS) test_$(TESTNAME).cpp -o $(OUTDIR)/$(TARGET)
+	$(CC) $(CPPFLAGS) $(INCLUDES) $(DEFS) test_$(TESTNAME).cpp -o $(OUTDIR)/$(TARGET)
 
 all: $(OUTDIR)/$(TARGET)

@@ -38,7 +38,7 @@ SOFTWARE.
 #include <iostream>
 #include <mutex>
 
-#include "tec_utils.hpp"
+#include "tec/tec_utils.hpp"
 
 
 namespace tec {

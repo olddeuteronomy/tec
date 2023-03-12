@@ -38,7 +38,7 @@ SOFTWARE.
 #include <thread>
 #include <condition_variable>
 
-#include "tec_def.hpp"
+#include "tec/tec_def.hpp"
 
 
 namespace tec {
