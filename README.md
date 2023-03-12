@@ -1,2 +1,3 @@
-# tec
-A practical header-only C++ library
+# tec: A Practical Header-Only C++ Library
+
+Under active development. Stay tuned.

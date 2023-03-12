@@ -1,0 +1,59 @@
+###############################################################################
+# To force rebuild with `clang++' (default):
+#    make [-k] -B
+# To force rebuild with `g++':
+#    make [-k] -B GCC=1
+###############################################################################
+TESTNAME := worker
+
+###############################################################################
+#                         DO NOT EDIT BELOW THIS LINE                         #
+###############################################################################
+
+# OS
+ifeq ($(OS),Windows_NT)
+    detected_OS := Windows
+	EXE_SUFFIX := .exe
+else
+	detected_OS := $(uname -o)
+endif
+
+# Compilers
+ifdef GCC
+CC = g++
+TARGET_SUFFIX = _gcc$(EXE_SUFFIX)
+else
+CC = clang++
+TARGET_SUFFIX = _clang$(EXE_SUFFIX)
+endif
+
+
+# Platform dependent commands
+
+ifeq ($(detected_OS),Windows)
+MKDIR_P = MKDIR
+else
+MKDIR_P = mkdir -p
+endif
+
+# Compilation parameters
+TARGET = $(TESTNAME)$(TARGET_SUFFIX)
+CPPFLAGS = -std=c++14 -Wall -pthread -O2
+OUTDIR = out
+
+# Enable tracing in release build
+DEFS = -D_TEC_TRACE_RELEASE
+
+# Create output directory if needed
+ifeq ($(detected_OS),Windows)
+$(shell if not exist $(OUTDIR) (${MKDIR_P} $(OUTDIR)))
+else
+$(info $(shell ${MKDIR_P} $(OUTDIR)))
+endif
+
+
+# Compile the target
+$(OUTDIR)/$(TARGET): test_$(TESTNAME).cpp
+	$(CC) $(CPPFLAGS) $(DEFS) test_$(TESTNAME).cpp -o $(OUTDIR)/$(TARGET)
+
+all: $(OUTDIR)/$(TARGET)

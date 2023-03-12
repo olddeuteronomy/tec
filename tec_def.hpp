@@ -34,7 +34,9 @@ SOFTWARE.
 #define __TEC__ 1
 
 // To resolve C-macros conflicts
-#define NOMINMAX 1
+#ifndef NOMINMAX
+  #define NOMINMAX 1
+#endif
 
 // OS specific defines
 //

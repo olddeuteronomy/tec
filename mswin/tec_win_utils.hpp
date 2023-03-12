@@ -23,78 +23,59 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   \file tec_queue.hpp
- *   \brief Thread safe message queue.
+ *   \file tec_win_utils.hpp
+ *   \brief MS Windows stuff.
  *
- *  Borrowed from https://stackoverflow.com/questions/15278343/c11-thread-safe-queue
- *  with some extensions (see poll()).
+ *  TODO: Detailed description
  *
 */
 
 #pragma once
 
-#include <queue>
-#include <mutex>
-#include <thread>
-#include <condition_variable>
+#include "../tec_def.hpp"
 
-#include "tec_def.hpp"
+#if !defined (__TEC_WINDOWS__)
+#error This file can be used on MS Windows only!
+
+#else
+// Windows stuff goes here
+
+#define VC_EXTRALEAN
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <tchar.h>
+#include <lmcons.h>
+
+
+#include "../tec_utils.hpp"
 
 
 namespace tec {
 
 
-template <class T>
-class SafeQueue
+inline String getusername()
 {
-private:
-    std::queue<T> q;
-    mutable std::mutex m;
-    mutable std::condition_variable c;
+    TCHAR name[UNLEN + 1];
+    DWORD size = UNLEN + 1;
 
-public:
-    //! Construct the empty queue.
-    SafeQueue(void)
-        : q()
-        , m()
-        , c()
-    {}
+    if( GetUserName(name, &size) )
+        return name;
+    else
+        return _T("unnamed");
+}
 
-    ~SafeQueue(void)
-    {}
 
-    //! Add an element to the queue.
-    void enqueue(T t)
-    {
-        std::lock_guard<std::mutex> lock(m);
-        q.push(t);
-        c.notify_one();
-    }
-
-    //! Get the front element.
-    //! If the queue is empty, wait till an element is avaiable.
-    T dequeue(void)
-    {
-        std::unique_lock<std::mutex> lock(m);
-        while( q.empty() )
-        {
-            // Release lock as long as the wait and reaquire it afterwards.
-            c.wait(lock);
-        }
-        T val = q.front();
-        q.pop();
-        return val;
-    }
-
-    //! Wait till a message is avaiable.
-    //! Returns true on message arriving, returns false if msg.quit() is set.
-    bool poll(T& msg)
-    {
-        msg = std::move(dequeue());
-        return !msg.quit();
-    }
-
-};
+inline String getcomputername()
+{
+    TCHAR name[MAX_COMPUTERNAME_LENGTH + 1];
+    DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
+    if( GetComputerName(name, &size) )
+        return name;
+    else
+        return _T("noname");
+}
 
 
 } // ::tec
+
+#endif // __TEC_WINDOWS__

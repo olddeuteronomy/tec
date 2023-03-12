@@ -66,14 +66,14 @@ public:
 #elif __TEC_PTR__ == 32
     typedef int32_t arg_t;
 #else
-    #error Unknown pointer size __TEC_PTR__
+#error Unknown pointer size __TEC_PTR__
 #endif
 
 #if __TEC_LONG__ == 64
-    typedef uint64_t errcode_t;
+    //typedef uint64_t errcode_t;
     typedef uint64_t cmd_t;
 #elif __TEC_LONG__ == 32
-    typedef uint32_t errcode_t;
+    //typedef uint32_t errcode_t;
     typedef uint32_t cmd_t;
 #endif
 
@@ -94,7 +94,6 @@ public:
     //! \sa poll() in tec_queue.hpp.
     struct Message
     {
-        //! DO NOT USE Command::system in the user code!
         enum Command
         {
             QUIT = 0
@@ -108,32 +107,29 @@ public:
         //! Null message.
         static Message zero() { return{Command::QUIT, 0}; }
         //! Terminate message loop and set exit code.
-        static Message terminate(arg_t exit_code = Status::OK) { return{Command::QUIT, exit_code}; }
+        static Message terminate() { return zero(); }
     };
 
 protected:
 
-    //! Thread attributes.
+    //! Worker attributes.
     std::unique_ptr<std::thread> thread_;
     id_t thread_id_;
-    errcode_t exit_code_;
-    String error_str_;
-    duration_t start_timeout_;
-    duration_t terminate_timeout_;
+    Result result_;
 
-    //! Signals
+    //! Signals.
     Signal sig_begin_;
     Signal sig_running_;
     Signal sig_inited_;
     Signal sig_terminated_;
 
-    //! Statistics
+    //! Statistics.
     duration_t stat_time_total_;
     duration_t stat_time_init_;
     duration_t stat_time_exec_;
     duration_t stat_time_finalize_;
 
-    //! Message queue
+    //! Message queue.
     SafeQueue<Message> mq_;
 
     //! Worker parameters.
@@ -142,10 +138,7 @@ protected:
 public:
 
     Worker(const TWorkerParams& params)
-        : thread_(nullptr)
-        , exit_code_(0)
-        , start_timeout_(duration_t::max())     // Everlasting
-        , terminate_timeout_(duration_t::max()) // Everlasting
+        : thread_{nullptr}
         , stat_time_total_{0}
         , stat_time_init_{0}
         , stat_time_exec_{0}
@@ -156,8 +149,9 @@ public:
 
     //! Worker attributes
     inline id_t get_id() const { return thread_id_; }
-    inline errcode_t get_exit_code() const { return exit_code_; }
-    const String& get_error_str() const { return error_str_; }
+    inline int get_exit_code() const { return result_.code(); }
+    const std::string& get_error_str() const { return result_.str(); }
+    Result get_result() const { return result_; }
 
     //! Statistics
     inline duration_t get_time_total() const { return stat_time_total_; }
@@ -191,7 +185,7 @@ private:
             // We obtained thread_id and then we are waiting for sig_begin
             // to resume the thread, see run().
             worker.thread_id_ = std::this_thread::get_id();
-            worker.sig_begin_.wait_for(duration_t::max());
+            worker.sig_begin_.wait();
             TEC_TRACE("sig_begin received.\n");
 
             // Signals sig_running, it will be reset on the thread exits.
@@ -200,7 +194,7 @@ private:
 
             // Initialize the worker
             Timer<duration_t> t_init;
-            worker.exit_code_ = worker.init();
+            worker.result_ = worker.init();
             worker.stat_time_init_ = t_init.stop();
 
             // Signals that the worker is inited, no matter if initialization failed
@@ -220,10 +214,13 @@ private:
             worker.stat_time_exec_ = t_exec.stop();
             TEC_TRACE("leaving message loop on Message{%, %}.\n", msg.command, msg.arg);
 
-            // Finalize the worker
-            Timer<duration_t> t_finalize;
-            worker.exit_code_ = worker.finalize((errcode_t)msg.arg);
-            worker.stat_time_finalize_ = t_finalize.stop();
+            // Finalize the worker if inited successfully
+            if( worker.result_.ok() )
+            {
+                Timer<duration_t> t_finalize;
+                worker.result_ = worker.finalize();
+                worker.stat_time_finalize_ = t_finalize.stop();
+            }
 
             // Notify that the worker is teminating
             worker.sig_terminated_.set();
@@ -249,21 +246,14 @@ public:
     }
 
 
-    Worker& run(
-        duration_t start_timeout = duration_t::max(),
-        duration_t terminate_timeout = duration_t::max()
-    )
+    Worker& run()
     {
         TEC_ENTER("run()");
-
-        // Set thread attributes
-        start_timeout_ = start_timeout;
-        terminate_timeout_ = terminate_timeout;
 
         if( !thread_ )
         {
             // No thread exists yet, see create()
-            exit_code_ = Status::NO_THREAD;
+            result_ = {Status::NO_THREAD};
             return *this;
         }
 
@@ -273,21 +263,8 @@ public:
 
         // Wait for thread init() completed
         TEC_TRACE("waiting for sig_inited signalled ...\n");
-        bool ok = sig_inited_.wait_for(start_timeout_);
-        if( ok )
-        {
-            // Check exit code returned by init(), stop the message loop if  error
-            if( exit_code_ != 0 )
-            {
-                send(Message::terminate(exit_code_));
-            }
-        }
-        else
-        {
-            // Process timeout, terminate message loop
-            TEC_TRACE("ERROR: timeout!\n");
-            send(Message::terminate(Status::START_TIMEOUT));
-        }
+        sig_inited_.wait();
+
         return *this;
     }
 
@@ -311,30 +288,20 @@ public:
         TEC_ENTER("terminate()");
         if( !thread_ )
         {
-            exit_code_ = Status::NO_THREAD;
+            result_ = Status::NO_THREAD;
             return *this;
         }
 
         // Terminate message loop
-        send(Message::terminate(exit_code_));
+        send(Message::terminate());
         TEC_TRACE("Message::terminate sent.\n");
 
         // Wait for thread sig_terminated signalled
         TEC_TRACE("waiting for sig_terminated ...\n");
-        bool ok = sig_terminated_.wait_for(terminate_timeout_);
-        if( ok )
-        {
-            TEC_TRACE("sig_terminated received.\n");
-            thread_->join();
-            TEC_TRACE("Worker thread joined.\n");
-        }
-        else
-        {
-            TEC_TRACE("ERROR: Timeout!\n");
-            exit_code_ = Status::TERMINATE_TIMEOUT;
-            thread_->detach();
-            TEC_TRACE("WARNING: thread detached.\n");
-        }
+        sig_terminated_.wait();
+
+        thread_->join();
+        TEC_TRACE("Worker thread joined OK.\n");
 
         return *this;
     }
@@ -353,9 +320,9 @@ public:
      *  \param void
      *  \return errcode_t
      */
-    virtual errcode_t init()
+    virtual Result init()
     {
-        return Status::OK;
+        return{OK};
     }
 
     /**
@@ -380,9 +347,9 @@ public:
      *  \return 0 if succeeded, Worker::Status otherwise
      *  \sa Worker::get_exit_code
      */
-    virtual errcode_t finalize(errcode_t exit_code)
+    virtual Result finalize()
     {
-        return exit_code;
+        return{OK};
     }
 
 }; // ::Worker

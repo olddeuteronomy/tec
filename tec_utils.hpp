@@ -72,12 +72,41 @@ inline const char* time_unit(Seconds) {return "s"; }
 inline const char* time_unit(MilliSec) {return "ms"; }
 inline const char* time_unit(MicroSec) {return "mu"; }
 
+//! Some duration constants.
+constexpr Seconds one_hour() { return Seconds(60 * 60); }
+constexpr Seconds one_day() { return Seconds(24 * 60 * 60); }
 
 #ifdef UNICODE
 typedef std::wstring String;
 #else
 typedef std::string  String;
 #endif
+
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                          Generic Result
+*
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+struct Result
+{
+    enum Status
+    {
+        OK = 0
+    };
+
+    int code_;
+    std::string errstr_;
+
+    Result(): code_(OK) {}
+    Result(int c): code_(c) {}
+    Result(int c, const std::string& e): code_(c), errstr_(e) {}
+
+    bool ok() const { return (code_ == OK); }
+    const std::string& str() const { return errstr_; }
+    int code() const { return code_; }
+};
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -154,7 +183,7 @@ public:
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Atomic-based signal. Deprecated, use Signal.
+//! Atomic-based signal. DEPRECATED, use Signal.
 class SignalAtomic
 {
     std::atomic_bool sig_;
@@ -202,7 +231,7 @@ public:
 }; // SignalAtomic
 
 
-//! Another implementation of Signal.
+//! Implementation of Signal based on classic mutex/cv.
 //! Borrowed from https://stackoverflow.com/questions/14920725/waiting-for-an-atomic-bool
 class Signal
 {
@@ -246,7 +275,7 @@ public:
     }
 
     template <typename Duration>
-    bool wait_for(const Duration& dur) const
+    bool wait_for(Duration dur) const
     {
         std::unique_lock<std::mutex> lock(m_);
         return cv_.wait_for(lock, dur, [this] { return flag_; });
