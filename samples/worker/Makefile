@@ -23,6 +23,7 @@ ifdef GCC
 CC = g++
 TARGET_SUFFIX = _gcc$(EXE_SUFFIX)
 else
+CLANG = 1
 CC = clang++
 TARGET_SUFFIX = _clang$(EXE_SUFFIX)
 endif
@@ -42,9 +43,19 @@ CPPFLAGS = -std=c++14 -Wall -pthread -O2
 INCLUDES = -I../../..
 OUTDIR = out
 
-# Enable tracing in release build, -v for verbose output (to list all include paths etc)
+# Enable tracing in release build
+# -v is for verbose output (to list all include paths etc)
 # DEFS = -D_TEC_TRACE_RELEASE -v
 DEFS = -D_TEC_TRACE_RELEASE
+
+# Just for fun - colorize compiler output
+ifdef GCC
+EXTRAS = -fdiagnostics-color=always
+else
+ifdef CLANG
+EXTRAS = -fcolor-diagnostics
+endif
+endif
 
 # Create output directory if needed
 ifeq ($(detected_OS),Windows)
@@ -56,6 +67,6 @@ endif
 
 # Compile the target
 $(OUTDIR)/$(TARGET): test_$(TESTNAME).cpp
-	$(CC) $(CPPFLAGS) $(INCLUDES) $(DEFS) test_$(TESTNAME).cpp -o $(OUTDIR)/$(TARGET)
+	$(CC) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) test_$(TESTNAME).cpp -o $(OUTDIR)/$(TARGET)
 
 all: $(OUTDIR)/$(TARGET)

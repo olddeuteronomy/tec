@@ -26,7 +26,7 @@ SOFTWARE.
  *   \file tec_win_utils.hpp
  *   \brief MS Windows stuff.
  *
- *  TODO: Detailed description
+ *  MS Windows-related system calls.
  *
 */
 
@@ -61,7 +61,7 @@ inline String getusername()
     if( GetUserName(name, &size) )
         return name;
     else
-        return _T("unnamed");
+        return _T("");
 }
 
 
@@ -72,7 +72,7 @@ inline String getcomputername()
     if( GetComputerName(name, &size) )
         return name;
     else
-        return _T("noname");
+        return _T("");
 }
 
 

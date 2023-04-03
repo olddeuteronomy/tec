@@ -78,7 +78,7 @@ protected:
         // Pause
         std::this_thread::sleep_for(params().init_delay);
 
-        // Unitialize processing
+        // Initiate processing
         send({CMD_CALL_PROCESS, 0});
         return{};
     }

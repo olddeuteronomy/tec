@@ -284,4 +284,45 @@ public:
 }; // Signal
 
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+* System utilities (Windows versions are in tec/mswin/tec_win_utils.hpp)
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+#if !defined(__TEC_WINDOWS__)
+
+#include <unistd.h>
+#include <pwd.h>
+
+
+//! Return a computer name or empty string on failure.
+inline std::string getcomputername()
+{
+    char host[1024];
+    if( gethostname(host, sizeof(host)) == 0)
+        return host;
+    else
+        return "";
+}
+
+
+//! Return a logged user name or empty string on failure.
+inline std::string getusername()
+{
+    uid_t uid = geteuid();
+    struct passwd* pw = getpwuid(uid);
+    if ( pw != NULL )
+        return pw->pw_name;
+    else
+        return "";
+}
+
+
+#else // __TEC_WINDOWS__
+// MS Windows stuff goes here
+#include "tec/mswin/tec_win_utils.hpp"
+
+#endif // !__TEC_WINDOWS__
+
+
 } // ::tec

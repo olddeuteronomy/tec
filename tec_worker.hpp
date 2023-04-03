@@ -173,9 +173,8 @@ private:
     {
         static void thread_proc(Worker& worker)
         {
-            TEC_ENTER("thread_proc");
+            TEC_ENTER("Worker::thread_proc");
 
-            // Worker* worker = (Worker*)(void*)pWorker;
             Timer<duration_t> t_total;
 
             // We obtained thread_id and then we are waiting for sig_begin
@@ -210,7 +209,7 @@ private:
             worker.stat_time_exec_ = t_exec.stop();
             TEC_TRACE("leaving message loop on Message{%, %}.\n", msg.command, msg.arg);
 
-            // Finalize the worker if inited successfully
+            // Finalize the worker if it had been inited successfully
             if( worker.result_.ok() )
             {
                 Timer<duration_t> t_finalize;
@@ -218,12 +217,12 @@ private:
                 worker.stat_time_finalize_ = t_finalize.stop();
             }
 
-            // Notify that the worker is teminating
+            // Notify that the worker is being teminated
             worker.sig_terminated_.set();
             worker.stat_time_total_ = t_total.stop();
             TEC_TRACE("sig_terminated signalled\n");
 
-            // We are leaving the thread
+            // We are leaving the thread now
             worker.sig_running_.reset();
         }
     };
@@ -242,7 +241,7 @@ public:
      */
     Worker& create()
     {
-        TEC_ENTER("create()");
+        TEC_ENTER("Worker::create");
         // Create a thread in "suspended" state.
         // The thread now waits to be resumed by sig_begin_ signalled. See run().
         thread_.reset(new std::thread(detail<TWorkerParams>::thread_proc, std::ref(*this)));
@@ -261,7 +260,7 @@ public:
      */
     Worker& run()
     {
-        TEC_ENTER("run()");
+        TEC_ENTER("Worker::run");
 
         if( !thread_ )
         {
@@ -316,7 +315,7 @@ public:
      */
     Worker& terminate()
     {
-        TEC_ENTER("terminate()");
+        TEC_ENTER("Worker::terminate");
         if( !thread_ )
         {
             result_ = Status::NO_THREAD;
