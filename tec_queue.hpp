@@ -45,8 +45,7 @@ namespace tec {
 
 
 template <class T>
-class SafeQueue
-{
+class SafeQueue {
 private:
     std::queue<T> q;
     mutable std::mutex m;
@@ -60,12 +59,10 @@ public:
         , c()
     {}
 
-    ~SafeQueue(void)
-    {}
+    ~SafeQueue(void) {}
 
     //! Add an element to the queue.
-    void enqueue(T t)
-    {
+    void enqueue(T t) {
         std::lock_guard<std::mutex> lock(m);
         q.push(t);
         c.notify_one();
@@ -73,8 +70,7 @@ public:
 
     //! Get the front element.
     //! If the queue is empty, wait till an element is avaiable.
-    T dequeue(void)
-    {
+    T dequeue(void) {
         std::unique_lock<std::mutex> lock(m);
         while( q.empty() )
         {
@@ -88,8 +84,7 @@ public:
 
     //! Wait till a message is avaiable.
     //! Returns true on message arriving, returns false if msg.quit() is set.
-    bool poll(T& msg)
-    {
+    bool poll(T& msg) {
         msg = std::move(dequeue());
         return !msg.quit();
     }

@@ -53,8 +53,7 @@ SOFTWARE.
 namespace tec {
 
 
-inline String getusername()
-{
+inline String getusername() {
     TCHAR name[UNLEN + 1];
     DWORD size = UNLEN + 1;
 
@@ -65,8 +64,7 @@ inline String getusername()
 }
 
 
-inline String getcomputername()
-{
+inline String getcomputername() {
     TCHAR name[MAX_COMPUTERNAME_LENGTH + 1];
     DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
     if( GetComputerName(name, &size) )

@@ -38,6 +38,7 @@ SOFTWARE.
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
+#include <string>
 #include <thread>
 
 #include "tec/tec_def.hpp"
@@ -55,8 +56,7 @@ namespace tec {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template <typename TWorkerParams, typename Duration = MilliSec>
-class Worker
-{
+class Worker {
 public:
     typedef std::thread::id id_t;
     typedef Duration duration_t;
@@ -76,22 +76,19 @@ public:
 #endif
 
     //! Worker system error codes.
-    enum Status
-    {
+    enum Status {
         OK = 0,
         ERR_MIN = 50000,
         NO_THREAD,
         ERR_MAX
     };
 
-    //! Message should implement quit() to indicate that
+    //! Message *should* implement quit() to indicate that
     //! message polling should stop.
     //!
     //! \sa poll() in tec_queue.hpp.
-    struct Message
-    {
-        enum Command
-        {
+    struct Message {
+        enum Command {
             QUIT = 0  //!< RESERVED, do not use it directly.
         };
 
@@ -104,6 +101,22 @@ public:
         static Message zero() { return{Command::QUIT, 0}; }
         //! Terminate message loop.
         static Message terminate() { return zero(); }
+    };
+
+    struct Metrics {
+        std::string units;
+        duration_t time_total;
+        duration_t time_init;
+        duration_t time_exec;
+        duration_t time_finalize;
+
+        Metrics()
+            : units(time_unit(duration_t(0)))
+            , time_total(0)
+            , time_init(0)
+            , time_exec(0)
+            , time_finalize(0)
+            {}
     };
 
 protected:
@@ -119,11 +132,8 @@ protected:
     Signal sig_inited_;
     Signal sig_terminated_;
 
-    //! Statistics.
-    duration_t stat_time_total_;
-    duration_t stat_time_init_;
-    duration_t stat_time_exec_;
-    duration_t stat_time_finalize_;
+    //! Metrics.
+    Metrics metrics_;
 
     //! Message queue.
     SafeQueue<Message> mq_;
@@ -134,33 +144,24 @@ protected:
 public:
 
     Worker(const TWorkerParams& params)
-        : thread_{nullptr}
-        , stat_time_total_{0}
-        , stat_time_init_{0}
-        , stat_time_exec_{0}
-        , stat_time_finalize_{0}
-        , params_{params}
+        : thread_(nullptr)
+        , params_(params)
     {
     }
 
     //! Worker attributes
-    inline id_t get_id() const { return thread_id_; }
-    inline int get_exit_code() const { return result_.code(); }
-    inline const std::string& get_error_str() const { return result_.str(); }
-    inline Result get_result() const { return result_; }
+    inline id_t id() const { return thread_id_; }
+    inline int exit_code() const { return result_.code(); }
+    inline const std::string& error_str() const { return result_.str(); }
+    inline Result result() const { return result_; }
 
     //! Statistics
-    inline duration_t get_time_total() const { return stat_time_total_; }
-    inline duration_t get_time_init() const { return stat_time_init_; }
-    inline duration_t get_time_exec() const { return stat_time_exec_; }
-    inline duration_t get_time_finalize() const { return stat_time_finalize_; }
+    const Metrics& metrics() const { return metrics_; }
 
     // User specified parameters
     TWorkerParams& params() { return params_; }
 
-    virtual ~Worker()
-    {
-    }
+    virtual ~Worker() {}
 
 private:
 
@@ -169,13 +170,11 @@ private:
     // DIFFERENT STATIC PROCEDURES OWNED BY DIFFERENT WORKERS.
     //-----------------------------------------------------------------
     template <typename>
-    struct detail
-    {
-        static void thread_proc(Worker& worker)
-        {
+    struct detail {
+        static void thread_proc(Worker& worker) {
             TEC_ENTER("Worker::thread_proc");
 
-            Timer<duration_t> t_total;
+            Timer<duration_t> t_total(worker.metrics_.time_total);
 
             // We obtained thread_id and then we are waiting for sig_begin
             // to resume the thread, see run().
@@ -188,9 +187,9 @@ private:
             TEC_TRACE("sig_running signalled.\n");
 
             // Initialize the worker
-            Timer<duration_t> t_init;
+            Timer<duration_t> t_init(worker.metrics_.time_init);
             worker.result_ = worker.init();
-            worker.stat_time_init_ = t_init.stop();
+            t_init.stop();
 
             // Signals that the worker is inited, no matter if initialization failed
             worker.sig_inited_.set();
@@ -199,27 +198,27 @@ private:
             // Start message polling
             TEC_TRACE("entering message loop.\n");
             Message msg = Message::zero();
-            Timer<duration_t> t_exec;
+            Timer<duration_t> t_exec(worker.metrics_.time_exec);
             while( worker.mq_.poll(msg) )
             {
                 TEC_TRACE("received Message{%, %}.\n", msg.command, msg.arg);
                 // Process a user-defined message
                 worker.process(msg);
             }
-            worker.stat_time_exec_ = t_exec.stop();
+            t_exec.stop();
             TEC_TRACE("leaving message loop on Message{%, %}.\n", msg.command, msg.arg);
 
             // Finalize the worker if it had been inited successfully
             if( worker.result_.ok() )
             {
-                Timer<duration_t> t_finalize;
+                Timer<duration_t> t_finalize(worker.metrics_.time_finalize);
                 worker.result_ = worker.finalize();
-                worker.stat_time_finalize_ = t_finalize.stop();
+                t_finalize.stop();
             }
 
             // Notify that the worker is being teminated
             worker.sig_terminated_.set();
-            worker.stat_time_total_ = t_total.stop();
+            t_total.stop();
             TEC_TRACE("sig_terminated signalled\n");
 
             // We are leaving the thread now
@@ -232,18 +231,15 @@ public:
     /**
      *  \brief Create the worker thread in the "suspended" state.
      *
-     *  The newly created worker thread now waits for sig_begin signalled.
+     *  The newly created worker thread waits for sig_begin signalled.
      *  Use run() to start the worker thread.
      *
      *  \param none
      *  \return self&
      *  \sa Worker::run()
      */
-    Worker& create()
-    {
+    virtual Worker& create() {
         TEC_ENTER("Worker::create");
-        // Create a thread in "suspended" state.
-        // The thread now waits to be resumed by sig_begin_ signalled. See run().
         thread_.reset(new std::thread(detail<TWorkerParams>::thread_proc, std::ref(*this)));
         return *this;
     }
@@ -258,12 +254,10 @@ public:
      *  \param none
      *  \return self&
      */
-    Worker& run()
-    {
+    virtual Worker& run() {
         TEC_ENTER("Worker::run");
 
-        if( !thread_ )
-        {
+        if( !thread_ ) {
             // No thread exists yet, see create()
             result_ = {Status::NO_THREAD};
             return *this;
@@ -289,15 +283,12 @@ public:
      *  \param msg a user-defined message to handle
      *  \return bool
      */
-    bool send(const Message& msg)
-    {
-        if( thread_ )
-        {
+    virtual bool send(const Message& msg) {
+        if( thread_ ) {
             mq_.enqueue(msg);
             return true;
         }
-        else
-        {
+        else {
             return false;
         }
     }
@@ -313,11 +304,9 @@ public:
      *  \param none
      *  \return self&
      */
-    Worker& terminate()
-    {
+    virtual Worker& terminate() {
         TEC_ENTER("Worker::terminate");
-        if( !thread_ )
-        {
+        if( !thread_ ) {
             result_ = Status::NO_THREAD;
             return *this;
         }
@@ -355,8 +344,7 @@ public:
      *  \sa Worker::get_exit_code()
      *  \sa Worker::finalize()
      */
-    virtual Result init()
-    {
+    virtual Result init() {
         return{OK};
     }
 

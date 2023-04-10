@@ -24,9 +24,9 @@ SOFTWARE.
 
 /**
  *   \file tec_rpc.hpp
- *   \brief A Documented file.
+ *   \brief Base server/client stuff definitions.
  *
- *  Detailed description
+ *  Base RPC server/client stuff definitions.
  *
 */
 
@@ -55,7 +55,7 @@ enum Status {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                    Abstract RPC Server Interface
+*                    Abstract Server Interface
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -77,7 +77,7 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                   Abstract RPC Client Interface
+*                   Abstract Client Interface
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -96,6 +96,8 @@ struct ClientParams {
 class Client {
 public:
     Client() {}
+    Client(const Client&) = delete;
+    Client(Client&&) = delete;
     virtual ~Client() {}
 
     virtual Result connect() = 0;
@@ -104,7 +106,7 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                       RPC Server Worker
+*                       Server Worker
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -144,8 +146,7 @@ public:
     {}
 
 
-    virtual ~ServerWorker()
-    {}
+    virtual ~ServerWorker() {}
 
 protected:
     virtual Result init() override {
@@ -165,7 +166,7 @@ protected:
             // something wrong happened, release the server thread.
             server_thread_->join();
             if( result_started_.ok() ) {
-                return {Status::RPC_ERROR_SERVER_START, "RPC server unknown error"};
+                return {RPC_ERROR_SERVER_START, "RPC server unknown error"};
             }
             return result_started_;
         }
@@ -190,7 +191,7 @@ protected:
             server_thread_->detach();
             // Report timeout.
             TEC_TRACE("error: timeout.\n");
-            result = {Status::RPC_ERROR_SERVER_SHUTDOWN, "RPC Server shutdown timeout"};
+            result = {RPC_ERROR_SERVER_SHUTDOWN, "RPC Server shutdown timeout"};
         }
         else {
             // Release the server thread.

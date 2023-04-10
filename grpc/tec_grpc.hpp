@@ -24,7 +24,7 @@ SOFTWARE.
 
 /**
  *   \file tec_grpc.hpp
- *   \brief General gRPC parameters.
+ *   \brief Base gRPC server/client definitions.
  *
  *  TODO
  *
@@ -46,7 +46,7 @@ namespace rpc {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Default server URI
+//! Default server URI.
 static const char GRPC_SERVER_ADDR_URI[] = "0.0.0.0:50051";
 
 //! Declare a health check service.
@@ -89,6 +89,7 @@ struct GrpcWorkerParams: public ServerWorkerParams {
 static const char GRPC_CLIENT_URI_ADDR[] = "127.0.0.1:50051";
 
 
+//! gRPC client parameters.
 struct GrpcClientParams: public ClientParams {
     std::string addr_uri;
 

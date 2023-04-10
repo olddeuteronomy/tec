@@ -51,7 +51,7 @@ struct WorkerParams
 using Worker = tec::Worker<WorkerParams>;
 
 // Test command
-const Worker::cmd_t CMD_CALL_PROCESS = 1;
+static const Worker::cmd_t CMD_CALL_PROCESS = 1;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -126,21 +126,21 @@ int test_worker()
     worker.create().run();
 
     // Pause worker if everything is OK
-    if( worker.get_result().ok() )
+    if( worker.result().ok() )
     {
         std::this_thread::sleep_for(params.worker_delay);
     }
 
     // Gently terminate the worker
-    auto retval = worker.terminate().get_exit_code();
+    auto retval = worker.terminate().exit_code();
 
-    // Print statistics
-    auto unit = tec::time_unit(MyWorker::duration_t(0));
-    tec_print("\nStatistics\n");
-    tec_print("init:     % %\n", worker.get_time_init().count(), unit);
-    tec_print("exec:     % %\n", worker.get_time_exec().count(), unit);
-    tec_print("finalize: % %\n", worker.get_time_finalize().count(), unit);
-    tec_print("total:    % %\n", worker.get_time_total().count(), unit);
+    // Print metrics
+    auto mcs = worker.metrics();
+    tec_print("\nMetrics\n");
+    tec_print("init:     % %\n", mcs.time_init.count(), mcs.units);
+    tec_print("exec:     % %\n", mcs.time_exec.count(), mcs.units);
+    tec_print("finalize: % %\n", mcs.time_finalize.count(), mcs.units);
+    tec_print("total:    % %\n", mcs.time_total.count(), mcs.units);
 
     return retval;
 }
@@ -161,7 +161,7 @@ int main()
 
     int retval = test_worker();
 
-    tec_print("\nget_exit_code() = %\n", retval);
+    tec_print("\nexit_code() = %\n", retval);
     tec_print("Press <Enter> to quit ...");
 
 #if defined(UNICODE) && !defined(__TEC_WINDOWS__)

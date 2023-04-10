@@ -48,18 +48,22 @@ SOFTWARE.
 namespace tec
 {
 
+//! Defauls is monotonic clock that is most suitable for measuring intervals.
 using Clock = std::chrono::steady_clock;
 
+//! Seconds.
 using Seconds = std::chrono::seconds;
 using TimePointSec = std::chrono::time_point<Clock, Seconds>;
 
+//! Milliseconds.
 using MilliSec = std::chrono::milliseconds;
 using TimePointMs = std::chrono::time_point<Clock, MilliSec>;
 
+//! Microseconds.
 using MicroSec = std::chrono::microseconds;
 using TimePointMu = std::chrono::time_point<Clock, MicroSec>;
 
-//! Returns Now() as Duration.
+//! Returns now() as Duration.
 template <typename Duration>
 inline Duration Now() { return std::chrono::duration_cast<Duration>(Clock::now() - std::chrono::time_point<Clock, Duration>()); }
 
@@ -68,14 +72,15 @@ template <typename Duration>
 inline Duration Since(Duration start) { return Now<Duration>() - start; }
 
 //! Duration unit as string.
-inline const char* time_unit(Seconds) {return "s"; }
-inline const char* time_unit(MilliSec) {return "ms"; }
-inline const char* time_unit(MicroSec) {return "mu"; }
+constexpr const char* time_unit(Seconds) { return "s"; }
+constexpr const char* time_unit(MilliSec) { return "ms"; }
+constexpr const char* time_unit(MicroSec) { return "mu"; }
 
 //! Some duration constants.
 constexpr Seconds one_hour() { return Seconds(60 * 60); }
 constexpr Seconds one_day() { return Seconds(24 * 60 * 60); }
 
+//! String.
 #ifdef UNICODE
 typedef std::wstring String;
 #else
@@ -85,14 +90,12 @@ typedef std::string  String;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                          Generic Result
+*                       Result of execution
 *
 *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-struct Result
-{
-    enum Status
-    {
+struct Result {
+    enum Status {
         OK = 0
     };
 
@@ -116,19 +119,15 @@ struct Result
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template <typename Tstream>
-void print(Tstream* out, const char* fmt) // base function
-{
+void print(Tstream* out, const char* fmt) {
     *out << fmt;
 }
 
 
 template <typename Tstream, typename T, typename... Targs>
-void print(Tstream* out, const char* fmt, T value, Targs... Fargs) // recursive variadic function
-{
-    for( ; *fmt != '\0'; fmt++ )
-    {
-        if( *fmt == '%' )
-        {
+void print(Tstream* out, const char* fmt, T value, Targs... Fargs) {
+    for( ; *fmt != '\0'; fmt++ ) {
+        if( *fmt == '%' ) {
             *out << value;
             print<>(out, fmt + 1, Fargs...); // recursive call
             return;
@@ -142,9 +141,8 @@ void print(Tstream* out, const char* fmt, T value, Targs... Fargs) // recursive 
 #define tec_print(...) tec::print(&std::cout, __VA_ARGS__)
 
 
-//! "Print" variadic arguments to string.
-inline std::string format(const char* fmt)
-{
+//! "Print" variadic arguments to a string.
+inline std::string format(const char* fmt) {
     std::ostringstream buf;
     print(&buf, fmt);
     return buf.str();
@@ -152,8 +150,7 @@ inline std::string format(const char* fmt)
 
 // Recursive call.
 template <typename T, typename... Targs>
-inline std::string format(const char* fmt, T value, Targs... Fargs)
-{
+inline std::string format(const char* fmt, T value, Targs... Fargs) {
     std::ostringstream buf;
     print(&buf, fmt, value, Fargs...);
     return buf.str();
@@ -166,14 +163,19 @@ inline std::string format(const char* fmt, T value, Targs... Fargs)
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+//! Simple timer.
 template <typename Duration>
-class Timer
-{
-    Duration start_;
+class Timer {
+    Duration& src_;
 
 public:
-    Timer(): start_{Now<Duration>()}  {}
-    Duration stop() { return Now<Duration>() - start_; }
+    Timer(Duration& src)
+        : src_(src)
+    {
+        src_ = Now<Duration>();
+    }
+
+    Duration stop() { src_ = Now<Duration>() - src_; return src_; }
 };
 
 
@@ -183,58 +185,9 @@ public:
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Atomic-based signal. DEPRECATED, use Signal.
-class SignalAtomic
-{
-    std::atomic_bool sig_;
-    bool reset_on_exit_;
-
-public:
-    SignalAtomic(bool signalled = false, bool reset_on_exit = false):
-        sig_{signalled}
-        , reset_on_exit_{reset_on_exit}
-    {}
-
-    SignalAtomic(const SignalAtomic&) = delete;
-    SignalAtomic(SignalAtomic&&) = delete;
-
-    ~SignalAtomic()
-    {
-        if( reset_on_exit_ ) { sig_.store(false); }
-    }
-
-    inline void set() noexcept { sig_.store(true); }
-    inline void reset() noexcept { sig_.store(false); }
-    inline operator bool() noexcept { return sig_.load(); }
-
-    template<typename Duration>
-    inline bool wait_for(Duration dur)
-    {
-        bool ok = true;
-        auto start = Now<Duration>();
-        while( !sig_.load() )
-        {
-            if( Since(start) < dur )
-            {
-                std::this_thread::yield();
-            }
-            else
-            {
-                ok = false;
-                break;
-            }
-        }
-
-        return ok;
-    }
-
-}; // SignalAtomic
-
-
-//! Implementation of Signal based on classic mutex/cv.
-//! Borrowed from https://stackoverflow.com/questions/14920725/waiting-for-an-atomic-bool
-class Signal
-{
+//! A classic implementation of Signal based on mutex/cv.
+//! Borrowed from https://stackoverflow.com/questions/14920725/waiting-for-an-atomic-bool.
+class Signal {
     mutable std::mutex m_;
     mutable std::condition_variable cv_;
     bool flag_;
@@ -244,14 +197,12 @@ public:
         : flag_(false)
     {}
 
-    bool is_set() const
-    {
+    bool is_set() const {
         std::lock_guard<std::mutex> lock(m_);
         return flag_;
     }
 
-    void set()
-    {
+    void set() {
         {
             std::lock_guard<std::mutex> lock(m_);
             flag_ = true;
@@ -259,8 +210,7 @@ public:
         cv_.notify_all();
     }
 
-    void reset()
-    {
+    void reset() {
         {
             std::lock_guard<std::mutex> lock(m_);
             flag_ = false;
@@ -268,15 +218,13 @@ public:
         cv_.notify_all();
     }
 
-    void wait() const
-    {
+    void wait() const {
         std::unique_lock<std::mutex> lock(m_);
         cv_.wait(lock, [this] { return flag_; });
     }
 
     template <typename Duration>
-    bool wait_for(Duration dur) const
-    {
+    bool wait_for(Duration dur) const {
         std::unique_lock<std::mutex> lock(m_);
         return cv_.wait_for(lock, dur, [this] { return flag_; });
     }
@@ -296,8 +244,7 @@ public:
 
 
 //! Return a computer name or empty string on failure.
-inline std::string getcomputername()
-{
+inline String getcomputername() {
     char host[1024];
     if( gethostname(host, sizeof(host)) == 0)
         return host;
@@ -307,8 +254,7 @@ inline std::string getcomputername()
 
 
 //! Return a logged user name or empty string on failure.
-inline std::string getusername()
-{
+inline String getusername() {
     uid_t uid = geteuid();
     struct passwd* pw = getpwuid(uid);
     if ( pw != NULL )

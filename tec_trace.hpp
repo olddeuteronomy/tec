@@ -55,28 +55,23 @@ extern std::mutex tracer_mtx__;
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template <typename Duration>
-class Tracer
-{
+class Tracer {
     using Lock = std::lock_guard<std::mutex>;
 
     std::string name_;
 
-    template <typename> struct detail
-    {
+    template <typename> struct detail {
         static std::mutex& mtx() { return tracer_mtx__; }
     };
 
 public:
 
     Tracer(const char* name):
-        name_(name)
-    {
-    }
+        name_(name) {}
 
 
     template<typename Tstream>
-    void tprint_enter(Tstream* out)
-    {
+    void tprint_enter(Tstream* out) {
         Lock lk(detail<Duration>::mtx());
         auto tp = Now<Duration>();
         *out << "[" << tp.count() << "] * " << name_ << " entered.\n";
@@ -84,8 +79,7 @@ public:
 
 
     template<typename Tstream>
-    void tprint(Tstream* out, const char* format) // base function
-    {
+    void tprint(Tstream* out, const char* format) {
         Lock lk(detail<Duration>::mtx());
         auto tp = Now<Duration>().count();
         *out << "[" << tp << "] " << name_ << ": ";
@@ -94,8 +88,7 @@ public:
 
 
     template<typename Tstream, typename T, typename... Targs>
-    void tprint(Tstream* out, const char* format, T value, Targs... Fargs) // recursive variadic function
-    {
+    void tprint(Tstream* out, const char* format, T value, Targs... Fargs) {
         Lock lk(detail<Duration>::mtx());
         auto tp = Now<Duration>().count();
         *out << "[" << tp << "] " << name_ << ": ";
@@ -111,9 +104,10 @@ public:
 #if defined(_DEBUG) || defined(DEBUG) || defined(_TEC_TRACE_RELEASE)
   #define TEC_ENTER(name) tec::Tracer<tec::MilliSec> tracer__(name); tracer__.tprint_enter(&std::cout)
   #define TEC_TRACE(...)  tracer__.tprint(&std::cout, __VA_ARGS__)
-#else // Release
+  #define TEC_DECLARE_TRACER namespace tec { std::mutex tracer_mtx__; }
+#else
+  // Clean release
   #define TEC_ENTER(name)
   #define TEC_TRACE(...)
+  #define TEC_DECLARE_TRACER
 #endif
-
-#define TEC_DECLARE_TRACER namespace tec { std::mutex tracer_mtx__; }

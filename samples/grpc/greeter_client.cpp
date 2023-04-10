@@ -100,7 +100,7 @@ int main()
     MyParams params;
     MyClient client(params);
 
-    auto result = client.connect({&grpc::CreateChannel});
+    auto result = client.connect();
     if( !result.ok() )
     {
         tec_print("Error: %.\n", result.str());

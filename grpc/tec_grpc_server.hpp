@@ -26,7 +26,7 @@ SOFTWARE.
  *   \file tec_grpc_server.hpp
  *   \brief Base gRPC server.
  *
- *  TODO
+ *  Declares the base gRPC server.
  *
 */
 
@@ -99,13 +99,13 @@ public:
      *  from *another* thread.
      *
      *  tec::Worker provides a suitable mechanism to manage
-     *  tec::Server as a deamon (or as MS Windows service ).
+     *  tec::Server as a daemon (or as MS Windows service ).
      *
      *  \param none
      *  \return tec::Result
      *  \sa tec::rpc::ServerWorker
      */
-    virtual Result run() {
+    virtual Result run() override {
         TEC_ENTER("Server::run");
 
         // Build the server and the service.
@@ -134,7 +134,7 @@ public:
         // Finally assemble the server.
         server_ = builder.BuildAndStart();
         if( !server_ ) {
-            auto errmsg = tec::format("gRPC Server cannot start on %", params_.addr_uri);
+            auto errmsg = format("gRPC Server cannot start on %", params_.addr_uri);
             TEC_TRACE("error: %.\n", errmsg);
             return {Status::RPC_ERROR_SERVER_START, errmsg};
         }
@@ -152,7 +152,7 @@ public:
      *  \param none
      *  \return none
      */
-    virtual void shutdown() {
+    virtual void shutdown() override {
         TEC_ENTER("Server::shutdown");
         if( server_ ) {
             TEC_TRACE("terminating gRPC server ...\n");

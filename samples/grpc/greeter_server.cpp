@@ -114,13 +114,13 @@ int main() {
     MyServerWorker worker(worker_params, server);
 
     worker.create().run();
-    if( !worker.get_result().ok() )
+    if( !worker.result().ok() )
     {
-        tec_print("Error code=% (%).\n", worker.get_result().code(), worker.get_result().str());
+        tec_print("Error code=% (%).\n", worker.result().code(), worker.result().str());
     }
 
     getchar();
 
     worker.terminate();
-    return worker.get_exit_code();
+    return worker.exit_code();
 }

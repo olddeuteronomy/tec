@@ -39,10 +39,14 @@ SOFTWARE.
 #endif
 
 // OS specific defines
-//
-// We should check Microsoft last because other compilers *may* define _WIN32/64 as well.
+
+// Checking for MS Windows
+#if defined(_MSC_VER) && (defined(_WIN32) || defined(_WIN64))
+  #define __TEC_WINDOWS__ _MSC_VER
+#endif
+
 #if defined(__clang__)
-// Check clang
+// Checking for clang
   // This pragma has been removed to make the code cleaner:
   // #pragma clang diagnostic ignored "-Wmicrosoft-template-shadow"
   #define __TEC_CLANG__ 1
@@ -56,7 +60,7 @@ SOFTWARE.
   #define __TEC_PTR__  __INTPTR_WIDTH__
 
 #elif defined(__GNUC__)
-// Check gcc
+// Checking for gcc
   #define __TEC_GNUC__            __GNUC__
   #define __TEC_COMPILER_NAME__ "g++"
 
@@ -66,9 +70,8 @@ SOFTWARE.
   #define __TEC_LONG__ __SIZEOF_LONG__<<3
   #define __TEC_PTR__  __SIZEOF_POINTER__<<3
 
-#elif defined(_WIN32) || defined(_WIN64)
-// Check Windows
-  #define __TEC_WINDOWS__
+#elif defined(__TEC_WINDOWS__)
+// MS Windows settings
   #define __TEC_COMPILER_NAME__ "cl"
 
   #if defined(_WIN64)

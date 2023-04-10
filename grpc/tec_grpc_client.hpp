@@ -46,7 +46,7 @@ namespace rpc {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// gRPC client traits.
+//! gRPC client traits.
 template <
     typename TUserService,
     typename TGrpcChannel,
@@ -58,8 +58,9 @@ struct grpc_client_traits {
     typedef TGrpcClientCredentials TCredentials;
 };
 
+//! gRPC client.
 template <typename TParams, typename Traits>
-class GrpcClient {
+class GrpcClient: public Client {
 public:
     typedef typename Traits::TService TService;
     typedef typename Traits::TChannel TChannel;
@@ -89,11 +90,19 @@ public:
         , credentials_(credentials)
     {}
 
-    virtual ~GrpcClient()
-    {}
+    virtual ~GrpcClient() {}
 
 
-    virtual tec::Result connect(const ChannelBuilder& builder) {
+    /**
+ *  \brief Connect to a server.
+ *
+ *  Connects to a server using `addr_uri' and `connect_timeout'
+ *  provided in `params'.
+ *
+ *  \param param
+ *  \return return type
+ */
+    virtual Result connect() override {
         TEC_ENTER("Client::connect");
 
         // Create a channel.
