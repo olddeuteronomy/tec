@@ -23,10 +23,10 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   \file tec_rpc.hpp
- *   \brief Base server/client stuff definitions.
+ *   \file tec_server.hpp
+ *   \brief A Documented file.
  *
- *  Base RPC server/client stuff definitions.
+ *  Detailed description
  *
 */
 
@@ -37,21 +37,6 @@ SOFTWARE.
 
 namespace tec {
 
-namespace rpc {
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                RPC status of both server and client
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-enum Status {
-    OK = 0,
-    RPC_ERROR_SERVER_START = 53001,
-    RPC_ERROR_SERVER_SHUTDOWN,
-    RPC_ERROR_CLIENT_CONNECT
-};
-
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
@@ -59,18 +44,20 @@ enum Status {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-struct ServerParams {
-};
-
-
 class Server {
 public:
+    enum Status {
+        OK = 0,
+        ERROR_SERVER_START = 53001,
+        ERROR_SERVER_SHUTDOWN,
+    };
+
     Server() {}
     Server(const Server&) = delete;
     Server(Server&&) = delete;
     virtual ~Server() {}
 
-    virtual Result run() = 0;
+    virtual Result start() = 0;
     virtual void shutdown() = 0;
 };
 
@@ -82,19 +69,24 @@ public:
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //! Timeout defaults.
-static const MilliSec RPC_CLIENT_CONNECT_TIMEOUT = MilliSec(5000);
+static const MilliSec CLIENT_CONNECT_TIMEOUT = MilliSec(5000);
 
 struct ClientParams {
     MilliSec connect_timeout;
 
     ClientParams()
-        : connect_timeout(RPC_CLIENT_CONNECT_TIMEOUT)
+        : connect_timeout(CLIENT_CONNECT_TIMEOUT)
     {}
 };
 
 
 class Client {
 public:
+    enum Status {
+        OK = 0,
+        ERROR_CLIENT_CONNECT = 53101
+    };
+
     Client() {}
     Client(const Client&) = delete;
     Client(Client&&) = delete;
@@ -114,7 +106,7 @@ public:
 static const MilliSec RPC_WORKER_START_TIMEOUT    = MilliSec(250);
 static const MilliSec RPC_WORKER_SHUTDOWN_TIMEOUT = MilliSec(10000);
 
-struct ServerWorkerParams
+struct ServerWorkerParams: public WorkerParams
 {
     MilliSec start_timeout;
     MilliSec shutdown_timeout;
@@ -125,11 +117,17 @@ struct ServerWorkerParams
     {}
 };
 
+//! NOTE: ServerParams MUST be a descendant of WorkerParams, see tec_worker.hpp.
+struct ServerParams: public ServerWorkerParams {
+};
 
-template <typename TWorkerParams, typename TServer>
-class ServerWorker: public Worker<TWorkerParams> {
+
+
+template <typename TServerParams, typename TServer>
+class ServerWorker: public Worker<TServerParams> {
+
 protected:
-    TWorkerParams params_;
+    TServerParams params_;
     std::unique_ptr<TServer> server_;
 
 private:
@@ -139,12 +137,11 @@ private:
     Result result_started_;
 
 public:
-    ServerWorker(const TWorkerParams& params, TServer* server)
-        : Worker<TWorkerParams>(params)
+    ServerWorker(const TServerParams& params, TServer* server)
+        : Worker<TServerParams>(params)
         , params_(params)
-        , server_(server) // Now Worker owns the server!
+        , server_(server)    // Now ServerWorker owns the server!
     {}
-
 
     virtual ~ServerWorker() {}
 
@@ -154,7 +151,7 @@ protected:
 
         server_thread_.reset(
             new std::thread([&]{
-                result_started_ = server_->run();
+                result_started_ = server_->start();
                 sig_started_.set();
             }));
         if( !sig_started_.wait_for(params_.start_timeout) ) {
@@ -166,7 +163,7 @@ protected:
             // something wrong happened, release the server thread.
             server_thread_->join();
             if( result_started_.ok() ) {
-                return {RPC_ERROR_SERVER_START, "RPC server unknown error"};
+                return {Server::ERROR_SERVER_START, "Server cannot start"};
             }
             return result_started_;
         }
@@ -191,7 +188,7 @@ protected:
             server_thread_->detach();
             // Report timeout.
             TEC_TRACE("error: timeout.\n");
-            result = {RPC_ERROR_SERVER_SHUTDOWN, "RPC Server shutdown timeout"};
+            result = {Server::ERROR_SERVER_SHUTDOWN, "Server shutdown timeout"};
         }
         else {
             // Release the server thread.
@@ -204,6 +201,27 @@ protected:
 };
 
 
-} // ::rpc
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                   Server Daemon Builder
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-} // tec
+//! A functor that creates a server daemon.
+template <typename TServerParams>
+struct DaemonBuilder {
+    using Func = Daemon*(*)(const TServerParams&);
+    Func fptr;
+
+    Daemon* operator()(const TServerParams& server_params) {
+        if( nullptr == fptr ) {
+            return nullptr;
+        }
+        else {
+            return fptr(server_params);
+        }
+    }
+};
+
+
+} // ::tec

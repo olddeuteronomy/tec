@@ -33,11 +33,14 @@ SOFTWARE.
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/health_check_service_interface.h>
+#include <memory>
 
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
 
 #include "tec/grpc/tec_grpc_server.hpp"
+#include "tec/tec_server.hpp"
+#include "tec/tec_worker.hpp"
 
 
 using grpc::Status;
@@ -68,27 +71,23 @@ class MyService final : public Greeter::Service
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // Instatiate Server traits.
-using MyServerTraits = tec::rpc::grpc_server_traits<
+using MyServerTraits = tec::grpc_server_traits<
     MyService
     , grpc::Server
     , grpc::ServerBuilder
     , grpc::ServerCredentials>;
 
 // Instantiate gRPC server parameters.
-struct MyServerParams: public tec::rpc::GrpcServerParams
+struct MyServerParams: public tec::GrpcServerParams
 {
     // Add custom parameters here.
 };
 
 // Instantiate gRPC Server.
-using MyServer = tec::rpc::GrpcServer<MyServerParams, MyServerTraits>;
-
-// Instantiate gRPC Worker parameters.
-struct MyWorkerParams: public tec::rpc::GrpcWorkerParams
-{};
+using MyServer = tec::GrpcServer<MyServerParams, MyServerTraits>;
 
 // Instantiate gRPC Worker.
-using MyServerWorker = tec::rpc::ServerWorker<MyWorkerParams, MyServer>;
+using MyServerWorker = tec::ServerWorker<MyServerParams, MyServer>;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -97,30 +96,38 @@ using MyServerWorker = tec::rpc::ServerWorker<MyWorkerParams, MyServer>;
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEC_DECLARE_TRACER
+TEC_DECLARE_TRACER()
 
-int main() {
-    // Build the server.
-    MyServerParams server_params;
-    server_params.health_check_builder = {&grpc::EnableDefaultHealthCheckService};
-    server_params.reflection_builder = {&grpc::reflection::InitProtoReflectionServerBuilderPlugin};
+
+tec::Daemon* build_daemon(const MyServerParams& params) {
+    MyServerParams params_ = params;
+    params_.health_check_builder = {&grpc::EnableDefaultHealthCheckService};
+    params_.reflection_builder = {&grpc::reflection::InitProtoReflectionServerBuilderPlugin};
 
     MyServer* server = new MyServer(
-        server_params,
+        params_,
         grpc::InsecureServerCredentials());
 
-    // Build the worker.
-    MyWorkerParams worker_params;
-    MyServerWorker worker(worker_params, server);
+    // Return the worker.
+    return new MyServerWorker(params_, server);
+}
 
-    worker.create().run();
-    if( !worker.result().ok() )
+
+int main() {
+    // Build the daemon.
+    MyServerParams params;
+    tec::DaemonBuilder<MyServerParams> builder({build_daemon});
+    std::unique_ptr<tec::Daemon> daemon(builder(params));
+
+    // Run the daemon
+    daemon->create();
+    auto result = daemon->run();
+    if( !result.ok() )
     {
-        tec_print("Error code=% (%).\n", worker.result().code(), worker.result().str());
+        tec_print("Error code=% (%).\n", result.code(), result.str());
     }
 
     getchar();
 
-    worker.terminate();
-    return worker.exit_code();
+    return daemon->terminate().code();
 }

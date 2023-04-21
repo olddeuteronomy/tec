@@ -98,16 +98,16 @@ public:
 }; // ::Tracer class
 
 
-} // ::tec
-
-
 #if defined(_DEBUG) || defined(DEBUG) || defined(_TEC_TRACE_RELEASE)
   #define TEC_ENTER(name) tec::Tracer<tec::MilliSec> tracer__(name); tracer__.tprint_enter(&std::cout)
   #define TEC_TRACE(...)  tracer__.tprint(&std::cout, __VA_ARGS__)
-  #define TEC_DECLARE_TRACER namespace tec { std::mutex tracer_mtx__; }
+  #define TEC_DECLARE_TRACER() namespace tec { std::mutex tracer_mtx__; }
 #else
   // Clean release
   #define TEC_ENTER(name)
   #define TEC_TRACE(...)
-  #define TEC_DECLARE_TRACER
+  #define TEC_DECLARE_TRACER()
 #endif
+
+
+} // ::tec

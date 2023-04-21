@@ -35,7 +35,6 @@ SOFTWARE.
 
 #include <queue>
 #include <mutex>
-#include <thread>
 #include <condition_variable>
 
 #include "tec/tec_def.hpp"

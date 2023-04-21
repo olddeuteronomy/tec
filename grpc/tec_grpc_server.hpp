@@ -37,16 +37,13 @@ SOFTWARE.
 
 namespace tec {
 
-namespace rpc {
-
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                     Generic gRPC Server
+*                     gRPC Server traits
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! gRPC server traits.
 template <
     typename TUserService,
     typename TGrpcServer,
@@ -60,7 +57,13 @@ struct grpc_server_traits {
     typedef TGrpcServerCredentials TCredentials;
 };
 
-//! gRPC server declaration.
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                     Generic gRPC Server
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 template <typename TParams, typename Traits>
 class GrpcServer: public Server {
 public:
@@ -105,8 +108,8 @@ public:
      *  \return tec::Result
      *  \sa tec::rpc::ServerWorker
      */
-    virtual Result run() override {
-        TEC_ENTER("Server::run");
+    virtual Result start() override {
+        TEC_ENTER("Server::start");
 
         // Build the server and the service.
         TService service;
@@ -136,7 +139,7 @@ public:
         if( !server_ ) {
             auto errmsg = format("gRPC Server cannot start on %", params_.addr_uri);
             TEC_TRACE("error: %.\n", errmsg);
-            return {Status::RPC_ERROR_SERVER_START, errmsg};
+            return {Status::ERROR_SERVER_START, errmsg};
         }
 
         TEC_TRACE("server listening on %.\n", params_.addr_uri);
@@ -162,6 +165,5 @@ public:
 
 }; // Server
 
-} // ::rpc
 
 } // ::tec

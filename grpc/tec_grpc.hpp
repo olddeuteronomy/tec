@@ -24,7 +24,7 @@ SOFTWARE.
 
 /**
  *   \file tec_grpc.hpp
- *   \brief Base gRPC server/client definitions.
+ *   \brief General gRPC parameters.
  *
  *  TODO
  *
@@ -32,12 +32,10 @@ SOFTWARE.
 
 #pragma once
 
-#include "tec/tec_rpc.hpp"
+#include "tec/tec_server.hpp"
 
 
 namespace tec {
-
-namespace rpc {
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -46,16 +44,16 @@ namespace rpc {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Default server URI.
+//! Default server URI
 static const char GRPC_SERVER_ADDR_URI[] = "0.0.0.0:50051";
 
 //! Declare a health check service.
-struct HealthCheckBuilder {
+struct GrpcHealthCheckBuilder {
     void (*fptr)(bool);
 };
 
 //! Declare a reflection service.
-struct ReflectionBuilder {
+struct GrpcReflectionBuilder {
     void (*fptr)(void);
 };
 
@@ -63,19 +61,14 @@ struct ReflectionBuilder {
 //! gRPC Server.
 struct GrpcServerParams: public ServerParams {
     std::string addr_uri;
-    HealthCheckBuilder health_check_builder;  //!< e.g. {&grpc::EnableDefaultHealthCheckService}
-    ReflectionBuilder reflection_builder;     //!< e.g. {&grpc::reflection::InitProtoReflectionServerBuilderPlugin}
+    GrpcHealthCheckBuilder health_check_builder;  //!< e.g. {&grpc::EnableDefaultHealthCheckService}
+    GrpcReflectionBuilder reflection_builder;     //!< e.g. {&grpc::reflection::InitProtoReflectionServerBuilderPlugin}
 
     GrpcServerParams()
         : addr_uri(GRPC_SERVER_ADDR_URI)
         , health_check_builder({nullptr})
         , reflection_builder({nullptr})
         {}
-};
-
-
-//! gRPC Worker.
-struct GrpcWorkerParams: public ServerWorkerParams {
 };
 
 
@@ -89,7 +82,6 @@ struct GrpcWorkerParams: public ServerWorkerParams {
 static const char GRPC_CLIENT_URI_ADDR[] = "127.0.0.1:50051";
 
 
-//! gRPC client parameters.
 struct GrpcClientParams: public ClientParams {
     std::string addr_uri;
 
@@ -98,8 +90,6 @@ struct GrpcClientParams: public ClientParams {
     {}
 };
 
-
-} // ::rpc
 
 } // ::tec
 

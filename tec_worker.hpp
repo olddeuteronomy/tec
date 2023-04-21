@@ -24,15 +24,14 @@ SOFTWARE.
 
 /**
  *   \file tec_worker_std.hpp
- *   \brief Defines a Worker class.
+ *   \brief Declares a Worker class.
  *
- * Manage a Windows-ish thread using Messages.
+ * Manages a Windows-ish thread using Messages.
  *
 */
 
 #pragma once
 
-#include <iostream>
 #include <memory>
 #include <chrono>
 #include <atomic>
@@ -49,6 +48,29 @@ SOFTWARE.
 
 namespace tec {
 
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                     Abstract Worker - Daemon
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+class WorkerParams {
+};
+
+
+class Daemon
+{
+public:
+    Daemon() {}
+    virtual ~Daemon() {}
+
+    virtual Result create() = 0;
+    virtual Result run() = 0;
+    virtual Result terminate() = 0;
+};
+
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                       Worker thread
@@ -56,30 +78,33 @@ namespace tec {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template <typename TWorkerParams, typename Duration = MilliSec>
-class Worker {
+class Worker: public Daemon {
+
 public:
     typedef std::thread::id id_t;
-    typedef Duration duration_t;
 
 #if __TEC_PTR__ == 64
     typedef int64_t arg_t;
 #elif __TEC_PTR__ == 32
     typedef int32_t arg_t;
 #else
-#error Unknown pointer size __TEC_PTR__
+    #error Unknown pointer size __TEC_PTR__
 #endif
 
 #if __TEC_LONG__ == 64
     typedef uint64_t cmd_t;
 #elif __TEC_LONG__ == 32
     typedef uint32_t cmd_t;
+#else
+    #error Unknown long int size __TEC__LONG__
 #endif
 
-    //! Worker system error codes.
+    //! Worker error codes.
     enum Status {
         OK = 0,
         ERR_MIN = 50000,
         NO_THREAD,
+        THREAD_ALREADY_EXISTS,
         ERR_MAX
     };
 
@@ -95,7 +120,7 @@ public:
         cmd_t command;
         arg_t arg;
 
-        inline const bool quit() const { return (command == Command::QUIT); }
+        inline bool quit() const { return (command == Command::QUIT); }
 
         //! Null message.
         static Message zero() { return{Command::QUIT, 0}; }
@@ -103,15 +128,16 @@ public:
         static Message terminate() { return zero(); }
     };
 
+    //! Statistics.
     struct Metrics {
         std::string units;
-        duration_t time_total;
-        duration_t time_init;
-        duration_t time_exec;
-        duration_t time_finalize;
+        Duration time_total;
+        Duration time_init;
+        Duration time_exec;
+        Duration time_finalize;
 
         Metrics()
-            : units(time_unit(duration_t(0)))
+            : units(time_unit(Duration(0)))
             , time_total(0)
             , time_init(0)
             , time_exec(0)
@@ -149,6 +175,9 @@ public:
     {
     }
 
+    Worker(const Worker&) = delete;
+    Worker(Worker&&) = delete;
+
     //! Worker attributes
     inline id_t id() const { return thread_id_; }
     inline int exit_code() const { return result_.code(); }
@@ -174,7 +203,7 @@ private:
         static void thread_proc(Worker& worker) {
             TEC_ENTER("Worker::thread_proc");
 
-            Timer<duration_t> t_total(worker.metrics_.time_total);
+            Timer<Duration> t_total(worker.metrics_.time_total);
 
             // We obtained thread_id and then we are waiting for sig_begin
             // to resume the thread, see run().
@@ -187,7 +216,7 @@ private:
             TEC_TRACE("sig_running signalled.\n");
 
             // Initialize the worker
-            Timer<duration_t> t_init(worker.metrics_.time_init);
+            Timer<Duration> t_init(worker.metrics_.time_init);
             worker.result_ = worker.init();
             t_init.stop();
 
@@ -198,7 +227,7 @@ private:
             // Start message polling
             TEC_TRACE("entering message loop.\n");
             Message msg = Message::zero();
-            Timer<duration_t> t_exec(worker.metrics_.time_exec);
+            Timer<Duration> t_exec(worker.metrics_.time_exec);
             while( worker.mq_.poll(msg) )
             {
                 TEC_TRACE("received Message{%, %}.\n", msg.command, msg.arg);
@@ -211,7 +240,7 @@ private:
             // Finalize the worker if it had been inited successfully
             if( worker.result_.ok() )
             {
-                Timer<duration_t> t_finalize(worker.metrics_.time_finalize);
+                Timer<Duration> t_finalize(worker.metrics_.time_finalize);
                 worker.result_ = worker.finalize();
                 t_finalize.stop();
             }
@@ -235,13 +264,17 @@ public:
      *  Use run() to start the worker thread.
      *
      *  \param none
-     *  \return self&
+     *  \return tec::Result
      *  \sa Worker::run()
      */
-    virtual Worker& create() {
+    virtual Result create() override {
         TEC_ENTER("Worker::create");
+        if( thread_ != nullptr) {
+            result_ = {Status::THREAD_ALREADY_EXISTS, "thread already exists"};
+            return result_;
+        }
         thread_.reset(new std::thread(detail<TWorkerParams>::thread_proc, std::ref(*this)));
-        return *this;
+        return {};
     }
 
 
@@ -252,15 +285,15 @@ public:
      *  then waits for init() callback completed.
      *
      *  \param none
-     *  \return self&
+     *  \return tec::Result
      */
-    virtual Worker& run() {
+    virtual Result run() override {
         TEC_ENTER("Worker::run");
 
         if( !thread_ ) {
             // No thread exists yet, see create()
             result_ = {Status::NO_THREAD};
-            return *this;
+            return result_;
         }
 
         // Resume the thread
@@ -271,7 +304,7 @@ public:
         TEC_TRACE("waiting for sig_inited signalled ...\n");
         sig_inited_.wait();
 
-        return *this;
+        return result_;
     }
 
 
@@ -302,13 +335,13 @@ public:
      *  sig_terminated signal to close the working thread.
      *
      *  \param none
-     *  \return self&
+     *  \return tec::Result
      */
-    virtual Worker& terminate() {
+    virtual Result terminate() override {
         TEC_ENTER("Worker::terminate");
         if( !thread_ ) {
             result_ = Status::NO_THREAD;
-            return *this;
+            return result_;
         }
 
         // Terminate message loop
@@ -322,9 +355,10 @@ public:
         thread_->join();
         TEC_TRACE("Worker thread joined OK.\n");
 
-        return *this;
+        return result_;
     }
 
+protected:
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      *
      *                        Worker callbacks
@@ -345,7 +379,7 @@ public:
      *  \sa Worker::finalize()
      */
     virtual Result init() {
-        return{OK};
+        return{};
     }
 
     /**
@@ -364,19 +398,17 @@ public:
     /**
      *  \brief Called on exiting from the thread.
      *
-     *  NOTE: if init() returned Status different from OK,
-     *  this callback *is not called*.
-     *
-     *  NOTE: Worker::get_exit_code() will return this Status.
+     *  NOTE: this callback *is not called*
+     *  if init() returned *not* Status::OK.
      *
      *  \param none
      *  \return Status::OK (0) if succeeded
      *  \sa Worker::init()
-     *  \sa Worker::get_exit_code()
+     *  \sa Worker::exit_code()
      */
     virtual Result finalize()
     {
-        return{OK};
+        return{};
     }
 
 }; // ::Worker

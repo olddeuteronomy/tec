@@ -45,19 +45,19 @@ using helloworld::Greeter;
 
 
 // Instantiate gRPC Client parameters.
-struct MyParams: public tec::rpc::GrpcClientParams
+struct MyParams: public tec::GrpcClientParams
 {
     // Add custom parameters here.
 };
 
 // Instantiate Client traits.
-using TClientTraits = tec::rpc::grpc_client_traits<
+using TClientTraits = tec::grpc_client_traits<
     Greeter,
     grpc::Channel,
     grpc::ChannelCredentials>;
 
 // Instantiate Client.
-using BaseClient = tec::rpc::GrpcClient<MyParams, TClientTraits>;
+using BaseClient = tec::GrpcClient<MyParams, TClientTraits>;
 
 class MyClient: public BaseClient
 {
@@ -93,7 +93,7 @@ public:
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEC_DECLARE_TRACER
+TEC_DECLARE_TRACER()
 
 int main()
 {

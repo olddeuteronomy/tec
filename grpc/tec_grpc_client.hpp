@@ -37,16 +37,13 @@ SOFTWARE.
 
 namespace tec {
 
-namespace rpc {
-
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                      Generic gRPC client
+*                      gRPC Client traits
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! gRPC client traits.
 template <
     typename TUserService,
     typename TGrpcChannel,
@@ -58,7 +55,13 @@ struct grpc_client_traits {
     typedef TGrpcClientCredentials TCredentials;
 };
 
-//! gRPC client.
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                          gRPC client
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 template <typename TParams, typename Traits>
 class GrpcClient: public Client {
 public:
@@ -113,11 +116,11 @@ public:
         // Connect to the server with timeout.
         if (!channel_->WaitForConnected(deadline))
         {
-            std::string msg{tec::format(
+            std::string msg(format(
                     "It took too long (> % ms) to reach out the server on %",
-                    params_.connect_timeout.count(), params_.addr_uri)};
+                    params_.connect_timeout.count(), params_.addr_uri));
             TEC_TRACE("error: %.\n", msg);
-            return {Status::RPC_ERROR_CLIENT_CONNECT, msg};
+            return {ERROR_CLIENT_CONNECT, msg};
         }
 
         // Create a stub.
@@ -129,7 +132,5 @@ public:
 
 };
 
-
-} // ::rpc
 
 } // ::tec

@@ -40,13 +40,13 @@ SOFTWARE.
 
 // OS specific defines
 
-// Checking for MS Windows
+// Check for MS Windows
 #if defined(_MSC_VER) && (defined(_WIN32) || defined(_WIN64))
   #define __TEC_WINDOWS__ _MSC_VER
 #endif
 
 #if defined(__clang__)
-// Checking for clang
+// Check clang
   // This pragma has been removed to make the code cleaner:
   // #pragma clang diagnostic ignored "-Wmicrosoft-template-shadow"
   #define __TEC_CLANG__ 1
@@ -60,7 +60,7 @@ SOFTWARE.
   #define __TEC_PTR__  __INTPTR_WIDTH__
 
 #elif defined(__GNUC__)
-// Checking for gcc
+// Check gcc
   #define __TEC_GNUC__            __GNUC__
   #define __TEC_COMPILER_NAME__ "g++"
 
@@ -71,7 +71,7 @@ SOFTWARE.
   #define __TEC_PTR__  __SIZEOF_POINTER__<<3
 
 #elif defined(__TEC_WINDOWS__)
-// MS Windows settings
+// Windows-specific
   #define __TEC_COMPILER_NAME__ "cl"
 
   #if defined(_WIN64)

@@ -121,18 +121,16 @@ int test_worker()
         /*Seconds worker_delay*/ Seconds{10} // 0, delay between worker's run() and terminate()
     };
     MyWorker worker(params);
-
-    // Go!
-    worker.create().run();
+    worker.create();
 
     // Pause worker if everything is OK
-    if( worker.result().ok() )
+    if( worker.run().ok() )
     {
         std::this_thread::sleep_for(params.worker_delay);
     }
 
     // Gently terminate the worker
-    auto retval = worker.terminate().exit_code();
+    auto retval = worker.terminate().code();
 
     // Print metrics
     auto mcs = worker.metrics();
@@ -153,7 +151,7 @@ int test_worker()
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // Instantiate Tracer, see tec_tracer.hpp
-TEC_DECLARE_TRACER
+TEC_DECLARE_TRACER()
 
 int main()
 {

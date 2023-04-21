@@ -22,7 +22,8 @@ TEC_CXXFLAGS := -I$(HOME)/lib/grpc/include -I$(HOME)/workspace/devel -D_TEC_TRAC
 
 HOST_SYSTEM = $(shell uname | cut -f 1 -d_)
 SYSTEM ?= $(HOST_SYSTEM)
-CXX = g++
+# CXX = g++
+CXX=clang++
 CPPFLAGS += `pkg-config --cflags protobuf grpc`
 CXXFLAGS += -std=c++14 $(TEC_CXXFLAGS)
 
