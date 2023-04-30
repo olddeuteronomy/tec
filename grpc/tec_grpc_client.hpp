@@ -93,7 +93,7 @@ public:
         , credentials_(credentials)
     {}
 
-    virtual ~GrpcClient() {}
+    virtual ~GrpcClient() = default;
 
 
     /**
@@ -105,7 +105,7 @@ public:
  *  \param param
  *  \return return type
  */
-    virtual Result connect() override {
+    Result connect() override {
         TEC_ENTER("Client::connect");
 
         // Create a channel.
@@ -114,8 +114,7 @@ public:
         auto deadline = std::chrono::system_clock::now() + params_.connect_timeout;
 
         // Connect to the server with timeout.
-        if (!channel_->WaitForConnected(deadline))
-        {
+        if (!channel_->WaitForConnected(deadline)) {
             std::string msg(format(
                     "It took too long (> % ms) to reach out the server on %",
                     params_.connect_timeout.count(), params_.addr_uri));
@@ -125,7 +124,6 @@ public:
 
         // Create a stub.
         stub_ = TService::NewStub(channel_);
-
         TEC_TRACE("connected to % OK.\n", params_.addr_uri);
         return {};
     }

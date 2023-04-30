@@ -107,6 +107,7 @@ struct Result {
     Result(int c, const std::string& e): code_(c), errstr_(e) {}
 
     bool ok() const { return (code_ == OK); }
+    operator bool() const { return ok(); }
     const std::string& str() const { return errstr_; }
     int code() const { return code_; }
 };
@@ -245,6 +246,7 @@ public:
 
 //! Return a computer name or empty string on failure.
 inline String getcomputername() {
+    // TODO: UNICODE support.
     char host[1024];
     if( gethostname(host, sizeof(host)) == 0)
         return host;
@@ -255,6 +257,7 @@ inline String getcomputername() {
 
 //! Return a logged user name or empty string on failure.
 inline String getusername() {
+    // TODO: UNICODE support.
     uid_t uid = geteuid();
     struct passwd* pw = getpwuid(uid);
     if ( pw != NULL )
@@ -263,12 +266,13 @@ inline String getusername() {
         return "";
 }
 
-
-#else // __TEC_WINDOWS__
-// MS Windows stuff goes here
-#include "tec/mswin/tec_win_utils.hpp"
-
 #endif // !__TEC_WINDOWS__
 
 
 } // ::tec
+
+
+#if defined(__TEC_WINDOWS__)
+// MS Windows stuff goes here
+#include "tec/mswin/tec_win_utils.hpp"
+#endif // __TEC_WINDOWS

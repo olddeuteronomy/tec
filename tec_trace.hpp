@@ -98,16 +98,25 @@ public:
 }; // ::Tracer class
 
 
+} // ::tec
+
+
 #if defined(_DEBUG) || defined(DEBUG) || defined(_TEC_TRACE_RELEASE)
-  #define TEC_ENTER(name) tec::Tracer<tec::MilliSec> tracer__(name); tracer__.tprint_enter(&std::cout)
-  #define TEC_TRACE(...)  tracer__.tprint(&std::cout, __VA_ARGS__)
-  #define TEC_DECLARE_TRACER() namespace tec { std::mutex tracer_mtx__; }
+
+#if defined(_MSVC_LANG)
+// _MSVC_LANG Defined as an integer literal that specifies the C++ language standard 
+// targeted by the compiler. It's set only in code compiled as C++. 
+// The macro is the integer literal value 201402L by default, 
+// or when the /std:c++14 compiler option is specified. 
+#define TEC_ENTER(name) Tracer<MilliSec> tracer__(name); tracer__.tprint_enter(&std::cout)
+#else
+#define TEC_ENTER(name) tec::Tracer<tec::MilliSec> tracer__(name); tracer__.tprint_enter(&std::cout)
+#endif
+#define TEC_TRACE(...)  tracer__.tprint(&std::cout, __VA_ARGS__)
+#define TEC_DECLARE_TRACER() namespace tec { std::mutex tracer_mtx__; }
 #else
   // Clean release
-  #define TEC_ENTER(name)
-  #define TEC_TRACE(...)
-  #define TEC_DECLARE_TRACER()
+#define TEC_ENTER(name)
+#define TEC_TRACE(...)
+#define TEC_DECLARE_TRACER()
 #endif
-
-
-} // ::tec

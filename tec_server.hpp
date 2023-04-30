@@ -32,6 +32,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <map>
+
 #include "tec/tec_worker.hpp"
 
 
@@ -52,10 +54,10 @@ public:
         ERROR_SERVER_SHUTDOWN,
     };
 
-    Server() {}
+    Server() = default;
     Server(const Server&) = delete;
     Server(Server&&) = delete;
-    virtual ~Server() {}
+    virtual ~Server() = default;
 
     virtual Result start() = 0;
     virtual void shutdown() = 0;
@@ -87,10 +89,10 @@ public:
         ERROR_CLIENT_CONNECT = 53101
     };
 
-    Client() {}
+    Client() = default;
     Client(const Client&) = delete;
     Client(Client&&) = delete;
-    virtual ~Client() {}
+    virtual ~Client() = default;
 
     virtual Result connect() = 0;
 };
@@ -103,8 +105,8 @@ public:
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //! Worker: default timeouts
-static const MilliSec RPC_WORKER_START_TIMEOUT    = MilliSec(250);
-static const MilliSec RPC_WORKER_SHUTDOWN_TIMEOUT = MilliSec(10000);
+constexpr MilliSec WORKER_START_TIMEOUT    = MilliSec(250);
+constexpr MilliSec WORKER_SHUTDOWN_TIMEOUT = MilliSec(10000);
 
 struct ServerWorkerParams: public WorkerParams
 {
@@ -112,8 +114,8 @@ struct ServerWorkerParams: public WorkerParams
     MilliSec shutdown_timeout;
 
     ServerWorkerParams()
-        : start_timeout(RPC_WORKER_START_TIMEOUT)
-        , shutdown_timeout(RPC_WORKER_SHUTDOWN_TIMEOUT)
+        : start_timeout(WORKER_START_TIMEOUT)
+        , shutdown_timeout(WORKER_SHUTDOWN_TIMEOUT)
     {}
 };
 
@@ -125,6 +127,13 @@ struct ServerParams: public ServerWorkerParams {
 
 template <typename TServerParams, typename TServer>
 class ServerWorker: public Worker<TServerParams> {
+public:
+    enum Status
+    {
+        OK = 0,
+        NO_SERVER_PROVIDED = 53201,      //!< No server found.
+        SERVER_ALREADY_ATTACHED = 53202  //!< Worker already has a server attached.
+    };
 
 protected:
     TServerParams params_;
@@ -137,17 +146,39 @@ private:
     Result result_started_;
 
 public:
+    //! Initialize with a Server.
     ServerWorker(const TServerParams& params, TServer* server)
         : Worker<TServerParams>(params)
         , params_(params)
         , server_(server)    // Now ServerWorker owns the server!
     {}
 
+    //! No Server provided in constructor, use attach_server() later.
+    ServerWorker(const TServerParams& params)
+        : Worker<TServerParams>(params)
+        , params_(params)
+    {}
+
     virtual ~ServerWorker() {}
 
+    virtual Result attach_server(TServer* server) {
+        if( server == nullptr ) {
+            return{Status::NO_SERVER_PROVIDED, "Internal: no Server provided"};
+        }
+        if( server_ ) {
+            return{Status::SERVER_ALREADY_ATTACHED, "Internal: Server already attached"};
+        }
+        server_.reset(server);
+        return{};
+    }
+
 protected:
-    virtual Result init() override {
+    Result init() override {
         TEC_ENTER("ServerWorker::init");
+
+        if( !server_ ) {
+            return{Status::NO_SERVER_PROVIDED, "Internal: no Server provided"};
+        }
 
         server_thread_.reset(
             new std::thread([&]{
@@ -170,8 +201,12 @@ protected:
     }
 
 
-    virtual Result finalize() override {
+    Result finalize() override {
         TEC_ENTER("ServerWorker::finalize");
+
+        if( !server_ ) {
+            return{Status::NO_SERVER_PROVIDED, "Internal: no Server provided"};
+        }
 
         if( !server_thread_ ) {
             // Already finished, perhaps there was an error.
@@ -203,7 +238,7 @@ protected:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                   Server Daemon Builder
+*                         Daemon Builder
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

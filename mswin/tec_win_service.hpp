@@ -32,6 +32,8 @@ SOFTWARE.
 
 #pragma once
 
+#include "tec/tec_def.hpp"
+
 #if !defined (__TEC_WINDOWS__)
 #error This file can be used on MS Windows only!
 
@@ -41,7 +43,7 @@ SOFTWARE.
 #include <winnt.h>
 #include <winsvc.h>
 
-#include "tec/tec_rpc.hpp"
+#include "tec/tec_server.hpp"
 
 
 //! MUST BE USED IN YOUR main.cpp (or somewhere else in a cpp file).
@@ -60,9 +62,9 @@ static const DWORD WINSVC_CONTROLS_ACCEPTED = SERVICE_ACCEPT_STOP | SERVICE_ACCE
 static const DWORD WINSVC_WAIT_HINT = 5000;
 
 
-//! Service parameters. Must be a descendant of WorkerParams, see Worker.
-template <typename TWorkerParams>
-struct ServiceParams: public TWorkerParams {
+//! Service parameters. Must be a descendant of ServerParams, see tec_server.hpp.
+template <typename TServerParams>
+struct ServiceParams: public TServerParams {
     String name;
     DWORD dwServiceType;
     DWORD dwControlsAccepted;
@@ -77,27 +79,10 @@ struct ServiceParams: public TWorkerParams {
 };
 
 
-//! A functor that creates a service daemon.
-template <typename TServerParams, typename TWorkerParams>
-struct DaemonBuilder {
-    rpc::Daemon* (*fptr)(const TServerParams&, const TWorkerParams&);
-
-    rpc::Daemon* operator()(const TServerParams& server_params, const TWorkerParams& worker_params) {
-        if( nullptr == fptr ) {
-            return nullptr;
-        }
-        else {
-            return fptr(server_params, worker_params);
-        }
-    }
-};
-
-
-template <typename TServerParams, typename TWorkerParams, typename TServiceParams>
+template <typename TServiceParams, typename TServerParams>
 class Service {
 protected:
     // Service custom attributes.
-    TServerParams server_params_;
     TServiceParams service_params_;
 
     // MSWindows service specific attributes.
@@ -105,23 +90,19 @@ protected:
     SERVICE_STATUS status_;
 
     //! Service daemon.
-    DaemonBuilder<TServerParams, TWorkerParams> daemon_builder_;
-    std::unique_ptr<rpc::Daemon> daemon_;
+    DaemonBuilder<TServerParams> daemon_builder_;
+    std::unique_ptr<Daemon> daemon_;
 
 public:
     enum Status {
         OK = 0,
-        WINSVC_NODAEMON = 53101, // ERROR_INVALID_FIELD_IN_PARAMETER_LIST 328 (0x148)
-        WINSVC_RUN_DAEMON_ERROR, // ERROR_CAN_NOT_COMPLETE 1003 (0x3EB)
+        WINSVC_NODAEMON = 53101,  // ERROR_INVALID_FIELD_IN_PARAMETER_LIST 328 (0x148)
+        WINSVC_RUN_DAEMON_ERROR,  // ERROR_CAN_NOT_COMPLETE 1003 (0x3EB)
         WINSVC_TERMINATE_TIMEOUT, // WAIT_TIMEOUT 258 (0x102)
     };
 
-    Service(
-        const TServerParams& server_params,
-        const TServiceParams& service_params,
-        DaemonBuilder<TServerParams, TWorkerParams> daemon_builder)
-        : server_params_(server_params)
-        , service_params_(service_params)
+    Service(const TServiceParams& service_params, DaemonBuilder<TServerParams> daemon_builder)
+        : service_params_(service_params)
         , daemon_builder_(daemon_builder)
         , handle_(nullptr)
     {
@@ -250,8 +231,8 @@ protected:
             impl::CtrlHandlerCallback);
 
         if( (SERVICE_STATUS_HANDLE)0 == handle_ ) {
-            DWORD dwErrorCode = GetLastError();
             // Cannot register the Service Control Handler.
+            DWORD dwErrorCode = GetLastError();
             return;
         }
 
@@ -320,16 +301,15 @@ protected:
 
     virtual void DoRun(DWORD /*argc*/, LPTSTR* /*argv*/) {
         // Create a server daemon.
-        daemon_.reset(daemon_builder_(server_params_, service_params_));
-        if( !daemon_ )
-        {
+        daemon_.reset(daemon_builder_(service_params_));
+        if( !daemon_ ) {
             SetError(ERROR_INVALID_FIELD_IN_PARAMETER_LIST, Status::WINSVC_NODAEMON);
         }
 
-        // Run the daemon.
+        // Create and run the daemon.
+        daemon_->create();
         auto result = daemon_->run();
-        if( !result.ok() )
-        {
+        if( !result.ok() ) {
             daemon_->terminate();
             daemon_.reset(nullptr);
             SetError(ERROR_CAN_NOT_COMPLETE, result.code());
@@ -341,11 +321,9 @@ protected:
 
 
     virtual void DoStop() {
-        if( daemon_ )
-        {
+        if( daemon_ ) {
             auto result = daemon_->terminate();
-            if( !result.ok() )
-            {
+            if( !result.ok() ) {
                 SetError(WAIT_TIMEOUT, result.code());
                 return;
             }

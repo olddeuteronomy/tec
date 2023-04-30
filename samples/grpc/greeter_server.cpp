@@ -122,8 +122,7 @@ int main() {
     // Run the daemon
     daemon->create();
     auto result = daemon->run();
-    if( !result.ok() )
-    {
+    if( !result.ok() ) {
         tec_print("Error code=% (%).\n", result.code(), result.str());
     }
 

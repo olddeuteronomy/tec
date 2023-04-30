@@ -26,7 +26,7 @@ SOFTWARE.
  *   \file tec_grpc_server.hpp
  *   \brief Base gRPC server.
  *
- *  Declares the base gRPC server.
+ *  Declares a base gRPC server.
  *
 */
 
@@ -90,8 +90,7 @@ public:
     {}
 
 
-    virtual ~GrpcServer()
-    {}
+    virtual ~GrpcServer() = default;
 
 
     /**
@@ -108,7 +107,7 @@ public:
      *  \return tec::Result
      *  \sa tec::rpc::ServerWorker
      */
-    virtual Result start() override {
+    Result start() override {
         TEC_ENTER("Server::start");
 
         // Build the server and the service.
@@ -130,8 +129,8 @@ public:
         // Listen on the given address with given authentication mechanism.
         builder.AddListeningPort(params_.addr_uri, credentials_);
 
-        // Register "service" as the instance through which we'll communicate with
-        // clients. In this case it corresponds to an *synchronous* service.
+        // Register a "service" as the instance through which we'll communicate with
+        // clients. In this case it corresponds to a *synchronous* service.
         builder.RegisterService(&service);
 
         // Finally assemble the server.
@@ -150,12 +149,12 @@ public:
     /**
      *  \brief Shutdown the server.
      *
-     *  Closes all connections, shuts down the server.
+     *  Closes all connections, shuts the server down.
      *
      *  \param none
      *  \return none
      */
-    virtual void shutdown() override {
+    void shutdown() override {
         TEC_ENTER("Server::shutdown");
         if( server_ ) {
             TEC_TRACE("terminating gRPC server ...\n");

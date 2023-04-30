@@ -23,6 +23,7 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 #include <sstream>
 
+#include "tec/tec_utils.hpp"
 #include "tec/tec_worker.hpp"
 
 
@@ -51,7 +52,7 @@ struct WorkerParams
 using Worker = tec::Worker<WorkerParams>;
 
 // Test command
-static const Worker::cmd_t CMD_CALL_PROCESS = 1;
+static const tec::BaseMessage::cmd_t CMD_CALL_PROCESS = 1;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -60,40 +61,37 @@ static const Worker::cmd_t CMD_CALL_PROCESS = 1;
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-class MyWorker: public Worker
-{
+class MyWorker: public Worker {
 public:
     MyWorker(const WorkerParams& params) : Worker(params) {}
 
 protected:
-    virtual tec::Result init() override
-    {
+    tec::Result init() override {
         TEC_ENTER("init()");
 
         // Emulate error
-        if( params().init_error )
-        {
+        if( params().init_error ) {
             return params().init_error;
         }
         // Pause
         std::this_thread::sleep_for(params().init_delay);
 
         // Initiate processing
-        send({CMD_CALL_PROCESS, 0});
+        send({CMD_CALL_PROCESS});
         return{};
     }
 
-    virtual void process(const Message&) override
+    void process(const tec::BaseMessage&) override
     {
         TEC_ENTER("process()");
         TEC_TRACE("count=%.\n", ++params().count);
         // Pause...
         std::this_thread::sleep_for(params().process_delay);
         // ...then repeat processing
-        send({CMD_CALL_PROCESS, 0});
+        send({CMD_CALL_PROCESS});
     }
 
-    virtual tec::Result finalize() override
+    tec::Result finalize() override
     {
         TEC_ENTER("finalize()");
         // Pause...
@@ -104,8 +102,7 @@ protected:
 };
 
 
-int test_worker()
-{
+int test_worker() {
     // Emulate delays and errors.
     WorkerParams params{
         /*int count*/ 0,
@@ -124,8 +121,7 @@ int test_worker()
     worker.create();
 
     // Pause worker if everything is OK
-    if( worker.run().ok() )
-    {
+    if( worker.run().ok() ) {
         std::this_thread::sleep_for(params.worker_delay);
     }
 

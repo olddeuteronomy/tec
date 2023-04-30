@@ -36,18 +36,13 @@ SOFTWARE.
 
 #if !defined (__TEC_WINDOWS__)
 #error This file can be used on MS Windows only!
-
 #else
 // Windows stuff goes here
-
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <tchar.h>
 #include <lmcons.h>
-
-
-#include "tec/tec_utils.hpp"
 
 
 namespace tec {

@@ -55,15 +55,15 @@ namespace tec {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-class WorkerParams {
+struct WorkerParams {
 };
 
 
 class Daemon
 {
 public:
-    Daemon() {}
-    virtual ~Daemon() {}
+    Daemon() = default;
+    virtual ~Daemon() = default;
 
     virtual Result create() = 0;
     virtual Result run() = 0;
@@ -73,31 +73,42 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
+*                         Message
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+//! Message *should* implement quit() to indicate that
+//! message polling should stop.
+//!
+//! \sa poll() in tec_queue.hpp.
+struct BaseMessage {
+    typedef unsigned long cmd_t ;
+
+    //! Quit message loop command.
+    static constexpr cmd_t QUIT = 0;
+
+    cmd_t command; //!< A command.
+
+    //! Indicates that message loop should be terminated.
+    inline bool quit() const { return (command == BaseMessage::QUIT); }
+};
+
+//! Null message.
+template <typename TMessage>
+inline TMessage zero() { TMessage msg; msg.command = BaseMessage::QUIT; return msg; }
+
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
 *                       Worker thread
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-template <typename TWorkerParams, typename Duration = MilliSec>
+template <typename TWorkerParams, typename TMessage = BaseMessage, typename Duration = MilliSec>
 class Worker: public Daemon {
 
 public:
-    typedef std::thread::id id_t;
-
-#if __TEC_PTR__ == 64
-    typedef int64_t arg_t;
-#elif __TEC_PTR__ == 32
-    typedef int32_t arg_t;
-#else
-    #error Unknown pointer size __TEC_PTR__
-#endif
-
-#if __TEC_LONG__ == 64
-    typedef uint64_t cmd_t;
-#elif __TEC_LONG__ == 32
-    typedef uint32_t cmd_t;
-#else
-    #error Unknown long int size __TEC__LONG__
-#endif
+    using id_t = std::thread::id;
 
     //! Worker error codes.
     enum Status {
@@ -106,26 +117,6 @@ public:
         NO_THREAD,
         THREAD_ALREADY_EXISTS,
         ERR_MAX
-    };
-
-    //! Message *should* implement quit() to indicate that
-    //! message polling should stop.
-    //!
-    //! \sa poll() in tec_queue.hpp.
-    struct Message {
-        enum Command {
-            QUIT = 0  //!< RESERVED, do not use it directly.
-        };
-
-        cmd_t command;
-        arg_t arg;
-
-        inline bool quit() const { return (command == Command::QUIT); }
-
-        //! Null message.
-        static Message zero() { return{Command::QUIT, 0}; }
-        //! Terminate message loop.
-        static Message terminate() { return zero(); }
     };
 
     //! Statistics.
@@ -162,7 +153,7 @@ protected:
     Metrics metrics_;
 
     //! Message queue.
-    SafeQueue<Message> mq_;
+    SafeQueue<TMessage> mq_;
 
     //! Worker parameters.
     TWorkerParams params_;
@@ -172,11 +163,12 @@ public:
     Worker(const TWorkerParams& params)
         : thread_(nullptr)
         , params_(params)
-    {
-    }
+    {}
 
     Worker(const Worker&) = delete;
     Worker(Worker&&) = delete;
+
+    virtual ~Worker() = default;
 
     //! Worker attributes
     inline id_t id() const { return thread_id_; }
@@ -189,8 +181,6 @@ public:
 
     // User specified parameters
     TWorkerParams& params() { return params_; }
-
-    virtual ~Worker() {}
 
 private:
 
@@ -226,16 +216,16 @@ private:
 
             // Start message polling
             TEC_TRACE("entering message loop.\n");
-            Message msg = Message::zero();
+            TMessage msg = zero<TMessage>();
             Timer<Duration> t_exec(worker.metrics_.time_exec);
             while( worker.mq_.poll(msg) )
             {
-                TEC_TRACE("received Message{%, %}.\n", msg.command, msg.arg);
+                TEC_TRACE("received Message{%}.\n", msg.command);
                 // Process a user-defined message
                 worker.process(msg);
             }
             t_exec.stop();
-            TEC_TRACE("leaving message loop on Message{%, %}.\n", msg.command, msg.arg);
+            TEC_TRACE("leaving message loop on Message{%}.\n", msg.command);
 
             // Finalize the worker if it had been inited successfully
             if( worker.result_.ok() )
@@ -267,7 +257,7 @@ public:
      *  \return tec::Result
      *  \sa Worker::run()
      */
-    virtual Result create() override {
+    Result create() override {
         TEC_ENTER("Worker::create");
         if( thread_ != nullptr) {
             result_ = {Status::THREAD_ALREADY_EXISTS, "thread already exists"};
@@ -287,7 +277,7 @@ public:
      *  \param none
      *  \return tec::Result
      */
-    virtual Result run() override {
+    Result run() override {
         TEC_ENTER("Worker::run");
 
         if( !thread_ ) {
@@ -316,7 +306,7 @@ public:
      *  \param msg a user-defined message to handle
      *  \return bool
      */
-    virtual bool send(const Message& msg) {
+    virtual bool send(const TMessage& msg) {
         if( thread_ ) {
             mq_.enqueue(msg);
             return true;
@@ -337,7 +327,7 @@ public:
      *  \param none
      *  \return tec::Result
      */
-    virtual Result terminate() override {
+    Result terminate() override {
         TEC_ENTER("Worker::terminate");
         if( !thread_ ) {
             result_ = Status::NO_THREAD;
@@ -345,7 +335,7 @@ public:
         }
 
         // Terminate message loop
-        send(Message::terminate());
+        send(zero<TMessage>());
         TEC_TRACE("Message::terminate sent.\n");
 
         // Wait for thread sig_terminated signalled
@@ -390,8 +380,7 @@ protected:
      *  \param msg _Message_ user-defined message
      *  \return none
      */
-    virtual void process(const Message& msg)
-    {
+    virtual void process(const TMessage& msg) {
     }
 
 
@@ -406,8 +395,7 @@ protected:
      *  \sa Worker::init()
      *  \sa Worker::exit_code()
      */
-    virtual Result finalize()
-    {
+    virtual Result finalize() {
         return{};
     }
 

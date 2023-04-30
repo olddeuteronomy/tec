@@ -45,8 +45,7 @@ using helloworld::Greeter;
 
 
 // Instantiate gRPC Client parameters.
-struct MyParams: public tec::GrpcClientParams
-{
+struct MyParams: public tec::GrpcClientParams {
     // Add custom parameters here.
 };
 
@@ -59,15 +58,13 @@ using TClientTraits = tec::grpc_client_traits<
 // Instantiate Client.
 using BaseClient = tec::GrpcClient<MyParams, TClientTraits>;
 
-class MyClient: public BaseClient
-{
+class MyClient: public BaseClient {
 public:
     MyClient(const MyParams& params)
         : BaseClient(params, {&grpc::CreateChannel}, grpc::InsecureChannelCredentials())
     {}
 
-    std::string SayHello(const std::string& user)
-    {
+    std::string SayHello(const std::string& user) {
         // Data we are sending to the server.
         HelloRequest request;
         request.set_name(user);
@@ -101,8 +98,7 @@ int main()
     MyClient client(params);
 
     auto result = client.connect();
-    if( !result.ok() )
-    {
+    if( !result ) {
         tec_print("Error: %.\n", result.str());
         return result.code();
     }
