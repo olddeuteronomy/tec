@@ -33,6 +33,7 @@ SOFTWARE.
 #pragma once
 
 #include "tec/grpc/tec_grpc.hpp"
+#include "tec/tec_trace.hpp"
 
 
 namespace tec {
@@ -126,6 +127,12 @@ public:
         stub_ = TService::NewStub(channel_);
         TEC_TRACE("connected to % OK.\n", params_.addr_uri);
         return {};
+    }
+
+
+    void close() override {
+        TEC_ENTER("Client::close");
+        TEC_TRACE("closed OK.\n");
     }
 
 };

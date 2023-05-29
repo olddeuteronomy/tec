@@ -95,6 +95,7 @@ public:
     virtual ~Client() = default;
 
     virtual Result connect() = 0;
+    virtual void close() = 0;
 };
 
 

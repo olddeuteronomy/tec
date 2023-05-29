@@ -24,7 +24,7 @@ SOFTWARE.
 
 /**
  *   \file greeter_client.cpp
- *   \brief A Documented file.
+ *   \brief A simple gRPC client.
  *
  *  Detailed description
  *
@@ -57,6 +57,7 @@ using TClientTraits = tec::grpc_client_traits<
 
 // Instantiate Client.
 using BaseClient = tec::GrpcClient<MyParams, TClientTraits>;
+
 
 class MyClient: public BaseClient {
 public:
@@ -106,5 +107,6 @@ int main()
     auto val = client.SayHello("world!");
     tec_print("<- %\n", val);
 
+    client.close();
     return result.code();
 }

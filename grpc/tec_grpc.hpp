@@ -104,7 +104,7 @@ std::string get_server_metadata(const TClientContext& ctx, const std::string& ke
         auto len = ref.length();
         // NOTE: grpc::string_ref is NOT null-terminated string!
         if( len > 0 ) {
-            return{ref.data(), 0, len - 1};
+            return{ref.data(), 0, len};
         }
     }
     return{};
@@ -130,7 +130,7 @@ std::string get_client_metadata(const TServerContext* pctx, const std::string& k
         auto len = ref.length();
         // NOTE: grpc::string_ref is NOT null-terminated string!
         if( len > 0 ) {
-            return{ref.data(), 0, len - 1};
+            return{ref.data(), 0, len};
         }
     }
     return{};
