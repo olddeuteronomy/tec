@@ -99,17 +99,17 @@ using MyServerWorker = tec::ServerWorker<MyServerParams, MyServer>;
 TEC_DECLARE_TRACER()
 
 
-tec::Daemon* build_daemon(const MyServerParams& params) {
+std::unique_ptr<tec::Daemon> build_daemon(const MyServerParams& params) {
     MyServerParams params_ = params;
     params_.health_check_builder = {&grpc::EnableDefaultHealthCheckService};
     params_.reflection_builder = {&grpc::reflection::InitProtoReflectionServerBuilderPlugin};
 
-    MyServer* server = new MyServer(
+    std::unique_ptr<MyServer> server(new MyServer(
         params_,
-        grpc::InsecureServerCredentials());
+        grpc::InsecureServerCredentials()));
 
     // Return the worker.
-    return new MyServerWorker(params_, server);
+    return std::unique_ptr<tec::Daemon>(new MyServerWorker(params_, std::move(server)));
 }
 
 

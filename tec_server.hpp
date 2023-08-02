@@ -148,10 +148,10 @@ private:
 
 public:
     //! Initialize with a Server.
-    ServerWorker(const TServerParams& params, TServer* server)
+    ServerWorker(const TServerParams& params, std::unique_ptr<TServer> server)
         : Worker<TServerParams>(params)
         , params_(params)
-        , server_(server)    // Now ServerWorker owns the server!
+        , server_(std::move(server))    // Now ServerWorker owns the server!
     {}
 
     //! No Server provided in constructor, use attach_server() later.
@@ -246,10 +246,10 @@ protected:
 //! A functor that creates a server daemon.
 template <typename TServerParams>
 struct DaemonBuilder {
-    using Func = Daemon*(*)(const TServerParams&);
+    using Func = std::unique_ptr<Daemon>(*)(const TServerParams&);
     Func fptr;
 
-    Daemon* operator()(const TServerParams& server_params) {
+    std::unique_ptr<Daemon> operator()(const TServerParams& server_params) {
         if( nullptr == fptr ) {
             return nullptr;
         }

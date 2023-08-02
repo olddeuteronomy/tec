@@ -18,14 +18,24 @@
 # Portions Copyright (c) 2022 The Emacs Cat
 #
 
+ifdef DEBUG
+EXTRA_FLAGS := -ggdb
+else
+EXTRA_FLAGS := -O3
+endif
+
+ifdef GCC
+CXX = g++
+else
+CXX=clang++
+endif
+
 TEC_CXXFLAGS := -I$(HOME)/lib/grpc/include -I$(HOME)/workspace/devel -D_TEC_TRACE_RELEASE
 
 HOST_SYSTEM = $(shell uname | cut -f 1 -d_)
 SYSTEM ?= $(HOST_SYSTEM)
-# CXX = g++
-CXX=clang++
 CPPFLAGS += `pkg-config --cflags protobuf grpc`
-CXXFLAGS += -std=c++14 $(TEC_CXXFLAGS)
+CXXFLAGS += -std=c++14 $(EXTRA_FLAGS) $(TEC_CXXFLAGS)
 
 # System-dependant libraries
 ifeq ($(SYSTEM),Darwin)
@@ -37,7 +47,7 @@ else
 LDFLAGS += -L/usr/local/lib `pkg-config --libs --static protobuf grpc++`\
            -pthread\
            -Wl,--no-as-needed -lgrpc++_reflection -Wl,--as-needed\
-           -ldl -lsystemd
+           -ldl -lsystemd -g
 endif
 
 
