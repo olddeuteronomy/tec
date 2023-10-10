@@ -48,12 +48,17 @@ namespace tec {
 template <
     typename TUserService,
     typename TGrpcChannel,
-    typename TGrpcClientCredentials
+    typename TGrpcClientCredentials,
+    typename TGrpcChannelArguments,
+    typename TGrpc_compression_algorithm
     >
 struct grpc_client_traits {
     typedef TUserService TService;
     typedef TGrpcChannel TChannel;
     typedef TGrpcClientCredentials TCredentials;
+    typedef TGrpcChannelArguments TArguments;
+    typedef TGrpc_compression_algorithm TCompressionAlgorithm;
+
 };
 
 
@@ -69,10 +74,12 @@ public:
     typedef typename Traits::TService TService;
     typedef typename Traits::TChannel TChannel;
     typedef typename Traits::TCredentials TCredentials;
+    typedef typename Traits::TArguments TArguments;
+    typedef typename Traits::TCompressionAlgorithm TCompressionAlgorithm;
 
     // Declare a pointer to CreateChannel function.
     struct ChannelBuilder {
-        std::shared_ptr<TChannel> (*fptr)(const std::string&, const std::shared_ptr<TCredentials>&);
+        std::shared_ptr<TChannel> (*fptr)(const std::string&, const std::shared_ptr<TCredentials>&, const TArguments&);
     };
 
 protected:
@@ -84,14 +91,34 @@ protected:
     std::unique_ptr<typename TService::Stub> stub_;
     ChannelBuilder channel_builder_;
     std::shared_ptr<TChannel> channel_;
+    TArguments arguments_;
+
+    // Sets grpc::ChannelArgiments before creating a channel, may be overwritten.
+    virtual void set_channel_arguments() {
+        // Maximum message size, see tec::GRPC_DEFAULT_MAX_MESSAGE_SIZE
+        if (params_.max_message_size > 0) {
+            // Set max message size in Mb
+            const int max_size = params_.max_message_size * 1024 * 1024;
+            arguments_.SetMaxSendMessageSize(max_size);
+            arguments_.SetMaxReceiveMessageSize(max_size);
+        }
+
+        // Compression algorithm
+        // GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
+        if (params_.compression_algorithm > 0) {
+            arguments_.SetCompressionAlgorithm(static_cast<TCompressionAlgorithm>(params_.compression_algorithm));
+        }
+    }
 
 public:
     GrpcClient(const TParams& params,
                const ChannelBuilder& channel_builder,
-               const std::shared_ptr<TCredentials>& credentials)
+               const std::shared_ptr<TCredentials>& credentials,
+               const TArguments& arguments)
         : params_(params)
         , channel_builder_(channel_builder)
         , credentials_(credentials)
+        , arguments_(arguments)
     {}
 
     virtual ~GrpcClient() = default;
@@ -100,18 +127,24 @@ public:
     /**
  *  \brief Connect to a server.
  *
- *  Connects to a server using `addr_uri' and `connect_timeout'
- *  provided in `params'.
+ *  1) Sets gRPC channel arguments as specified in params_.
  *
- *  \param param
- *  \return return type
+ *  2) Creates the gRPC channel.
+ *
+ *  3) Connects to a server using `addr_uri' and `connect_timeout'
+ *  provided in `params_'.
+ *
+ *  \return tec::Result
  */
     Result connect() override {
         TEC_ENTER("Client::connect");
 
+        // Set channel arguments. Can be overwritten.
+        set_channel_arguments();
+
         // Create a channel.
         // If failed, a lame channel (one on which all operations fail) is created.
-        channel_ = channel_builder_.fptr(params_.addr_uri, credentials_);
+        channel_ = channel_builder_.fptr(params_.addr_uri, credentials_, arguments_);
         auto deadline = std::chrono::system_clock::now() + params_.connect_timeout;
 
         // Connect to the server with timeout.

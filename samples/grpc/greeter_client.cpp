@@ -31,6 +31,7 @@ SOFTWARE.
 */
 
 
+#include <grpc/compression.h>
 #include <grpcpp/grpcpp.h>
 
 #include "helloworld.grpc.pb.h"
@@ -51,9 +52,12 @@ struct MyParams: public tec::GrpcClientParams {
 
 // Instantiate Client traits.
 using TClientTraits = tec::grpc_client_traits<
-    Greeter,
-    grpc::Channel,
-    grpc::ChannelCredentials>;
+    Greeter
+    , grpc::Channel
+    , grpc::ChannelCredentials
+    , grpc::ChannelArguments
+    , grpc_compression_algorithm
+    >;
 
 // Instantiate Client.
 using BaseClient = tec::GrpcClient<MyParams, TClientTraits>;
@@ -61,8 +65,8 @@ using BaseClient = tec::GrpcClient<MyParams, TClientTraits>;
 
 class MyClient: public BaseClient {
 public:
-    MyClient(const MyParams& params)
-        : BaseClient(params, {&grpc::CreateChannel}, grpc::InsecureChannelCredentials())
+    MyClient(const MyParams& params, const grpc::ChannelArguments& arguments)
+        : BaseClient(params, {&grpc::CreateCustomChannel}, grpc::InsecureChannelCredentials(), arguments)
     {}
 
     std::string SayHello(const std::string& user) {
@@ -95,8 +99,9 @@ TEC_DECLARE_TRACER()
 
 int main()
 {
+    grpc::ChannelArguments arguments;
     MyParams params;
-    MyClient client(params);
+    MyClient client(params, arguments);
 
     auto result = client.connect();
     if( !result ) {

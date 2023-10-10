@@ -126,6 +126,7 @@ int main() {
         tec_print("Error code=% (%).\n", result.code(), result.str());
     }
 
+    // Wait for <Enter> key pressed to terminate the server.
     getchar();
 
     return daemon->terminate().code();

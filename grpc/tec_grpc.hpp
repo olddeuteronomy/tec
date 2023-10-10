@@ -40,6 +40,16 @@ namespace tec {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
+*                        gRPC parameters
+*
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+//! Default maximum message size, in Mb
+static const int GRPC_DEFAULT_MAX_MESSAGE_SIZE = 64;
+
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
 *                     gRPC Server parameters
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -63,11 +73,13 @@ struct GrpcServerParams: public ServerParams {
     std::string addr_uri;
     GrpcHealthCheckBuilder health_check_builder;  //!< e.g. {&grpc::EnableDefaultHealthCheckService}
     GrpcReflectionBuilder reflection_builder;     //!< e.g. {&grpc::reflection::InitProtoReflectionServerBuilderPlugin}
+    int max_message_size;                         //!< GRPC_DEFAULT_MAX_MESSAGE_SIZE
 
     GrpcServerParams()
         : addr_uri(GRPC_SERVER_ADDR_URI)
         , health_check_builder({nullptr})
         , reflection_builder({nullptr})
+        , max_message_size(GRPC_DEFAULT_MAX_MESSAGE_SIZE)
         {}
 };
 
@@ -83,10 +95,16 @@ static const char GRPC_CLIENT_URI_ADDR[] = "127.0.0.1:50051";
 
 
 struct GrpcClientParams: public ClientParams {
-    std::string addr_uri;
+    std::string addr_uri;  //!< GRPC_CLIENT_URI_ADDR
+
+    // Channel arguments
+    int max_message_size;  //!< GRPC_DEFAULT_MAX_MESSAGE_SIZE
+    int compression_algorithm; //!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
 
     GrpcClientParams()
         : addr_uri(GRPC_CLIENT_URI_ADDR)
+        , max_message_size(GRPC_DEFAULT_MAX_MESSAGE_SIZE)
+        , compression_algorithm(0)
     {}
 };
 

@@ -122,18 +122,25 @@ public:
             params_.reflection_builder.fptr();
             TEC_TRACE("Reflection enabled.\n");
         }
-        TEC_TRACE("starting gRPC server on % ...\n", params_.addr_uri);
 
         TBuilder builder;
 
         // Listen on the given address with given authentication mechanism.
         builder.AddListeningPort(params_.addr_uri, credentials_);
 
+        // Set max message size.
+        if( params_.max_message_size > 0 ) {
+            const int max_size = params_.max_message_size * 1024 * 1024;
+            builder.SetMaxReceiveMessageSize(max_size);
+            builder.SetMaxSendMessageSize(max_size);
+        }
+
         // Register a "service" as the instance through which we'll communicate with
         // clients. In this case it corresponds to a *synchronous* service.
         builder.RegisterService(&service);
 
         // Finally assemble the server.
+        TEC_TRACE("starting gRPC server on % ...\n", params_.addr_uri);
         server_ = builder.BuildAndStart();
         if( !server_ ) {
             auto errmsg = format("gRPC Server cannot start on %", params_.addr_uri);
