@@ -24,15 +24,16 @@ SOFTWARE.
 
 /**
  *   \file greeter_client.cpp
- *   \brief A simple gRPC client.
+ *   \brief A simplest gRPC client.
  *
- *  Detailed description
+ *  Create the client and make a single RPC call to the server.
  *
 */
 
 
 #include <grpc/compression.h>
 #include <grpcpp/grpcpp.h>
+#include <iostream>
 
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
@@ -63,12 +64,16 @@ using TClientTraits = tec::grpc_client_traits<
 using BaseClient = tec::GrpcClient<MyParams, TClientTraits>;
 
 
+// Client implementation.
 class MyClient: public BaseClient {
 public:
-    MyClient(const MyParams& params, const grpc::ChannelArguments& arguments)
-        : BaseClient(params, {&grpc::CreateCustomChannel}, grpc::InsecureChannelCredentials(), arguments)
+    MyClient(const MyParams& params,
+             const std::shared_ptr<grpc::ChannelCredentials>& credentials
+        )
+        : BaseClient(params, {&grpc::CreateCustomChannel}, credentials)
     {}
 
+    //
     std::string SayHello(const std::string& user) {
         // Data we are sending to the server.
         HelloRequest request;
@@ -78,10 +83,10 @@ public:
         HelloReply reply;
 
         // Context for the client. It could be used to convey extra information to
-        // the server and/or tweak certain RPC behaviors.
+        // the server and/or tweak certain gRPC behavior.
         grpc::ClientContext context;
 
-        // The actual RPC.
+        // The actual RPC. No error processing here.
         grpc::Status status = stub_->SayHello(&context, request, &reply);
 
         return reply.message();
@@ -95,23 +100,27 @@ public:
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+// Define the internal tracer.
 TEC_DECLARE_TRACER()
 
 int main()
 {
-    grpc::ChannelArguments arguments;
+    // Create the client.
     MyParams params;
-    MyClient client(params, arguments);
+    MyClient client(params, grpc::InsecureChannelCredentials());
 
+    // Connect to the gRPC server.
     auto result = client.connect();
     if( !result ) {
-        tec_print("Error: %.\n", result.str());
+        std::cout << "Error: " << result.str() << "\n";
         return result.code();
     }
 
+    // Make a call and print a result.
     auto val = client.SayHello("world!");
-    tec_print("<- %\n", val);
+    std::cout << "<- " << val << "\n";
 
+    // Clean up.
     client.close();
     return result.code();
 }

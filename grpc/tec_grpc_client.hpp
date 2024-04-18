@@ -32,8 +32,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "tec/grpc/tec_grpc.hpp"
 #include "tec/tec_trace.hpp"
+#include "tec/grpc/tec_grpc.hpp"
 
 
 namespace tec {
@@ -83,49 +83,54 @@ public:
     };
 
 protected:
-    //! Custom parameters - must be inherited from ClientParams.
+    // Custom parameters - must be inherited from ClientParams.
     TParams params_;
 
-    //! gRPC-specific implementation.
+    // gRPC-specific implementation.
     std::shared_ptr<TCredentials> credentials_;
     std::unique_ptr<typename TService::Stub> stub_;
     ChannelBuilder channel_builder_;
     std::shared_ptr<TChannel> channel_;
     TArguments arguments_;
 
-    // Sets grpc::ChannelArgiments before creating a channel, may be overwritten.
+protected:
+
+    // Sets grpc::ChannelArgiments before creating a channel. Can be overwritten.
     virtual void set_channel_arguments() {
-        // Maximum message size, see tec::GRPC_DEFAULT_MAX_MESSAGE_SIZE
+        TEC_ENTER("GrpcClient::set_channel_arguments");
+
+        // Maximum message size, see tec::kGrpcMaxMessageSize
         if (params_.max_message_size > 0) {
             // Set max message size in Mb
             const int max_size = params_.max_message_size * 1024 * 1024;
             arguments_.SetMaxSendMessageSize(max_size);
             arguments_.SetMaxReceiveMessageSize(max_size);
         }
+        TEC_TRACE("MaxMessageSize is set to % Mb.\n", params_.max_message_size);
 
         // Compression algorithm
         // GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
         if (params_.compression_algorithm > 0) {
             arguments_.SetCompressionAlgorithm(static_cast<TCompressionAlgorithm>(params_.compression_algorithm));
         }
+        TEC_TRACE("CompressionAlgorithm is set to %.\n", params_.compression_algorithm);
     }
 
 public:
     GrpcClient(const TParams& params,
                const ChannelBuilder& channel_builder,
-               const std::shared_ptr<TCredentials>& credentials,
-               const TArguments& arguments)
+               const std::shared_ptr<TCredentials>& credentials
+        )
         : params_(params)
         , channel_builder_(channel_builder)
         , credentials_(credentials)
-        , arguments_(arguments)
     {}
 
     virtual ~GrpcClient() = default;
 
 
     /**
- *  \brief Connect to a server.
+ *  \brief Connect to a gRPC server.
  *
  *  1) Sets gRPC channel arguments as specified in params_.
  *
@@ -137,7 +142,7 @@ public:
  *  \return tec::Result
  */
     Result connect() override {
-        TEC_ENTER("Client::connect");
+        TEC_ENTER("GrpcClient::connect");
 
         // Set channel arguments. Can be overwritten.
         set_channel_arguments();
@@ -164,7 +169,7 @@ public:
 
 
     void close() override {
-        TEC_ENTER("Client::close");
+        TEC_ENTER("GrpcClient::close");
         TEC_TRACE("closed OK.\n");
     }
 

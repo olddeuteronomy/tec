@@ -33,6 +33,7 @@ SOFTWARE.
 #pragma once
 
 #include "tec/grpc/tec_grpc.hpp"
+#include "tec/tec_trace.hpp"
 
 
 namespace tec {
@@ -48,13 +49,17 @@ template <
     typename TUserService,
     typename TGrpcServer,
     typename TGrpcServerBuilder,
-    typename TGrpcServerCredentials
+    typename TGrpcServerCredentials,
+    typename TGrpc_compression_algorithm,
+    typename TGrpc_compression_level
     >
 struct grpc_server_traits {
     typedef TUserService TService;
     typedef TGrpcServer TServer;
     typedef TGrpcServerBuilder TBuilder;
     typedef TGrpcServerCredentials TCredentials;
+    typedef TGrpc_compression_algorithm TCompressionAlgorithm;
+    typedef TGrpc_compression_level TCompressionLevel;
 };
 
 
@@ -72,6 +77,8 @@ public:
     typedef typename Traits::TServer TServer;
     typedef typename Traits::TBuilder TBuilder;
     typedef typename Traits::TCredentials TCredentials;
+    typedef typename Traits::TCompressionAlgorithm TCompressionAlgorithm;
+    typedef typename Traits::TCompressionLevel TCompressionLevel;
 
 protected:
 
@@ -81,6 +88,63 @@ protected:
     //! gRPC specific attributes.
     std::unique_ptr<TServer> server_;
     std::shared_ptr<TCredentials> credentials_;
+
+protected:
+
+    /**
+     * @brief      Sets builder plugins such as HealthCheck and Reflection.
+     *
+     * @details    Called *before* the builder is created. Can be overwritten.
+     *
+     * @param      None.
+     * @return     None.
+     */
+    virtual void set_plugins() {
+        TEC_ENTER("GrpcServer::set_plugins");
+
+        if( params_.health_check_builder.fptr ) {
+            params_.health_check_builder.fptr(true);
+            TEC_TRACE("Health checking enabled.\n");
+        }
+        if( params_.reflection_builder.fptr ) {
+            params_.reflection_builder.fptr();
+            TEC_TRACE("Reflection enabled.\n");
+        }
+    }
+
+
+    /**
+     * @brief      Sets various builder options such as MaxMessageSize etc.
+     *
+     * @details    Called *after* the builder is created. Can be overwritten.
+     *
+     * @param      None.
+     * @return     None.
+     */
+    virtual void set_builder_options(TBuilder& builder) {
+        TEC_ENTER("GrpcServer::set_builder_options");
+
+        // Set max message size.
+        if(params_.max_message_size > 0) {
+            const int max_size = params_.max_message_size * 1024 * 1024;
+            builder.SetMaxReceiveMessageSize(max_size);
+            builder.SetMaxSendMessageSize(max_size);
+        }
+        TEC_TRACE("MaxMessageSize is set to % Mb.\n", params_.max_message_size);
+
+        // Set compression algorithm.
+        // Note that it overrides any compression level set by SetDefaultCompressionLevel.
+        if (params_.compression_algorithm > 0) {
+            builder.SetDefaultCompressionAlgorithm(static_cast<TCompressionAlgorithm>(params_.compression_algorithm));
+        }
+        TEC_TRACE("CompressionAlgorithm is set to %.\n", params_.compression_algorithm);
+
+        // Set compression level
+        if (params_.compression_level > 0) {
+            builder.SetDefaultCompressionLevel(static_cast<TCompressionLevel>(params_.compression_level));
+        }
+        TEC_TRACE("CompressionLevel is set to %.\n", params_.compression_level);
+    }
 
 public:
 
@@ -100,40 +164,29 @@ public:
      *  This procedure doesn't quit until Server::shutdown() is called
      *  from *another* thread.
      *
-     *  tec::Worker provides a suitable mechanism to manage
-     *  tec::Server as a daemon (or as MS Windows service ).
+     *  Worker provides a suitable mechanism to manage
+     *  Server as a daemon (or as MS Windows service).
      *
-     *  \param none
+     *  \param None
      *  \return tec::Result
-     *  \sa tec::rpc::ServerWorker
+     *  \sa tec::Server
      */
     Result start() override {
-        TEC_ENTER("Server::start");
+        TEC_ENTER("GrpcServer::start");
 
         // Build the server and the service.
         TService service;
 
-        // Set builder parameters.
-        if( params_.health_check_builder.fptr ) {
-            params_.health_check_builder.fptr(true);
-            TEC_TRACE("Health checking enabled.\n");
-        }
-        if( params_.reflection_builder.fptr ) {
-            params_.reflection_builder.fptr();
-            TEC_TRACE("Reflection enabled.\n");
-        }
+        // Set builder plugins.
+        set_plugins();
 
         TBuilder builder;
 
         // Listen on the given address with given authentication mechanism.
         builder.AddListeningPort(params_.addr_uri, credentials_);
 
-        // Set max message size.
-        if( params_.max_message_size > 0 ) {
-            const int max_size = params_.max_message_size * 1024 * 1024;
-            builder.SetMaxReceiveMessageSize(max_size);
-            builder.SetMaxSendMessageSize(max_size);
-        }
+        // Set builder options.
+        set_builder_options(builder);
 
         // Register a "service" as the instance through which we'll communicate with
         // clients. In this case it corresponds to a *synchronous* service.
@@ -149,6 +202,8 @@ public:
         }
 
         TEC_TRACE("server listening on %.\n", params_.addr_uri);
+
+        // Wait until this->shutdown() is called from another thread.
         server_->Wait();
         return {};
     }
@@ -162,14 +217,14 @@ public:
      *  \return none
      */
     void shutdown() override {
-        TEC_ENTER("Server::shutdown");
+        TEC_ENTER("GrpcServer::shutdown");
         if( server_ ) {
             TEC_TRACE("terminating gRPC server ...\n");
             server_->Shutdown();
         }
     }
 
-}; // Server
+}; // GrpcServer
 
 
 } // ::tec

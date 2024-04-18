@@ -42,10 +42,10 @@ namespace tec {
 *
 *                        gRPC parameters
 *
-*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //! Default maximum message size, in Mb
-static const int GRPC_DEFAULT_MAX_MESSAGE_SIZE = 64;
+static const int kGrpcMaxMessageSize = 64;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,15 +54,15 @@ static const int GRPC_DEFAULT_MAX_MESSAGE_SIZE = 64;
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Default server URI.
-static const char GRPC_SERVER_ADDR_URI[] = "0.0.0.0:50051";
+//! Default server URI. Accepts connections from any IPv4 addresses.
+static const char kGrpcServerAddrUri[] = "0.0.0.0:50051";
 
-//! Declare a gRPC health check service builder.
+//! Declare the gRPC health check service builder.
 struct GrpcHealthCheckBuilder {
     void (*fptr)(bool);
 };
 
-//! Declare a gRPC reflection service builder.
+//! Declare the gRPC reflection service builder.
 struct GrpcReflectionBuilder {
     void (*fptr)(void);
 };
@@ -71,15 +71,21 @@ struct GrpcReflectionBuilder {
 //! gRPC Server parameters.
 struct GrpcServerParams: public ServerParams {
     std::string addr_uri;
+
+    // ServerBuilder parameters
     GrpcHealthCheckBuilder health_check_builder;  //!< e.g. {&grpc::EnableDefaultHealthCheckService}
     GrpcReflectionBuilder reflection_builder;     //!< e.g. {&grpc::reflection::InitProtoReflectionServerBuilderPlugin}
-    int max_message_size;                         //!< GRPC_DEFAULT_MAX_MESSAGE_SIZE
+    int max_message_size;                         //!< kGrpcMaxMessageSize
+    int compression_algorithm;                    //!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
+    int compression_level;                        //!< GRPC_COMPRESS_LEVEL_NONE = 0, GRPC_COMPRESS_LEVEL_LOW, GRPC_COMPRESS_LEVEL_MED, GRPC_COMPRESS_LEVEL_HIGH, GRPC_COMPRESS_LEVEL_COUNT
 
     GrpcServerParams()
-        : addr_uri(GRPC_SERVER_ADDR_URI)
+        : addr_uri(kGrpcServerAddrUri)
         , health_check_builder({nullptr})
         , reflection_builder({nullptr})
-        , max_message_size(GRPC_DEFAULT_MAX_MESSAGE_SIZE)
+        , max_message_size(kGrpcMaxMessageSize)
+        , compression_algorithm(0)
+        , compression_level(0)
         {}
 };
 
@@ -90,29 +96,30 @@ struct GrpcServerParams: public ServerParams {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Default server URI.
-static const char GRPC_CLIENT_URI_ADDR[] = "127.0.0.1:50051";
+//! Default client URI (localhost).
+static const char kGrpcClientAddrUri[] = "127.0.0.1:50051";
 
 
 struct GrpcClientParams: public ClientParams {
-    std::string addr_uri;  //!< GRPC_CLIENT_URI_ADDR
+    std::string addr_uri;  //!< kGrpcClientAddrUri
 
     // Channel arguments
-    int max_message_size;  //!< GRPC_DEFAULT_MAX_MESSAGE_SIZE
+    int max_message_size;  //!< kGrpcMaxMessageSize
     int compression_algorithm; //!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
 
     GrpcClientParams()
-        : addr_uri(GRPC_CLIENT_URI_ADDR)
-        , max_message_size(GRPC_DEFAULT_MAX_MESSAGE_SIZE)
+        : addr_uri(kGrpcClientAddrUri)
+        , max_message_size(kGrpcMaxMessageSize)
         , compression_algorithm(0)
     {}
 };
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*                  gRPC metadata at client side
+*                  gRPC metadata on the client side
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+//! Get server's metadata on the client side.
 template <typename TClientContext>
 std::string get_server_metadata(const TClientContext& ctx, const std::string& key) {
     auto meta = ctx.GetServerInitialMetadata();
@@ -129,6 +136,7 @@ std::string get_server_metadata(const TClientContext& ctx, const std::string& ke
 
 }
 
+//! Put client's metadata on the client side.
 template <typename TClientContext>
 void add_client_metadata(TClientContext& ctx, const std::string& key, const std::string& data) {
     ctx.AddMetadata(key, data);
@@ -136,15 +144,16 @@ void add_client_metadata(TClientContext& ctx, const std::string& key, const std:
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*                  gRPC metadata at server side
+*                  gRPC metadata on the server side
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+//! Get client's metadada on the server side.
 template <typename TServerContext>
 std::string get_client_metadata(const TServerContext* pctx, const std::string& key) {
     auto meta = pctx->client_metadata();
     auto data = meta.find(key);
     if( data != meta.end() ) {
-        auto ref = data->second;
+        auto ref = data->second;  // grpc::string_ref
         auto len = ref.length();
         // NOTE: grpc::string_ref is NOT null-terminated string!
         if( len > 0 ) {
@@ -154,6 +163,7 @@ std::string get_client_metadata(const TServerContext* pctx, const std::string& k
     return{};
 }
 
+//! Put server's metadata on the server side.
 template <typename TServerContext>
 void add_server_medadata(TServerContext* pctx, const std::string& key, const std::string& data) {
     pctx->AddInitialMetadata(key, data);

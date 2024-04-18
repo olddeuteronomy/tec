@@ -30,17 +30,17 @@ SOFTWARE.
  *
 */
 
+#include <grpc/compression.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/health_check_service_interface.h>
+#include <iostream>
 #include <memory>
 
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
 
 #include "tec/grpc/tec_grpc_server.hpp"
-#include "tec/tec_server.hpp"
-#include "tec/tec_worker.hpp"
 
 
 using grpc::Status;
@@ -75,11 +75,13 @@ using MyServerTraits = tec::grpc_server_traits<
     MyService
     , grpc::Server
     , grpc::ServerBuilder
-    , grpc::ServerCredentials>;
+    , grpc::ServerCredentials
+    , grpc_compression_algorithm
+    , grpc_compression_level
+    >;
 
 // Instantiate gRPC server parameters.
-struct MyServerParams: public tec::GrpcServerParams
-{
+struct MyServerParams: public tec::GrpcServerParams {
     // Add custom parameters here.
 };
 
@@ -123,7 +125,7 @@ int main() {
     daemon->create();
     auto result = daemon->run();
     if( !result.ok() ) {
-        tec_print("Error code=% (%).\n", result.code(), result.str());
+        std::cout << "ErrCode=" << result.code() << " (" << result.str() << ").\n";
     }
 
     // Wait for <Enter> key pressed to terminate the server.
