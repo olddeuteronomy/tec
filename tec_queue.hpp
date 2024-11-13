@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ SOFTWARE.
 #include <mutex>
 #include <condition_variable>
 
-#include "tec/tec_def.hpp"
+#include "tec/tec_def.hpp" // IWYU pragma: keep
 
 
 namespace tec {
@@ -67,7 +67,7 @@ public:
         c.notify_one();
     }
 
-    //! Get the front element.
+    //! Get the front element and remove it from the queue.
     //! If the queue is empty, wait till an element is avaiable.
     T dequeue(void) {
         std::unique_lock<std::mutex> lock(m);
@@ -82,7 +82,7 @@ public:
     }
 
     //! Wait till a message is avaiable.
-    //! Returns true on message arriving, returns false if msg.quit() is set.
+    //! Returns false if msg.quit() is set, otherwise true.
     bool poll(T& msg) {
         msg = std::move(dequeue());
         return !msg.quit();

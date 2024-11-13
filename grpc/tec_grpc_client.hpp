@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,8 +33,7 @@ SOFTWARE.
 #pragma once
 
 #include "tec/tec_trace.hpp"
-#include "tec/grpc/tec_grpc.hpp"
-
+#include "tec/grpc/tec_grpc.hpp" // IWYU pragma: keep
 
 namespace tec {
 
@@ -106,14 +105,14 @@ protected:
             arguments_.SetMaxSendMessageSize(max_size);
             arguments_.SetMaxReceiveMessageSize(max_size);
         }
-        TEC_TRACE("MaxMessageSize is set to % Mb.\n", params_.max_message_size);
+        TEC_TRACE("MaxMessageSize is set to % Mb.", params_.max_message_size);
 
         // Compression algorithm
         // GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
         if (params_.compression_algorithm > 0) {
             arguments_.SetCompressionAlgorithm(static_cast<TCompressionAlgorithm>(params_.compression_algorithm));
         }
-        TEC_TRACE("CompressionAlgorithm is set to %.\n", params_.compression_algorithm);
+        TEC_TRACE("CompressionAlgorithm is set to %.", params_.compression_algorithm);
     }
 
 public:
@@ -157,20 +156,20 @@ public:
             std::string msg(format(
                     "It took too long (> % ms) to reach out the server on %",
                     params_.connect_timeout.count(), params_.addr_uri));
-            TEC_TRACE("error: %.\n", msg);
+            TEC_TRACE("error: %.", msg);
             return {ERROR_CLIENT_CONNECT, msg};
         }
 
         // Create a stub.
         stub_ = TService::NewStub(channel_);
-        TEC_TRACE("connected to % OK.\n", params_.addr_uri);
+        TEC_TRACE("connected to % OK.", params_.addr_uri);
         return {};
     }
 
 
     void close() override {
         TEC_ENTER("GrpcClient::close");
-        TEC_TRACE("closed OK.\n");
+        TEC_TRACE("closed OK.");
     }
 
 };

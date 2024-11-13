@@ -30,7 +30,6 @@ endif
 
 
 # Platform dependent commands
-
 ifeq ($(detected_OS),Windows)
 MKDIR_P = MKDIR
 else
@@ -39,14 +38,14 @@ endif
 
 # Compilation parameters
 TARGET = $(TESTNAME)$(TARGET_SUFFIX)
-CPPFLAGS = -std=c++14 -Wall -pthread -O2
+CPPFLAGS = -std=c++20 -Wall -pthread -O2
 INCLUDES = -I../../..
 OUTDIR = out
 
 # Enable tracing in release build
 # -v is for verbose output (to list all include paths etc)
 # DEFS = -D_TEC_TRACE_RELEASE -v
-DEFS = -D_TEC_TRACE_RELEASE
+DEFS = -D_TEC_TRACE_ON
 
 # Just for fun - colorize compiler output
 ifdef GCC

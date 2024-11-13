@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -31,8 +31,6 @@ SOFTWARE.
 */
 
 #pragma once
-
-#include <map>
 
 #include "tec/tec_worker.hpp"
 
@@ -71,13 +69,13 @@ public:
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //! Timeout defaults.
-static const MilliSec CLIENT_CONNECT_TIMEOUT = MilliSec(5000);
+constexpr const MilliSec kClientConnectTimeout = MilliSec(5000);
 
 struct ClientParams {
     MilliSec connect_timeout;
 
     ClientParams()
-        : connect_timeout(CLIENT_CONNECT_TIMEOUT)
+        : connect_timeout(kClientConnectTimeout)
     {}
 };
 
@@ -106,8 +104,8 @@ public:
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //! Worker: default timeouts
-constexpr MilliSec WORKER_START_TIMEOUT    = MilliSec(250);
-constexpr MilliSec WORKER_SHUTDOWN_TIMEOUT = MilliSec(10000);
+constexpr const MilliSec kWorkerStartTimeout    = MilliSec(250);
+constexpr const MilliSec kWorkerShutdownTimeout = MilliSec(10000);
 
 struct ServerWorkerParams: public WorkerParams
 {
@@ -115,8 +113,8 @@ struct ServerWorkerParams: public WorkerParams
     MilliSec shutdown_timeout;
 
     ServerWorkerParams()
-        : start_timeout(WORKER_START_TIMEOUT)
-        , shutdown_timeout(WORKER_SHUTDOWN_TIMEOUT)
+        : start_timeout(kWorkerStartTimeout)
+        , shutdown_timeout(kWorkerShutdownTimeout)
     {}
 };
 

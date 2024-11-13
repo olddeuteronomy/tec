@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,21 +33,16 @@ SOFTWARE.
 #pragma once
 
 #include <memory>
-#include <chrono>
-#include <atomic>
-#include <mutex>
-#include <condition_variable>
 #include <string>
 #include <thread>
 
-#include "tec/tec_def.hpp"
+#include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_utils.hpp"
 #include "tec/tec_queue.hpp"
 #include "tec/tec_trace.hpp"
 
 
 namespace tec {
-
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
@@ -81,21 +76,21 @@ public:
 //! message polling should stop.
 //!
 //! \sa poll() in tec_queue.hpp.
-struct BaseMessage {
+struct BasicMessage {
     typedef unsigned long cmd_t ;
 
     //! Quit message loop command.
-    static constexpr cmd_t QUIT = 0;
+    static const cmd_t QUIT = 0;
 
     cmd_t command; //!< A command.
 
     //! Indicates that message loop should be terminated.
-    inline bool quit() const { return (command == BaseMessage::QUIT); }
+    inline bool quit() const { return (command == BasicMessage::QUIT); }
 };
 
 //! Null message.
 template <typename TMessage>
-inline TMessage zero() { TMessage msg; msg.command = BaseMessage::QUIT; return msg; }
+TMessage zero() { TMessage msg; msg.command = BasicMessage::QUIT; return msg; }
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,7 +99,7 @@ inline TMessage zero() { TMessage msg; msg.command = BaseMessage::QUIT; return m
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-template <typename TWorkerParams, typename TMessage = BaseMessage, typename Duration = MilliSec>
+template <typename TWorkerParams, typename TMessage = BasicMessage, typename Duration = MilliSec>
 class Worker: public Daemon {
 
 public:
@@ -199,11 +194,11 @@ private:
             // to resume the thread, see run().
             worker.thread_id_ = std::this_thread::get_id();
             worker.sig_begin_.wait();
-            TEC_TRACE("sig_begin received.\n");
+            TEC_TRACE("`sig_begin' received.");
 
             // Signals sig_running, it will be reset on the thread exits.
             worker.sig_running_.set();
-            TEC_TRACE("sig_running signalled.\n");
+            TEC_TRACE("`sig_running' signalled.");
 
             // Initialize the worker
             Timer<Duration> t_init(worker.metrics_.time_init);
@@ -212,20 +207,20 @@ private:
 
             // Signals that the worker is inited, no matter if initialization failed
             worker.sig_inited_.set();
-            TEC_TRACE("sig_inited signalled.\n");
+            TEC_TRACE("`sig_inited' signalled.");
 
             // Start message polling
-            TEC_TRACE("entering message loop.\n");
+            TEC_TRACE("entering message loop.");
             TMessage msg = zero<TMessage>();
             Timer<Duration> t_exec(worker.metrics_.time_exec);
             while( worker.mq_.poll(msg) )
             {
-                TEC_TRACE("received Message{%}.\n", msg.command);
+                TEC_TRACE("received Message [cmd=%].", msg.command);
                 // Process a user-defined message
                 worker.process(msg);
             }
             t_exec.stop();
-            TEC_TRACE("leaving message loop on Message{%}.\n", msg.command);
+            TEC_TRACE("leaving message loop.");
 
             // Finalize the worker if it had been inited successfully
             if( worker.result_.ok() )
@@ -238,7 +233,7 @@ private:
             // Notify that the worker is being teminated
             worker.sig_terminated_.set();
             t_total.stop();
-            TEC_TRACE("sig_terminated signalled\n");
+            TEC_TRACE("`sig_terminated' signalled.");
 
             // We are leaving the thread now
             worker.sig_running_.reset();
@@ -288,10 +283,10 @@ public:
 
         // Resume the thread
         sig_begin_.set();
-        TEC_TRACE("sig_begin signalled.\n");
+        TEC_TRACE("`sig_begin' signalled.");
 
         // Wait for thread init() completed
-        TEC_TRACE("waiting for sig_inited signalled ...\n");
+        TEC_TRACE("waiting for `sig_inited' signalled ...");
         sig_inited_.wait();
 
         return result_;
@@ -307,8 +302,10 @@ public:
      *  \return bool
      */
     virtual bool send(const TMessage& msg) {
+        TEC_ENTER("Worker::send");
         if( thread_ ) {
             mq_.enqueue(msg);
+            TEC_TRACE("Message [cmd=%] sent.", msg.command);
             return true;
         }
         else {
@@ -336,14 +333,14 @@ public:
 
         // Terminate message loop
         send(zero<TMessage>());
-        TEC_TRACE("Message::terminate sent.\n");
+        TEC_TRACE("Message::terminate sent.");
 
         // Wait for thread sig_terminated signalled
-        TEC_TRACE("waiting for sig_terminated ...\n");
+        TEC_TRACE("waiting for `sig_terminated' ...");
         sig_terminated_.wait();
 
         thread_->join();
-        TEC_TRACE("Worker thread joined OK.\n");
+        TEC_TRACE("Worker thread joined OK.");
 
         return result_;
     }
@@ -361,11 +358,11 @@ protected:
      *  NOTE: if init() returns Status different from OK,
      *  finalize() callback *would not be called*.
      *
-     *  NOTE: Worker::get_exit_code() will return this Status.
+     *  NOTE: Worker::exit_code() returns this Status.
      *
      *  \param none
      *  \return Status::OK (0) if succeeded
-     *  \sa Worker::get_exit_code()
+     *  \sa Worker::exit_code()
      *  \sa Worker::finalize()
      */
     virtual Result init() {
@@ -377,7 +374,7 @@ protected:
      *
      *  Processes a user-defined message.
      *
-     *  \param msg _Message_ user-defined message
+     *  \param msg a user-defined message
      *  \return none
      */
     virtual void process(const TMessage& msg) {
@@ -388,7 +385,7 @@ protected:
      *  \brief Called on exiting from the thread.
      *
      *  NOTE: this callback *is not called*
-     *  if init() returned *not* Status::OK.
+     *  if init() returned status other than Status::OK.
      *
      *  \param none
      *  \return Status::OK (0) if succeeded

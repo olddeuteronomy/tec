@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,9 +33,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <chrono>
+#include <ostream>
 #include <string>
-#include <iostream>
 #include <mutex>
 
 #include "tec/tec_utils.hpp"
@@ -43,26 +42,24 @@ SOFTWARE.
 
 namespace tec {
 
-//! Global synchronizer. Declare it somewhere in your code
+//! Global synchronizer. Declare it somewhere in your code only once
 //! using TEC_DECLARE_TRACER macro (see below),
 //! usually just before your `main' procedure.
 extern std::mutex tracer_mtx__;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                           Tracer
+*                       A simple and dumb Tracer
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-template <typename Duration>
+template <typename Duration = MilliSec>
 class Tracer {
     using Lock = std::lock_guard<std::mutex>;
 
     std::string name_;
 
-    template <typename> struct detail {
-        static std::mutex& mtx() { return tracer_mtx__; }
-    };
+    static std::mutex& mtx() { return tracer_mtx__; }
 
 public:
 
@@ -70,52 +67,51 @@ public:
         name_(name) {}
 
 
-    template<typename Tstream>
-    void tprint_enter(Tstream* out) {
-        Lock lk(detail<Duration>::mtx());
+    void enter(std::ostream* out) {
+        Lock lk(mtx());
         auto tp = Now<Duration>();
         *out << "[" << tp.count() << "] * " << name_ << " entered.\n";
     }
 
 
-    template<typename Tstream>
-    void tprint(Tstream* out, const char* format) {
-        Lock lk(detail<Duration>::mtx());
+    template<typename T>
+    void trace(std::ostream* out, T arg) {
+        Lock lk(mtx());
         auto tp = Now<Duration>().count();
         *out << "[" << tp << "] " << name_ << ": ";
-        print(out, format);
+        println<>(out, arg);
     }
 
 
-    template<typename Tstream, typename T, typename... Targs>
-    void tprint(Tstream* out, const char* format, T value, Targs... Fargs) {
-        Lock lk(detail<Duration>::mtx());
+    template<typename T, typename... Targs>
+    void trace(std::ostream* out, const char* fmt, T value, Targs&&... Args) {
+        Lock lk(mtx());
         auto tp = Now<Duration>().count();
         *out << "[" << tp << "] " << name_ << ": ";
-        print(out, format, value, Fargs...);
+        println<>(out, fmt, value, Args...);
     }
 
-}; // ::Tracer class
+}; // ::Tracer
 
 
 } // ::tec
 
 
-#if defined(_DEBUG) || defined(DEBUG) || defined(_TEC_TRACE_RELEASE)
+#if !defined(_TEC_TRACE_OFF) && (defined(_TEC_TRACE_ON) || defined(_DEBUG) || defined(DEBUG))
 
-#if defined(_MSVC_LANG)
-// _MSVC_LANG Defined as an integer literal that specifies the C++ language standard 
-// targeted by the compiler. It's set only in code compiled as C++. 
-// The macro is the integer literal value 201402L by default, 
-// or when the /std:c++14 compiler option is specified. 
-#define TEC_ENTER(name) Tracer<MilliSec> tracer__(name); tracer__.tprint_enter(&std::cout)
-#else
-#define TEC_ENTER(name) tec::Tracer<tec::MilliSec> tracer__(name); tracer__.tprint_enter(&std::cout)
+#if defined(__TEC_WINDOWS__)
+// _MSVC_LANG Defined as an integer literal that specifies the C++ language standard
+// targeted by the compiler. It's set only in code compiled as C++.
+// The macro is the integer literal value 201402L by default,
+// or when the /std:c++14 compiler option is specified.
+  #define TEC_ENTER(name) Tracer<> tracer__(name); tracer__.enter(&std::cout)
+    #else
+  #define TEC_ENTER(name) tec::Tracer<> tracer__(name); tracer__.enter(&std::cout)
 #endif
-#define TEC_TRACE(...)  tracer__.tprint(&std::cout, __VA_ARGS__)
+#define TEC_TRACE(...)  tracer__.trace(&std::cout, __VA_ARGS__)
 #define TEC_DECLARE_TRACER() namespace tec { std::mutex tracer_mtx__; }
 #else
-  // Clean release
+// No trace
 #define TEC_ENTER(name)
 #define TEC_TRACE(...)
 #define TEC_DECLARE_TRACER()

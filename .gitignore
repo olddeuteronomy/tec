@@ -33,5 +33,3 @@ out/
 *.exe
 *.out
 *.app
-greeter_server
-greeter_client

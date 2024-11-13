@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -32,8 +32,9 @@ SOFTWARE.
 
 #pragma once
 
-#include "tec/grpc/tec_grpc.hpp"
 #include "tec/tec_trace.hpp"
+#include "tec/tec_server.hpp" // IWYU pragma: keep
+#include "tec/grpc/tec_grpc.hpp" // IWYU pragma: keep
 
 
 namespace tec {
@@ -104,11 +105,11 @@ protected:
 
         if( params_.health_check_builder.fptr ) {
             params_.health_check_builder.fptr(true);
-            TEC_TRACE("Health checking enabled.\n");
+            TEC_TRACE("Health checking enabled.");
         }
         if( params_.reflection_builder.fptr ) {
             params_.reflection_builder.fptr();
-            TEC_TRACE("Reflection enabled.\n");
+            TEC_TRACE("Reflection enabled.");
         }
     }
 
@@ -130,20 +131,20 @@ protected:
             builder.SetMaxReceiveMessageSize(max_size);
             builder.SetMaxSendMessageSize(max_size);
         }
-        TEC_TRACE("MaxMessageSize is set to % Mb.\n", params_.max_message_size);
+        TEC_TRACE("MaxMessageSize is set to % Mb.", params_.max_message_size);
 
         // Set compression algorithm.
         // Note that it overrides any compression level set by SetDefaultCompressionLevel.
         if (params_.compression_algorithm > 0) {
             builder.SetDefaultCompressionAlgorithm(static_cast<TCompressionAlgorithm>(params_.compression_algorithm));
         }
-        TEC_TRACE("CompressionAlgorithm is set to %.\n", params_.compression_algorithm);
+        TEC_TRACE("CompressionAlgorithm is set to %.", params_.compression_algorithm);
 
         // Set compression level
         if (params_.compression_level > 0) {
             builder.SetDefaultCompressionLevel(static_cast<TCompressionLevel>(params_.compression_level));
         }
-        TEC_TRACE("CompressionLevel is set to %.\n", params_.compression_level);
+        TEC_TRACE("CompressionLevel is set to %.", params_.compression_level);
     }
 
 public:
@@ -158,7 +159,7 @@ public:
 
 
     /**
-     *  \brief Start the RPC server.
+     *  @brief Start the RPC server.
      *
      *  Registers the service, builds and runs the server.
      *  This procedure doesn't quit until Server::shutdown() is called
@@ -167,9 +168,9 @@ public:
      *  Worker provides a suitable mechanism to manage
      *  Server as a daemon (or as MS Windows service).
      *
-     *  \param None
-     *  \return tec::Result
-     *  \sa tec::Server
+     *  @param None
+     *  @return tec::Result
+     *  @sa tec::Server
      */
     Result start() override {
         TEC_ENTER("GrpcServer::start");
@@ -193,15 +194,15 @@ public:
         builder.RegisterService(&service);
 
         // Finally assemble the server.
-        TEC_TRACE("starting gRPC server on % ...\n", params_.addr_uri);
+        TEC_TRACE("starting gRPC server on % ...", params_.addr_uri);
         server_ = builder.BuildAndStart();
         if( !server_ ) {
             auto errmsg = format("gRPC Server cannot start on %", params_.addr_uri);
-            TEC_TRACE("error: %.\n", errmsg);
+            TEC_TRACE("error: %.", errmsg);
             return {Status::ERROR_SERVER_START, errmsg};
         }
 
-        TEC_TRACE("server listening on %.\n", params_.addr_uri);
+        TEC_TRACE("server listening on %.", params_.addr_uri);
 
         // Wait until this->shutdown() is called from another thread.
         server_->Wait();
@@ -209,17 +210,17 @@ public:
     }
 
     /**
-     *  \brief Shutdown the server.
+     *  @brief Shutdown the server.
      *
      *  Closes all connections, shuts the server down.
      *
-     *  \param none
-     *  \return none
+     *  @param none
+     *  @return none
      */
     void shutdown() override {
         TEC_ENTER("GrpcServer::shutdown");
         if( server_ ) {
-            TEC_TRACE("terminating gRPC server ...\n");
+            TEC_TRACE("terminating gRPC server ...");
             server_->Shutdown();
         }
     }

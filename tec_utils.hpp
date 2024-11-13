@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -32,23 +32,21 @@ SOFTWARE.
 
 #pragma once
 
-#include <atomic>
 #include <chrono>
-#include <sstream>
-#include <string>
+#include <cstdio>
 #include <iostream>
 #include <ostream>
+#include <sstream>
+#include <string>
 #include <mutex>
 #include <condition_variable>
-#include <thread>
 
-#include "tec/tec_def.hpp"
+#include "tec/tec_def.hpp" // IWYU pragma: keep
 
 
-namespace tec
-{
+namespace tec {
 
-//! Defauls is monotonic clock that is most suitable for measuring intervals.
+//! Default is monotonic clock that is most suitable for measuring intervals.
 using Clock = std::chrono::steady_clock;
 
 //! Seconds.
@@ -65,11 +63,11 @@ using TimePointMu = std::chrono::time_point<Clock, MicroSec>;
 
 //! Returns now() as Duration.
 template <typename Duration>
-inline Duration Now() { return std::chrono::duration_cast<Duration>(Clock::now() - std::chrono::time_point<Clock, Duration>()); }
+Duration Now() { return std::chrono::duration_cast<Duration>(Clock::now() - std::chrono::time_point<Clock, Duration>()); }
 
 //! Returns Duration since `start'.
 template <typename Duration>
-inline Duration Since(Duration start) { return Now<Duration>() - start; }
+Duration Since(Duration start) { return Now<Duration>() - start; }
 
 //! Duration unit as string.
 constexpr const char* time_unit(Seconds) { return "s"; }
@@ -77,8 +75,8 @@ constexpr const char* time_unit(MilliSec) { return "ms"; }
 constexpr const char* time_unit(MicroSec) { return "mu"; }
 
 //! Some duration constants.
-constexpr Seconds one_hour() { return Seconds(60 * 60); }
-constexpr Seconds one_day() { return Seconds(24 * 60 * 60); }
+constexpr const Seconds one_hour() { return Seconds(60 * 60); }
+constexpr const Seconds one_day() { return Seconds(24 * 60 * 60); }
 
 //! String.
 #ifdef UNICODE
@@ -119,41 +117,69 @@ struct Result {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-template <typename Tstream>
-void print(Tstream* out, const char* fmt) {
-    *out << fmt;
+template <typename T>
+void print(std::ostream* out, T arg) {
+    *out << arg;
 }
 
-
-template <typename Tstream, typename T, typename... Targs>
-void print(Tstream* out, const char* fmt, T value, Targs... Fargs) {
+template <typename T, typename... Targs>
+void print(std::ostream* out, const char* fmt, T value, Targs&&... Args) {
     for( ; *fmt != '\0'; fmt++ ) {
         if( *fmt == '%' ) {
             *out << value;
-            print<>(out, fmt + 1, Fargs...); // recursive call
+            print<>(out, fmt + 1, Args...); // recursive call
             return;
         }
         *out << *fmt;
     }
 }
 
+template <typename T>
+void println(std::ostream* out, T arg) {
+    *out << arg << "\n";
+}
 
-//! Macro: print variadic arguments to std::cout.
-#define tec_print(...) tec::print(&std::cout, __VA_ARGS__)
+template <typename T, typename... Targs>
+void println(std::ostream* out, const char* fmt, T value, Targs&&... Args) {
+    print<>(out, fmt, value, Args...);
+    *out << "\n";
+}
+
+
+//! Output to terminal.
+template <typename T>
+void print(T& arg) {
+    std::cout << arg;
+}
+
+template <typename T, typename... Targs>
+void print(const char* fmt, T value, Targs&&... Args) {
+    print<>(&std::cout, fmt, value, Args...);
+}
+
+template <typename T>
+void println(T& arg) {
+    println<>(&std::cout, arg);
+}
+template <typename T, typename... Targs>
+void println(const char* fmt, T value, Targs&&... Args) {
+    println<>(&std::cout, fmt, value, Args...);
+}
 
 
 //! "Print" variadic arguments to a string.
-inline std::string format(const char* fmt) {
+template <typename T>
+std::string format(T&& arg) {
     std::ostringstream buf;
-    print(&buf, fmt);
+    print<>(&buf, arg);
     return buf.str();
 }
 
 // Recursive call.
 template <typename T, typename... Targs>
-inline std::string format(const char* fmt, T value, Targs... Fargs) {
+std::string format(const char* fmt, T value, Targs&&... Args) {
     std::ostringstream buf;
-    print(&buf, fmt, value, Fargs...);
+    print<>(&buf, fmt, value, Args...);
     return buf.str();
 }
 

@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -40,12 +40,12 @@ namespace tec {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                        gRPC parameters
+*                      gRPC default parameters
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //! Default maximum message size, in Mb
-static const int kGrpcMaxMessageSize = 64;
+constexpr const int kGrpcMaxMessageSize = 64;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,7 +55,7 @@ static const int kGrpcMaxMessageSize = 64;
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //! Default server URI. Accepts connections from any IPv4 addresses.
-static const char kGrpcServerAddrUri[] = "0.0.0.0:50051";
+constexpr const char kGrpcServerAddrUri[] = "0.0.0.0:50051";
 
 //! Declare the gRPC health check service builder.
 struct GrpcHealthCheckBuilder {
@@ -97,7 +97,7 @@ struct GrpcServerParams: public ServerParams {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //! Default client URI (localhost).
-static const char kGrpcClientAddrUri[] = "127.0.0.1:50051";
+constexpr const char kGrpcClientAddrUri[] = "127.0.0.1:50051";
 
 
 struct GrpcClientParams: public ClientParams {
@@ -133,7 +133,6 @@ std::string get_server_metadata(const TClientContext& ctx, const std::string& ke
         }
     }
     return{};
-
 }
 
 //! Put client's metadata on the client side.

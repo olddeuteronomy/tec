@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,15 +21,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-#include <sstream>
 
+#include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_trace.hpp"
 #include "tec/tec_utils.hpp"
 #include "tec/tec_worker.hpp"
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-* Test Worker
+*                           Test Worker
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -52,12 +53,12 @@ struct WorkerParams
 using Worker = tec::Worker<WorkerParams>;
 
 // Test command
-static const tec::BaseMessage::cmd_t CMD_CALL_PROCESS = 1;
+static const tec::BasicMessage::cmd_t CMD_CALL_PROCESS = 1;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-* MyWorker
+*                              MyWorker
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -81,10 +82,10 @@ protected:
         return{};
     }
 
-    void process(const tec::BaseMessage&) override
+    void process(const tec::BasicMessage&) override
     {
         TEC_ENTER("process()");
-        TEC_TRACE("count=%.\n", ++params().count);
+        TEC_TRACE("count=%.", ++params().count);
         // Pause...
         std::this_thread::sleep_for(params().process_delay);
         // ...then repeat processing
@@ -130,11 +131,11 @@ int test_worker() {
 
     // Print metrics
     auto mcs = worker.metrics();
-    tec_print("\nMetrics\n");
-    tec_print("init:     % %\n", mcs.time_init.count(), mcs.units);
-    tec_print("exec:     % %\n", mcs.time_exec.count(), mcs.units);
-    tec_print("finalize: % %\n", mcs.time_finalize.count(), mcs.units);
-    tec_print("total:    % %\n", mcs.time_total.count(), mcs.units);
+    tec::println("\nMetrics");
+    tec::println("init:     % %", mcs.time_init.count(), mcs.units.c_str());
+    tec::println("exec:     % %", mcs.time_exec.count(), mcs.units.c_str());
+    tec::println("finalize: % %", mcs.time_finalize.count(), mcs.units.c_str());
+    tec::println("total:    % %", mcs.time_total.count(), mcs.units.c_str());
 
     return retval;
 }
@@ -146,17 +147,16 @@ int test_worker() {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Instantiate Tracer, see tec_tracer.hpp
-TEC_DECLARE_TRACER()
+TEC_DECLARE_TRACER();
 
 int main()
 {
-    tec_print("*** Running % built at %, % with % ***\n", __FILE__, __DATE__, __TIME__, __TEC_COMPILER_NAME__);
+    tec::println("*** Running % built at %, % with % ***", __FILE__, __DATE__, __TIME__, __TEC_COMPILER_NAME__);
 
     int retval = test_worker();
 
-    tec_print("\nexit_code() = %\n", retval);
-    tec_print("Press <Enter> to quit ...");
+    tec::println("\nexit_code() = %", retval);
+    tec::print("Press <Enter> to quit ...");
 
 #if defined(UNICODE) && !defined(__TEC_WINDOWS__)
     std::wgetchar();
