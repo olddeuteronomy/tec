@@ -34,6 +34,7 @@ SOFTWARE.
 #include <grpc/compression.h>
 #include <grpcpp/grpcpp.h>
 #include <iostream>
+#include <ostream>
 
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
@@ -105,22 +106,22 @@ TEC_DECLARE_TRACER()
 
 int main()
 {
-    // Create the client.
+    // Create a client.
     MyParams params;
     MyClient client(params, grpc::InsecureChannelCredentials());
 
     // Connect to the gRPC server.
     auto result = client.connect();
     if( !result ) {
-        std::cout << "Error: " << result.str() << "\n";
-        return result.code();
+        std::cout << "Error: " << result.desc.value_or("Unknown error") << std::endl;
+        return result.code.value();
     }
 
     // Make a call and print a result.
     auto val = client.SayHello("world!");
-    std::cout << "<- " << val << "\n";
+    std::cout << "<- " << val << std::endl;
 
     // Clean up.
     client.close();
-    return result.code();
+    return result.code.value_or(-1);
 }

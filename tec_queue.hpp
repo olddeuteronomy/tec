@@ -46,38 +46,38 @@ namespace tec {
 template <class T>
 class SafeQueue {
 private:
-    std::queue<T> q;
-    mutable std::mutex m;
-    mutable std::condition_variable c;
+    std::queue<T> q_;
+    mutable std::mutex m_;
+    mutable std::condition_variable c_;
 
 public:
     //! Construct the empty queue.
     SafeQueue(void)
-        : q()
-        , m()
-        , c()
+        : q_()
+        , m_()
+        , c_()
     {}
 
     ~SafeQueue(void) {}
 
     //! Add an element to the queue.
     void enqueue(T t) {
-        std::lock_guard<std::mutex> lock(m);
-        q.push(t);
-        c.notify_one();
+        std::lock_guard<std::mutex> lock(m_);
+        q_.push(t);
+        c_.notify_one();
     }
 
     //! Get the front element and remove it from the queue.
     //! If the queue is empty, wait till an element is avaiable.
     T dequeue(void) {
-        std::unique_lock<std::mutex> lock(m);
-        while( q.empty() )
+        std::unique_lock<std::mutex> lock(m_);
+        while( q_.empty() )
         {
             // Release lock as long as the wait and reaquire it afterwards.
-            c.wait(lock);
+            c_.wait(lock);
         }
-        T val = q.front();
-        q.pop();
+        T val = q_.front();
+        q_.pop();
         return val;
     }
 

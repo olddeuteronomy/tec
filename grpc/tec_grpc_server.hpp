@@ -35,6 +35,7 @@ SOFTWARE.
 #include "tec/tec_trace.hpp"
 #include "tec/tec_server.hpp" // IWYU pragma: keep
 #include "tec/grpc/tec_grpc.hpp" // IWYU pragma: keep
+#include "tec/tec_utils.hpp"
 
 
 namespace tec {
@@ -172,7 +173,7 @@ public:
      *  @return tec::Result
      *  @sa tec::Server
      */
-    Result start() override {
+    Result<> start() override {
         TEC_ENTER("GrpcServer::start");
 
         // Build the server and the service.
@@ -199,7 +200,7 @@ public:
         if( !server_ ) {
             auto errmsg = format("gRPC Server cannot start on %", params_.addr_uri);
             TEC_TRACE("error: %.", errmsg);
-            return {Status::ERROR_SERVER_START, errmsg};
+            return {Status::ERROR_SERVER_START, errmsg, Result<>::Kind::GrpcErr};
         }
 
         TEC_TRACE("server listening on %.", params_.addr_uri);

@@ -27,16 +27,16 @@
 
 # OS
 ifeq ($(OS),Windows_NT)
-    detected_OS := Windows
-	EXE_SUFFIX := .exe
+detected_OS := Windows
+EXE_SUFFIX := .exe
 else
-	detected_OS := $(uname -o)
+detected_OS := $(uname -o)
 endif
 
 ifdef DEBUG
 EXTRA_FLAGS := -ggdb -D_DEBUG=1
 else
-EXTRA_FLAGS := -O3
+EXTRA_FLAGS := -O2
 endif
 
 # Just for fun - colorize compiler output

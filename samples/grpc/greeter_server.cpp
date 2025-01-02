@@ -124,12 +124,12 @@ int main() {
     // Run the daemon
     daemon->create();
     auto result = daemon->run();
-    if( !result.ok() ) {
-        std::cout << "ErrCode=" << result.code() << " (" << result.str() << ").\n";
+    if( !result ) {
+        std::cout << "ErrCode=" << result.code.value() << " (" << result.desc.value_or("Unknown") << ")." << std::endl;
     }
 
     // Wait for <Enter> key pressed to terminate the server.
     getchar();
 
-    return daemon->terminate().code();
+    return daemon->terminate().code.value_or(-1);
 }

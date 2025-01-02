@@ -67,7 +67,7 @@ public:
     MyWorker(const WorkerParams& params) : Worker(params) {}
 
 protected:
-    tec::Result init() override {
+    tec::Result<> init() override {
         TEC_ENTER("init()");
 
         // Emulate error
@@ -92,7 +92,7 @@ protected:
         send({CMD_CALL_PROCESS});
     }
 
-    tec::Result finalize() override
+    tec::Result<> finalize() override
     {
         TEC_ENTER("finalize()");
         // Pause...
@@ -127,7 +127,7 @@ int test_worker() {
     }
 
     // Gently terminate the worker
-    auto retval = worker.terminate().code();
+    auto retval = worker.terminate().code;
 
     // Print metrics
     auto mcs = worker.metrics();
@@ -137,7 +137,7 @@ int test_worker() {
     tec::println("finalize: % %", mcs.time_finalize.count(), mcs.units.c_str());
     tec::println("total:    % %", mcs.time_total.count(), mcs.units.c_str());
 
-    return retval;
+    return retval.value();
 }
 
 

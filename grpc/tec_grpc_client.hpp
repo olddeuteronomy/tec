@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include "tec/tec_trace.hpp"
 #include "tec/grpc/tec_grpc.hpp" // IWYU pragma: keep
+#include "tec/tec_utils.hpp"
 
 namespace tec {
 
@@ -140,7 +141,7 @@ public:
  *
  *  \return tec::Result
  */
-    Result connect() override {
+    Result<> connect() override {
         TEC_ENTER("GrpcClient::connect");
 
         // Set channel arguments. Can be overwritten.
@@ -157,7 +158,7 @@ public:
                     "It took too long (> % ms) to reach out the server on %",
                     params_.connect_timeout.count(), params_.addr_uri));
             TEC_TRACE("error: %.", msg);
-            return {ERROR_CLIENT_CONNECT, msg};
+            return {ERROR_CLIENT_CONNECT, msg, Result<>::Kind::GrpcErr};
         }
 
         // Create a stub.

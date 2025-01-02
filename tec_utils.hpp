@@ -35,6 +35,7 @@ SOFTWARE.
 #include <chrono>
 #include <cstdio>
 #include <iostream>
+#include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -90,17 +91,18 @@ typedef std::string  String;
 *
 *                       Result of execution
 *
-*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/*
 struct Result {
-    enum Status {
+    enum Result {
         OK = 0
     };
 
     int code_;
     std::string errstr_;
 
-    Result(): code_(OK) {}
+x    Result(): code_(OK) {}
     Result(int c): code_(c) {}
     Result(int c, const std::string& e): code_(c), errstr_(e) {}
 
@@ -108,6 +110,49 @@ struct Result {
     operator bool() const { return ok(); }
     const std::string& str() const { return errstr_; }
     int code() const { return code_; }
+};
+*/
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                       Execution Result
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+template <typename ECode=int, typename EDesc=std::string>
+struct Result {
+    enum class Kind: int {
+        Ok
+        , Err  //!< Generic error.
+        , IOErr //!< IO failure,
+        , RuntimeErr //!< Runtime error.
+        , NetErr //!< Network error.
+        , GrpcErr //!< gRPC error.
+        , TimeoutErr //!< Timeout error.
+        , DataErr //!< Invalid data or state.
+    };
+
+    Kind kind;
+    std::optional<ECode> code; //!< Error code.
+    std::optional<EDesc> desc; //!< Error description.
+
+    bool ok() const { return kind == Kind::Ok; }
+    operator bool() const { return ok(); }
+
+    Result()
+        : kind{Kind::Ok}
+    {}
+
+    Result(const ECode& _code, Kind _kind = Kind::Err)
+        : kind{_kind}
+        , code{_code}
+    {}
+
+    Result(const ECode& _code, const EDesc& _desc, Kind _kind = Kind::Err)
+        : kind{_kind}
+        , code{_code}
+        , desc{_desc}
+    {}
 };
 
 
@@ -136,13 +181,13 @@ void print(std::ostream* out, const char* fmt, T value, Targs&&... Args) {
 
 template <typename T>
 void println(std::ostream* out, T arg) {
-    *out << arg << "\n";
+    *out << arg << std::endl;
 }
 
 template <typename T, typename... Targs>
 void println(std::ostream* out, const char* fmt, T value, Targs&&... Args) {
     print<>(out, fmt, value, Args...);
-    *out << "\n";
+    *out << std::endl;
 }
 
 

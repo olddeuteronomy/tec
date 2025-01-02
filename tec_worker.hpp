@@ -60,9 +60,9 @@ public:
     Daemon() = default;
     virtual ~Daemon() = default;
 
-    virtual Result create() = 0;
-    virtual Result run() = 0;
-    virtual Result terminate() = 0;
+    virtual Result<> create() = 0;
+    virtual Result<> run() = 0;
+    virtual Result<> terminate() = 0;
 };
 
 
@@ -72,7 +72,7 @@ public:
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Message *should* implement quit() to indicate that
+//! BasicMessage implements quit() to indicate that
 //! message polling should stop.
 //!
 //! \sa poll() in tec_queue.hpp.
@@ -80,7 +80,7 @@ struct BasicMessage {
     typedef unsigned long cmd_t ;
 
     //! Quit message loop command.
-    static const cmd_t QUIT = 0;
+    static constexpr const cmd_t QUIT{0};
 
     cmd_t command; //!< A command.
 
@@ -105,13 +105,12 @@ class Worker: public Daemon {
 public:
     using id_t = std::thread::id;
 
+    static constexpr int kWorkerStatus{50000};
+
     //! Worker error codes.
     enum Status {
-        OK = 0,
-        ERR_MIN = 50000,
-        NO_THREAD,
-        THREAD_ALREADY_EXISTS,
-        ERR_MAX
+        NO_THREAD = kWorkerStatus
+        ,THREAD_ALREADY_EXISTS,
     };
 
     //! Statistics.
@@ -136,7 +135,7 @@ protected:
     //! Worker members.
     std::unique_ptr<std::thread> thread_;
     id_t thread_id_;
-    Result result_;
+    Result<> result_;
 
     //! Signals.
     Signal sig_begin_;
@@ -167,9 +166,9 @@ public:
 
     //! Worker attributes
     inline id_t id() const { return thread_id_; }
-    inline int exit_code() const { return result_.code(); }
-    inline const std::string& error_str() const { return result_.str(); }
-    inline Result result() const { return result_; }
+    inline auto exit_code() const { return result_.code.value(); }
+    inline const auto& error_str() const { return result_.desc.value_or("No description"); }
+    inline Result<> result() const { return result_; }
 
     //! Statistics
     const Metrics& metrics() const { return metrics_; }
@@ -252,10 +251,10 @@ public:
      *  \return tec::Result
      *  \sa Worker::run()
      */
-    Result create() override {
+    Result<> create() override {
         TEC_ENTER("Worker::create");
         if( thread_ != nullptr) {
-            result_ = {Status::THREAD_ALREADY_EXISTS, "thread already exists"};
+            result_ = {Status::THREAD_ALREADY_EXISTS, "Thread already exists", Result<>::Kind::RuntimeErr};
             return result_;
         }
         thread_.reset(new std::thread(detail<TWorkerParams>::thread_proc, std::ref(*this)));
@@ -272,12 +271,12 @@ public:
      *  \param none
      *  \return tec::Result
      */
-    Result run() override {
+    Result<> run() override {
         TEC_ENTER("Worker::run");
 
         if( !thread_ ) {
             // No thread exists yet, see create()
-            result_ = {Status::NO_THREAD};
+            result_ = {Status::NO_THREAD, "No thread exists, see create()", Result<>::Kind::RuntimeErr};
             return result_;
         }
 
@@ -324,7 +323,7 @@ public:
      *  \param none
      *  \return tec::Result
      */
-    Result terminate() override {
+    Result<> terminate() override {
         TEC_ENTER("Worker::terminate");
         if( !thread_ ) {
             result_ = Status::NO_THREAD;
@@ -365,7 +364,7 @@ protected:
      *  \sa Worker::exit_code()
      *  \sa Worker::finalize()
      */
-    virtual Result init() {
+    virtual Result<> init() {
         return{};
     }
 
@@ -385,14 +384,14 @@ protected:
      *  \brief Called on exiting from the thread.
      *
      *  NOTE: this callback *is not called*
-     *  if init() returned status other than Status::OK.
+     *  if init() returned Result other than Kind::Ok.
      *
      *  \param none
      *  \return Status::OK (0) if succeeded
      *  \sa Worker::init()
      *  \sa Worker::exit_code()
      */
-    virtual Result finalize() {
+    virtual Result<> finalize() {
         return{};
     }
 
