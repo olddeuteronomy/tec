@@ -39,13 +39,13 @@ using Seconds = tec::Seconds;
 // Test parameters
 struct WorkerParams
 {
-    int count;
-    Seconds init_delay;
-    int init_error;
-    Seconds process_delay;
-    Seconds finalize_delay;
-    int finalize_error;
-    Seconds worker_delay;
+  int count;
+  Seconds init_delay;
+  tec::Result init_result; // To emulate init() failure
+  Seconds process_delay;
+  Seconds finalize_delay;
+  tec::Result finalize_result; // To emulate finalize() failure
+  Seconds worker_delay;
 };
 
 
@@ -53,7 +53,7 @@ struct WorkerParams
 using Worker = tec::Worker<WorkerParams>;
 
 // Test command
-static const tec::BasicMessage::cmd_t CMD_CALL_PROCESS = 1;
+static constexpr const tec::Message::cmd_t CMD_CALL_PROCESS = 1;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -67,77 +67,72 @@ public:
     MyWorker(const WorkerParams& params) : Worker(params) {}
 
 protected:
-    tec::Result<> init() override {
-        TEC_ENTER("init()");
+    tec::Result init() override {
+        TEC_ENTER("Test::init()");
 
         // Emulate error
-        if( params().init_error ) {
-            return params().init_error;
+        if( !params_.init_result ) {
+            TEC_TRACE(params_.init_result);
+            return params_.init_result;
         }
         // Pause
-        std::this_thread::sleep_for(params().init_delay);
+        std::this_thread::sleep_for(params_.init_delay);
 
-        // Initiate processing
+        // Initiate processing again.
         send({CMD_CALL_PROCESS});
         return{};
     }
 
-    void process(const tec::BasicMessage&) override
+    void process(const tec::Message&) override
     {
-        TEC_ENTER("process()");
-        TEC_TRACE("count=%.", ++params().count);
+        TEC_ENTER("Test::process()");
+        TEC_TRACE("count=%.", ++params_.count);
         // Pause...
-        std::this_thread::sleep_for(params().process_delay);
-        // ...then repeat processing
+        std::this_thread::sleep_for(params_.process_delay);
+        // ...then repeat processing.
         send({CMD_CALL_PROCESS});
     }
 
-    tec::Result<> finalize() override
+    tec::Result finalize() override
     {
-        TEC_ENTER("finalize()");
+        TEC_ENTER("Test::finalize()");
         // Pause...
-        std::this_thread::sleep_for(params().finalize_delay);
-        // Return error
-        return params().finalize_error;
+        std::this_thread::sleep_for(params_.finalize_delay);
+        // Return result.
+        return params_.finalize_result;
     }
 };
 
 
-int test_worker() {
+tec::Result test_worker() {
     // Emulate delays and errors.
     WorkerParams params{
         /*int count*/ 0,
 
         /*Seconds init_delay*/ Seconds{5},
-        /*Status  init_error*/ 0, // 0, set to 1 to emulate init() error
+        /*tec::Result  init_result*/ {}, // Set to {1, "init() failed"} to emulate init() error.
 
-        /*Seconds process_delay*/ Seconds{1}, // 1, delay in process() callback
+        /*Seconds process_delay*/ Seconds{1}, // 1, delay in process() callback.
 
         /*Seconds finalize_delay*/ Seconds{2},
-        /*Status  finalize_error*/ 0, // 0, set to 2 to emulate finalize() error
+        /*tec::Result  finalize_result*/ {2, "finalize() failed"}, // Set to {2, "finalize() failed"} to emulate finalize() error.
 
-        /*Seconds worker_delay*/ Seconds{10} // 0, delay between worker's run() and terminate()
+        /*Seconds worker_delay*/ Seconds{10} // Delay between worker's run() and terminate().
     };
     MyWorker worker(params);
-    worker.create();
 
-    // Pause worker if everything is OK
-    if( worker.run().ok() ) {
-        std::this_thread::sleep_for(params.worker_delay);
+    if( !worker.run() ) {
+        return worker.result();
     }
 
-    // Gently terminate the worker
-    auto retval = worker.terminate().code;
+    // Run worker for params.worker_delay seconds.
+    std::this_thread::sleep_for(params.worker_delay);
 
-    // Print metrics
-    auto mcs = worker.metrics();
-    tec::println("\nMetrics");
-    tec::println("init:     % %", mcs.time_init.count(), mcs.units.c_str());
-    tec::println("exec:     % %", mcs.time_exec.count(), mcs.units.c_str());
-    tec::println("finalize: % %", mcs.time_finalize.count(), mcs.units.c_str());
-    tec::println("total:    % %", mcs.time_total.count(), mcs.units.c_str());
+    // Gently terminate the worker, obtaining finalize() callback result correctly.
+    return worker.terminate();
 
-    return retval.value();
+    // NOTE: We can't get the proper result of finalize() callback here.
+    // return worker.result();
 }
 
 
@@ -153,15 +148,11 @@ int main()
 {
     tec::println("*** Running % built at %, % with % ***", __FILE__, __DATE__, __TIME__, __TEC_COMPILER_NAME__);
 
-    int retval = test_worker();
+    auto result = test_worker();
 
-    tec::println("\nexit_code() = %", retval);
+    tec::println("\nExited with %", result);
     tec::print("Press <Enter> to quit ...");
-
-#if defined(UNICODE) && !defined(__TEC_WINDOWS__)
-    std::wgetchar();
-#else
     std::getchar();
-#endif
-    return retval;
+
+    return result.code.value_or(tec::Result::ErrCode::Unspecified);
 }

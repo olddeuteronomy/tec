@@ -40,6 +40,7 @@ SOFTWARE.
 #include "helloworld.pb.h"
 
 #include "tec/grpc/tec_grpc_client.hpp"
+#include "tec/tec_utils.hpp"
 
 
 using helloworld::HelloReply;
@@ -113,8 +114,8 @@ int main()
     // Connect to the gRPC server.
     auto result = client.connect();
     if( !result ) {
-        std::cout << "Error: " << result.desc.value_or("Unknown error") << std::endl;
-        return result.code.value();
+        tec::println("Abnormally exited with %.", result);
+        return result.code.value_or(tec::Result::ErrCode::Unspecified);
     }
 
     // Make a call and print a result.
@@ -123,5 +124,7 @@ int main()
 
     // Clean up.
     client.close();
-    return result.code.value_or(-1);
+
+    tec::println("Exited with %.", result);
+    return result.code.value_or(tec::Result::ErrCode::Unspecified);
 }

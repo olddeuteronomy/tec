@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +23,8 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   \file tec_utils.hpp
- *   \brief Various utility classes/functions.
- *
- *  TODO: Detailed description
- *
+ *   @file tec_utils.hpp
+ *   @brief Various utility classes/functions.
 */
 
 #pragma once
@@ -35,6 +32,7 @@ SOFTWARE.
 #include <chrono>
 #include <cstdio>
 #include <iostream>
+#include <linux/limits.h>
 #include <optional>
 #include <ostream>
 #include <sstream>
@@ -79,81 +77,133 @@ constexpr const char* time_unit(MicroSec) { return "mu"; }
 constexpr const Seconds one_hour() { return Seconds(60 * 60); }
 constexpr const Seconds one_day() { return Seconds(24 * 60 * 60); }
 
-//! String.
-#ifdef UNICODE
-typedef std::wstring String;
-#else
-typedef std::string  String;
-#endif
-
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                       Result of execution
+*                       TResult of execution
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-/*
-struct Result {
-    enum Result {
-        OK = 0
-    };
-
-    int code_;
-    std::string errstr_;
-
-x    Result(): code_(OK) {}
-    Result(int c): code_(c) {}
-    Result(int c, const std::string& e): code_(c), errstr_(e) {}
-
-    bool ok() const { return (code_ == OK); }
-    operator bool() const { return ok(); }
-    const std::string& str() const { return errstr_; }
-    int code() const { return code_; }
-};
-*/
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                       Execution Result
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
+/**
+ * @class TResult
+ * @include{cpp} ex1.cpp
+ */
 template <typename ECode=int, typename EDesc=std::string>
-struct Result {
-    enum class Kind: int {
-        Ok
-        , Err  //!< Generic error.
-        , IOErr //!< IO failure,
-        , RuntimeErr //!< Runtime error.
-        , NetErr //!< Network error.
-        , GrpcErr //!< gRPC error.
-        , TimeoutErr //!< Timeout error.
-        , DataErr //!< Invalid data or state.
+struct TResult {
+    //! Generic error codes.
+    struct ErrCode {
+        constexpr static const ECode Unspecified{-1}; //!< Unspecified error code.
     };
 
-    Kind kind;
-    std::optional<ECode> code; //!< Error code.
-    std::optional<EDesc> desc; //!< Error description.
+    //! Error classes
+    enum class Kind: int {
+        Ok  //!< Success
+        , Err        //!< Generic error
+        , IOErr      //!< IO failure
+        , RuntimeErr //!< Runtime error
+        , NetErr     //!< Network error
+        , GrpcErr    //!< gRPC error
+        , TimeoutErr //!< Timeout error
+        , Invalid    //!< Invalid data or state
+        , System     //!< System error
+    };
 
+    //! Returns Result::Kind as string.
+    virtual const char* kind_as_string(Kind k) const {
+        switch (k) {
+            case Kind::Ok: { static char s0[]{"Success"}; return s0; }
+            case Kind::Err: { static char s1[]{"Generic"}; return s1; }
+            case Kind::IOErr: { static char s2[]{"IO"}; return s2; }
+            case Kind::RuntimeErr: { static char s3[]{"Runtime"}; return s3; }
+            case Kind::NetErr: { static char s3[]{"Network"}; return s3; }
+            case Kind::GrpcErr: { static char s4[]{"gRpc"}; return s4; }
+            case Kind::TimeoutErr: { static char s5[]{"Timeout"}; return s5; }
+            case Kind::Invalid: { static char s6[]{"Invalid"}; return s6; }
+            case Kind::System: { static char s7[]{"System"}; return s7; }
+            default: { static char s8[]{"Unspecified"}; return s8; }
+        }
+    }
+
+    Kind kind;                 //!< Error class.
+    std::optional<ECode> code; //!< Error code (optional).
+    std::optional<EDesc> desc; //!< Error description (optional).
+
+    //! Is everything OK?
     bool ok() const { return kind == Kind::Ok; }
+    //! Operator: Is everything OK?
     operator bool() const { return ok(); }
 
-    Result()
+    //! Output Result to a stream.
+    friend std::ostream& operator << (std::ostream& out, const TResult& result) {
+        out << "[" << result.kind_as_string(result.kind) << "]"
+            << " Code=" << (result.ok() ? ECode{0} : result.code.value_or(ErrCode::Unspecified))
+            << " Desc=\"" << result.desc.value_or("<unspecified>") << "\"";
+        return out;
+    }
+
+    //! Return Result as string.
+    std::string as_string() {
+        std::ostringstream buf;
+        buf << *this;
+        return buf.str();
+    }
+
+    /**
+     * @brief      Constructs a successful TResult (class is Kind::Ok).
+     */
+    TResult()
         : kind{Kind::Ok}
     {}
 
-    Result(const ECode& _code, Kind _kind = Kind::Err)
+    /**
+     * @brief      Constructs an error TResult with unspecified error code.
+     *
+     * @param      _kind Error class.
+     */
+    TResult(Kind _kind)
+        : kind{_kind}
+        , code{ErrCode::Unspecified}
+    {}
+
+    /**
+     * @brief      Constructs an unspecified error TResult with description.
+     *
+     * @param      _desc Error description.
+     * @param      _kind Error class (default Kind::Err, a generic error).
+     */
+    TResult(const EDesc& _desc, Kind _kind = Kind::Err)
+        : kind{_kind}
+        , code{ErrCode::Unspecified}
+        , desc{_desc}
+    {}
+
+    /**
+     * @brief      Constructs an error TResult w/o description.
+     *
+     * @param      _code Error code.
+     * @param      _kind Error class (default Kind::Err, a generic error).
+     */
+    TResult(const ECode& _code, Kind _kind = Kind::Err)
         : kind{_kind}
         , code{_code}
     {}
 
-    Result(const ECode& _code, const EDesc& _desc, Kind _kind = Kind::Err)
+    /**
+     * @brief      Constructs an error TResult with description.
+     *
+     * @param      _code Error code.
+     * @param      _kind Error class (default Kind::Err, a generic error).
+     * @param      _desc Error description (default std::string).
+     */
+    TResult(const ECode& _code, const EDesc& _desc, Kind _kind = Kind::Err)
         : kind{_kind}
         , code{_code}
         , desc{_desc}
     {}
+
 };
+
+using Result = TResult<>;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -163,12 +213,12 @@ struct Result {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template <typename T>
-void print(std::ostream* out, T arg) {
+void print(std::ostream* out, const T& arg) {
     *out << arg;
 }
 
 template <typename T, typename... Targs>
-void print(std::ostream* out, const char* fmt, T value, Targs&&... Args) {
+void print(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) {
     for( ; *fmt != '\0'; fmt++ ) {
         if( *fmt == '%' ) {
             *out << value;
@@ -180,12 +230,12 @@ void print(std::ostream* out, const char* fmt, T value, Targs&&... Args) {
 }
 
 template <typename T>
-void println(std::ostream* out, T arg) {
+void println(std::ostream* out, const T& arg) {
     *out << arg << std::endl;
 }
 
 template <typename T, typename... Targs>
-void println(std::ostream* out, const char* fmt, T value, Targs&&... Args) {
+void println(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) {
     print<>(out, fmt, value, Args...);
     *out << std::endl;
 }
@@ -193,28 +243,28 @@ void println(std::ostream* out, const char* fmt, T value, Targs&&... Args) {
 
 //! Output to terminal.
 template <typename T>
-void print(T& arg) {
+void print(const T& arg) {
     std::cout << arg;
 }
 
 template <typename T, typename... Targs>
-void print(const char* fmt, T value, Targs&&... Args) {
+void print(const char* fmt, const T& value, Targs&&... Args) {
     print<>(&std::cout, fmt, value, Args...);
 }
 
 template <typename T>
-void println(T& arg) {
+void println(const T& arg) {
     println<>(&std::cout, arg);
 }
 template <typename T, typename... Targs>
-void println(const char* fmt, T value, Targs&&... Args) {
+void println(const char* fmt, const T& value, Targs&&... Args) {
     println<>(&std::cout, fmt, value, Args...);
 }
 
 
 //! "Print" variadic arguments to a string.
 template <typename T>
-std::string format(T&& arg) {
+std::string format(const T& arg) {
     std::ostringstream buf;
     print<>(&buf, arg);
     return buf.str();
@@ -222,7 +272,7 @@ std::string format(T&& arg) {
 
 // Recursive call.
 template <typename T, typename... Targs>
-std::string format(const char* fmt, T value, Targs&&... Args) {
+std::string format(const char* fmt, const T& value, Targs&&... Args) {
     std::ostringstream buf;
     print<>(&buf, fmt, value, Args...);
     return buf.str();
@@ -235,19 +285,26 @@ std::string format(const char* fmt, T value, Targs&&... Args) {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Simple timer.
-template <typename Duration>
+/**
+ * @class      Timer
+ * @brief      Simple timer.
+ */
+template <typename Duration = MilliSec>
 class Timer {
-    Duration& src_;
+    Duration src_;
 
 public:
-    Timer(Duration& src)
-        : src_(src)
-    {
-        src_ = Now<Duration>();
+
+    //! Start the timer.
+    Timer() {
+        start();
     }
 
-    Duration stop() { src_ = Now<Duration>() - src_; return src_; }
+    //! Start the timer.
+    void start() { src_ = Now<Duration>(); }
+
+    //! Return duration between start() and stop().
+    Duration stop() { return Now<Duration>() - src_;  }
 };
 
 
@@ -260,45 +317,59 @@ public:
 //! A classic implementation of Signal based on mutex/cv.
 //! Borrowed from https://stackoverflow.com/questions/14920725/waiting-for-an-atomic-bool.
 class Signal {
+    using Lock = std::lock_guard<std::mutex>;
+    using ULock = std::unique_lock<std::mutex>;
+
     mutable std::mutex m_;
     mutable std::condition_variable cv_;
-    bool flag_;
+    mutable bool flag_;
 
 public:
+    //! Constructs
     Signal()
         : flag_(false)
     {}
 
     bool is_set() const {
-        std::lock_guard<std::mutex> lock(m_);
+        Lock lock(m_);
         return flag_;
     }
 
+    //! Set signalled state and notify all threads that are waiting for.
     void set() {
         {
-            std::lock_guard<std::mutex> lock(m_);
+            Lock lock(m_);
             flag_ = true;
         }
         cv_.notify_all();
     }
 
+    //! Reset to unsignalled state and notify all threads.
     void reset() {
         {
-            std::lock_guard<std::mutex> lock(m_);
+            Lock lock(m_);
             flag_ = false;
         }
         cv_.notify_all();
     }
 
+    //! Wait for the signal is set, unconditionally.
     void wait() const {
-        std::unique_lock<std::mutex> lock(m_);
-        cv_.wait(lock, [this] { return flag_; });
+        ULock ulock(m_);
+        cv_.wait(ulock, [this] { return flag_; });
     }
 
+    /**
+     * @brief      Wait for the signal is set for the specified amount of time.
+     * @param      dur Duration Amount of time to wait for the signal is set.
+     * @return     bool `false` if timeout otherwise `true`.
+     * @sa wait()
+     * @sa Milliseconds
+     */
     template <typename Duration>
     bool wait_for(Duration dur) const {
-        std::unique_lock<std::mutex> lock(m_);
-        return cv_.wait_for(lock, dur, [this] { return flag_; });
+        ULock ulock(m_);
+        return cv_.wait_for(ulock, dur, [this] { return flag_; });
     }
 
 }; // Signal
@@ -315,10 +386,10 @@ public:
 #include <pwd.h>
 
 
-//! Return a computer name or empty string on failure.
-inline String getcomputername() {
-    // TODO: UNICODE support.
-    char host[1024];
+//! Returns a computer name or empty string on failure.
+//! Use UTF-8 for non-English encoding.
+inline std::string getcomputername() {
+    char host[PATH_MAX];
     if( gethostname(host, sizeof(host)) == 0)
         return host;
     else
@@ -326,9 +397,9 @@ inline String getcomputername() {
 }
 
 
-//! Return a logged user name or empty string on failure.
-inline String getusername() {
-    // TODO: UNICODE support.
+//! Returns a logged user name or empty string on failure.
+//! Use UTF-8 for non-English encoding.
+inline std::string getusername() {
     uid_t uid = geteuid();
     struct passwd* pw = getpwuid(uid);
     if ( pw != NULL )
@@ -338,7 +409,6 @@ inline String getusername() {
 }
 
 #endif // !__TEC_WINDOWS__
-
 
 } // ::tec
 

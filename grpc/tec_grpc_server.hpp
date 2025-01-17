@@ -40,7 +40,6 @@ SOFTWARE.
 
 namespace tec {
 
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                     gRPC Server traits
@@ -120,8 +119,7 @@ protected:
      *
      * @details    Called *after* the builder is created. Can be overwritten.
      *
-     * @param      None.
-     * @return     None.
+     * @return     void.
      */
     virtual void set_builder_options(TBuilder& builder) {
         TEC_ENTER("GrpcServer::set_builder_options");
@@ -169,11 +167,11 @@ public:
      *  Worker provides a suitable mechanism to manage
      *  Server as a daemon (or as MS Windows service).
      *
-     *  @param None
-     *  @return tec::Result
+     *  @param sig_started Signal Signals GrpcSever is started, possible with error.
+     *  @param result tec::Result
      *  @sa tec::Server
      */
-    Result<> start() override {
+    void start(Signal& sig_started, Result& result) override {
         TEC_ENTER("GrpcServer::start");
 
         // Build the server and the service.
@@ -198,32 +196,37 @@ public:
         TEC_TRACE("starting gRPC server on % ...", params_.addr_uri);
         server_ = builder.BuildAndStart();
         if( !server_ ) {
-            auto errmsg = format("gRPC Server cannot start on %", params_.addr_uri);
-            TEC_TRACE("error: %.", errmsg);
-            return {Status::ERROR_SERVER_START, errmsg, Result<>::Kind::GrpcErr};
+            auto errmsg = format("gRPC Server cannot start on \"%\"", params_.addr_uri);
+            TEC_TRACE("!!! Error: %.", errmsg);
+            result = {errmsg, Result::Kind::GrpcErr};
+            // Signal that the server started, set error result.
+            sig_started.set();
+            return;
         }
 
-        TEC_TRACE("server listening on %.", params_.addr_uri);
+        TEC_TRACE("server listening on \"%\".", params_.addr_uri);
 
+        // Signal that the gRPC server is started OK.
+        sig_started.set();
         // Wait until this->shutdown() is called from another thread.
         server_->Wait();
-        return {};
     }
 
     /**
-     *  @brief Shutdown the server.
+     *  @brief Shutdown the gRPC server.
      *
      *  Closes all connections, shuts the server down.
      *
-     *  @param none
+     *  @param sig_stopped Signalled on gRPC server is stopped.
      *  @return none
      */
-    void shutdown() override {
+    void shutdown(Signal& sig_stopped) override {
         TEC_ENTER("GrpcServer::shutdown");
         if( server_ ) {
             TEC_TRACE("terminating gRPC server ...");
             server_->Shutdown();
         }
+        sig_stopped.set();
     }
 
 }; // GrpcServer

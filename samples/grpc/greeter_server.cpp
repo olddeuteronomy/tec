@@ -34,13 +34,14 @@ SOFTWARE.
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/health_check_service_interface.h>
-#include <iostream>
 #include <memory>
 
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
 
 #include "tec/grpc/tec_grpc_server.hpp"
+#include "tec/tec_trace.hpp"
+#include "tec/tec_utils.hpp"
 
 
 using grpc::Status;
@@ -70,7 +71,7 @@ class MyService final : public Greeter::Service
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Instatiate Server traits.
+// Instantiate Server traits.
 using MyServerTraits = tec::grpc_server_traits<
     MyService
     , grpc::Server
@@ -98,19 +99,21 @@ using MyServerWorker = tec::ServerWorker<MyServerParams, MyServer>;
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEC_DECLARE_TRACER()
+TEC_DECLARE_TRACER();
 
 
 std::unique_ptr<tec::Daemon> build_daemon(const MyServerParams& params) {
     MyServerParams params_ = params;
+    // Set additional server parameters.
     params_.health_check_builder = {&grpc::EnableDefaultHealthCheckService};
     params_.reflection_builder = {&grpc::reflection::InitProtoReflectionServerBuilderPlugin};
 
+    // Create the server.
     std::unique_ptr<MyServer> server(new MyServer(
         params_,
         grpc::InsecureServerCredentials()));
 
-    // Return the worker.
+    // Return the server worker.
     return std::unique_ptr<tec::Daemon>(new MyServerWorker(params_, std::move(server)));
 }
 
@@ -118,18 +121,25 @@ std::unique_ptr<tec::Daemon> build_daemon(const MyServerParams& params) {
 int main() {
     // Build the daemon.
     MyServerParams params;
-    tec::DaemonBuilder<MyServerParams> builder({build_daemon});
-    std::unique_ptr<tec::Daemon> daemon(builder(params));
+    // [TEST]
+    // params.start_timeout = tec::MilliSec{1};
+    // [TEST]
+    // params.addr_uri = "";
+    tec::DaemonBuilder<MyServerParams> builder{build_daemon};
+    std::unique_ptr<tec::Daemon> daemon{builder(params)};
 
     // Run the daemon
-    daemon->create();
     auto result = daemon->run();
     if( !result ) {
-        std::cout << "ErrCode=" << result.code.value() << " (" << result.desc.value_or("Unknown") << ")." << std::endl;
+        tec::println("Abnormal exited with %.", result);
     }
 
-    // Wait for <Enter> key pressed to terminate the server.
-    getchar();
+    // Wait for <Enter> key pressed to terminate the server if OK.
+    if( result )
+        getchar();
 
-    return daemon->terminate().code.value_or(-1);
+    // Terminate the server.
+    daemon->terminate();
+    tec::println("Exited with %.", result);
+    return result.code.value_or(tec::Result::ErrCode::Unspecified);
 }

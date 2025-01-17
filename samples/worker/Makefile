@@ -38,13 +38,12 @@ endif
 
 # Compilation parameters
 TARGET = $(TESTNAME)$(TARGET_SUFFIX)
-CPPFLAGS = -std=c++20 -Wall -pthread -O2
+CPPFLAGS = -std=c++17 -Wall -pthread -O2 -g
 INCLUDES = -I../../..
 OUTDIR = out
 
-# Enable tracing in release build
-# -v is for verbose output (to list all include paths etc)
-# DEFS = -D_TEC_TRACE_RELEASE -v
+# Enable tracing in release build.
+# Add -v is for verbose output (to list all include paths etc)
 DEFS = -D_TEC_TRACE_ON
 
 # Just for fun - colorize compiler output

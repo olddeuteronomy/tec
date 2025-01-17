@@ -1,6 +1,9 @@
 # Directories
 out/
 
+# Comment to include doc/ directory
+doc/
+
 # Prerequisites
 *.d
 

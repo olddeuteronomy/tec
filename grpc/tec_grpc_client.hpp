@@ -121,27 +121,27 @@ public:
                const ChannelBuilder& channel_builder,
                const std::shared_ptr<TCredentials>& credentials
         )
-        : params_(params)
-        , channel_builder_(channel_builder)
-        , credentials_(credentials)
+        : params_{params}
+        , channel_builder_{channel_builder}
+        , credentials_{credentials}
     {}
 
     virtual ~GrpcClient() = default;
 
 
     /**
- *  \brief Connect to a gRPC server.
- *
- *  1) Sets gRPC channel arguments as specified in params_.
- *
- *  2) Creates the gRPC channel.
- *
- *  3) Connects to a server using `addr_uri' and `connect_timeout'
- *  provided in `params_'.
- *
- *  \return tec::Result
- */
-    Result<> connect() override {
+     *  @brief Connect to a gRPC server.
+     *
+     *  1) Sets gRPC channel arguments as specified in params_.
+     *
+     *  2) Creates the gRPC channel.
+     *
+     *  3) Connects to a server using `addr_uri' and `connect_timeout'
+     *  provided in `params_'.
+     *
+     *  @return tec::Result
+     */
+    Result connect() override {
         TEC_ENTER("GrpcClient::connect");
 
         // Set channel arguments. Can be overwritten.
@@ -150,15 +150,15 @@ public:
         // Create a channel.
         // If failed, a lame channel (one on which all operations fail) is created.
         channel_ = channel_builder_.fptr(params_.addr_uri, credentials_, arguments_);
-        auto deadline = std::chrono::system_clock::now() + params_.connect_timeout;
 
         // Connect to the server with timeout.
+        auto deadline = std::chrono::system_clock::now() + params_.connect_timeout;
         if (!channel_->WaitForConnected(deadline)) {
             std::string msg(format(
-                    "It took too long (> % ms) to reach out the server on %",
-                    params_.connect_timeout.count(), params_.addr_uri));
-            TEC_TRACE("error: %.", msg);
-            return {ERROR_CLIENT_CONNECT, msg, Result<>::Kind::GrpcErr};
+                    "It took too long (> % ms) to reach out the server on \"%\"",
+                    MilliSec{params_.connect_timeout}.count(), params_.addr_uri));
+            TEC_TRACE("!!! Error: %.", msg);
+            return {msg, Result::Kind::GrpcErr};
         }
 
         // Create a stub.

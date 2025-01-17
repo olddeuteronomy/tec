@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,10 +22,10 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 /**
- *   \file tec_def.hpp
- *   \brief __TEC internal macros.
+ *   @file tec_def.hpp
+ *   @brief __TEC internal macros.
  *
- *  Defines compiler- and OS-depended macros.
+ *  Defines various compiler- and OS-depended macros.
  *
 */
 
@@ -38,7 +38,7 @@ SOFTWARE.
   #define NOMINMAX 1
 #endif
 
-// OS specific defines
+/// OS specific defines
 
 // Check for MS Windows
 #if defined(_MSC_VER) && (defined(_WIN32) || defined(_WIN64))

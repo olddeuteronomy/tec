@@ -32,12 +32,12 @@ SOFTWARE.
 
 #pragma once
 
+#include "tec/tec_trace.hpp"
 #include "tec/tec_utils.hpp"
 #include "tec/tec_worker.hpp"
 
 
 namespace tec {
-
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
@@ -47,20 +47,13 @@ namespace tec {
 
 class Server {
 public:
-    static constexpr const int kServerErr{51000};
-
-    enum Status {
-        ERROR_SERVER_START = kServerErr
-        ,ERROR_SERVER_SHUTDOWN
-    };
-
     Server() = default;
     Server(const Server&) = delete;
     Server(Server&&) = delete;
     virtual ~Server() = default;
 
-    virtual Result<> start() = 0;
-    virtual void shutdown() = 0;
+    virtual void start(Signal&, Result&) = 0;
+    virtual void shutdown(Signal&) = 0;
 };
 
 
@@ -70,32 +63,26 @@ public:
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Timeout defaults.
-constexpr const MilliSec kClientConnectTimeout = MilliSec{5000};
-
 struct ClientParams {
+    //! Default client connection timeout (5 sec).
+    static constexpr const MilliSec kConnectTimeout{Seconds{5}};
+
     MilliSec connect_timeout;
 
     ClientParams()
-        : connect_timeout(kClientConnectTimeout)
+        : connect_timeout(kConnectTimeout)
     {}
 };
 
 
 class Client {
 public:
-    static constexpr const int kClientErr{51100};
-
-    enum Status {
-        ERROR_CLIENT_CONNECT = kClientErr
-    };
-
     Client() = default;
     Client(const Client&) = delete;
     Client(Client&&) = delete;
     virtual ~Client() = default;
 
-    virtual Result<> connect() = 0;
+    virtual Result connect() = 0;
     virtual void close() = 0;
 };
 
@@ -106,18 +93,18 @@ public:
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Worker: default timeouts
-static constexpr const MilliSec kWorkerStartTimeout    = MilliSec{250};
-static constexpr const MilliSec kWorkerShutdownTimeout = MilliSec{10000};
-
 struct ServerWorkerParams: public WorkerParams
 {
+    //! Worker: default timeouts.
+    static constexpr const MilliSec kStartTimeout{Seconds{2}};
+    static constexpr const MilliSec kShutdownTimeout{Seconds{10}};
+
     MilliSec start_timeout;
     MilliSec shutdown_timeout;
 
     ServerWorkerParams()
-        : start_timeout(kWorkerStartTimeout)
-        , shutdown_timeout(kWorkerShutdownTimeout)
+        : start_timeout(kStartTimeout)
+        , shutdown_timeout(kShutdownTimeout)
     {}
 };
 
@@ -129,15 +116,6 @@ struct ServerParams: public ServerWorkerParams {
 
 template <typename TServerParams, typename TServer>
 class ServerWorker: public Worker<TServerParams> {
-public:
-    static constexpr const int kServerWorkerErr{51200};
-
-    enum Status
-    {
-        NO_SERVER_PROVIDED = kServerWorkerErr  //!< No server found.
-        ,SERVER_ALREADY_ATTACHED               //!< Worker already has a server attached.
-    };
-
 protected:
     TServerParams params_;
     std::unique_ptr<TServer> server_;
@@ -146,7 +124,8 @@ private:
     std::unique_ptr<std::thread> server_thread_;
     Signal sig_started_;
     Signal sig_stopped_;
-    Result<> result_started_;
+    Result result_started_;
+    Result result_stopped_;
 
 public:
     //! Initialize with a Server.
@@ -164,77 +143,77 @@ public:
 
     virtual ~ServerWorker() {}
 
-    virtual Result<> attach_server(TServer* server) {
+    virtual Result attach_server(TServer* server) {
         if( server == nullptr ) {
-            return{Status::NO_SERVER_PROVIDED, "No Server provided", Result<>::Kind::RuntimeErr};
+            return{"No server provided", Result::Kind::Invalid};
         }
         if( server_ ) {
-            return{Status::SERVER_ALREADY_ATTACHED, "Server already attached", Result<>::Kind::RuntimeErr};
+            return{"Server already attached", Result::Kind::Invalid};
         }
         server_.reset(server);
         return{};
     }
 
 protected:
-    Result<> init() override {
+    Result init() override {
         TEC_ENTER("ServerWorker::init");
 
         if( !server_ ) {
-            return{Status::NO_SERVER_PROVIDED, "No Server exists", Result<>::Kind::RuntimeErr};
+            return {"No server exists", Result::Kind::Invalid};
         }
 
+        // A new thread to start the server.
         server_thread_.reset(
             new std::thread([&]{
-                result_started_ = server_->start();
-                sig_started_.set();
+                server_->start(sig_started_, result_started_);
             }));
+
         if( !sig_started_.wait_for(params_.start_timeout) ) {
-            // Timeout! But that means the server is started...
-            return{};
+            // Timeout!
+            TEC_TRACE("!!! Error: server start timeout");
+            server_thread_->detach();
+            return {"Server start timeout", Result::Kind::TimeoutErr};
         }
-        else {
-            // Server finished too quickly, possible with error -
-            // something wrong happened, release the server thread.
+        if( !result_started_ ) {
+            // Something wrong happened, release the server thread.
             server_thread_->join();
-            if( result_started_.ok() ) {
-                return {Server::ERROR_SERVER_START, "Server cannot start", Result<>::Kind::RuntimeErr};
-            }
             return result_started_;
         }
+
+        // Everything is OK.
+        return {};
     }
 
 
-    Result<> finalize() override {
+    Result finalize() override {
         TEC_ENTER("ServerWorker::finalize");
 
         if( !server_ ) {
-            return{Status::NO_SERVER_PROVIDED, "No Server exists", Result<>::Kind::RuntimeErr};
+            return {"No server exists", Result::Kind::Invalid};
         }
 
         if( !server_thread_ ) {
-            // Already finished, perhaps there was an error.
-            return{};
+            // Already finished or not started.
+            return {};
         }
 
-        Result result;
         std::thread shutdown_thread([&]{
-            server_->shutdown();
-            sig_stopped_.set();});
+            server_->shutdown(sig_stopped_);
+            });
 
         if( !sig_stopped_.wait_for(params_.shutdown_timeout) ) {
             // Timeout! Detach the server thread.
             server_thread_->detach();
             // Report timeout.
-            TEC_TRACE("error: timeout.\n");
-            result = {Server::ERROR_SERVER_SHUTDOWN, "Server shutdown timeout", Result<>::Kind::RuntimeErr};
+            TEC_TRACE("!!! Error: Server shutdown timeout.");
+            result_stopped_ = {"Server shutdown timeout", Result::Kind::TimeoutErr};
         }
         else {
-            // Release the server thread.
             server_thread_->join();
         }
 
         shutdown_thread.join();
-        return result;
+        return result_stopped_;
     }
 };
 
@@ -250,6 +229,10 @@ template <typename TServerParams>
 struct DaemonBuilder {
     using Func = std::unique_ptr<Daemon>(*)(const TServerParams&);
     Func fptr;
+
+    DaemonBuilder(Func func)
+        : fptr{func}
+    {}
 
     std::unique_ptr<Daemon> operator()(const TServerParams& server_params) {
         if( nullptr == fptr ) {

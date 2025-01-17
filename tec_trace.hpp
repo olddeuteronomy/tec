@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +23,10 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   \file tec_trace.hpp
- *   \brief A simple tracer with (un)formatted output.
+ *   @file tec_trace.hpp
+ *   @brief A simple tracer utilities.
  *
- * Always defined in _DEBUG build.
- * Use _TEC_TRACE_RELEASE compiler flag to enable it in release build as well.
+ * Define `_TEC_TRACE_ON` to enable tracing.
  *
 */
 
@@ -75,7 +74,7 @@ public:
 
 
     template<typename T>
-    void trace(std::ostream* out, T arg) {
+    void trace(std::ostream* out, const T& arg) {
         Lock lk(mtx());
         auto tp = Now<Duration>().count();
         *out << "[" << tp << "] " << name_ << ": ";
@@ -84,7 +83,7 @@ public:
 
 
     template<typename T, typename... Targs>
-    void trace(std::ostream* out, const char* fmt, T value, Targs&&... Args) {
+    void trace(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) {
         Lock lk(mtx());
         auto tp = Now<Duration>().count();
         *out << "[" << tp << "] " << name_ << ": ";
@@ -97,21 +96,25 @@ public:
 } // ::tec
 
 
-#if !defined(_TEC_TRACE_OFF) && (defined(_TEC_TRACE_ON) || defined(_DEBUG) || defined(DEBUG))
+#if defined(_DEBUG) || defined(DEBUG)
+  #define _TEC_DEBUG 1
+#endif
+
+#if defined(_TEC_TRACE_ON)
+// Trace is enabled.
 
 #if defined(__TEC_WINDOWS__)
-// _MSVC_LANG Defined as an integer literal that specifies the C++ language standard
-// targeted by the compiler. It's set only in code compiled as C++.
-// The macro is the integer literal value 201402L by default,
-// or when the /std:c++14 compiler option is specified.
+  // Windows-specific version of TEC_ENTER.
   #define TEC_ENTER(name) Tracer<> tracer__(name); tracer__.enter(&std::cout)
     #else
   #define TEC_ENTER(name) tec::Tracer<> tracer__(name); tracer__.enter(&std::cout)
 #endif
+
 #define TEC_TRACE(...)  tracer__.trace(&std::cout, __VA_ARGS__)
 #define TEC_DECLARE_TRACER() namespace tec { std::mutex tracer_mtx__; }
+
 #else
-// No trace
+// No trace, please.
 #define TEC_ENTER(name)
 #define TEC_TRACE(...)
 #define TEC_DECLARE_TRACER()

@@ -96,19 +96,18 @@ struct GrpcServerParams: public ServerParams {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Default client URI (localhost).
-constexpr const char kGrpcClientAddrUri[] = "127.0.0.1:50051";
-
-
 struct GrpcClientParams: public ClientParams {
+    //! Default client URI (localhost).
+    static constexpr const char kAddrUri[] = "127.0.0.1:50051";
+
     std::string addr_uri;  //!< kGrpcClientAddrUri
 
     // Channel arguments
-    int max_message_size;  //!< kGrpcMaxMessageSize
+    int max_message_size;      //!< kGrpcMaxMessageSize
     int compression_algorithm; //!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
 
     GrpcClientParams()
-        : addr_uri(kGrpcClientAddrUri)
+        : addr_uri(kAddrUri)
         , max_message_size(kGrpcMaxMessageSize)
         , compression_algorithm(0)
     {}
