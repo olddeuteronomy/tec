@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ SOFTWARE.
  *   \file greeter_server.cpp
  *   \brief A Documented file.
  *
- *  Detailed description
+ *  Detailed description.
  *
 */
 
@@ -59,7 +59,7 @@ class MyService final : public Greeter::Service
         TEC_ENTER("Greeter::SayHello");
         std::string prefix("Hello ");
         reply->set_message(prefix + request->name());
-        TEC_TRACE("request.name=\"%\".\n", request->name());
+        TEC_TRACE("request.name=\"{}\".\n", request->name());
         return Status::OK;
     }
 };
@@ -99,9 +99,6 @@ using MyServerWorker = tec::ServerWorker<MyServerParams, MyServer>;
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-TEC_DECLARE_TRACER();
-
-
 std::unique_ptr<tec::Daemon> build_daemon(const MyServerParams& params) {
     MyServerParams params_ = params;
     // Set additional server parameters.
@@ -131,7 +128,7 @@ int main() {
     // Run the daemon
     auto result = daemon->run();
     if( !result ) {
-        tec::println("Abnormal exited with %.", result);
+        tec::println("Abnormal exited with {}.", result);
     }
 
     // Wait for <Enter> key pressed to terminate the server if OK.
@@ -140,6 +137,6 @@ int main() {
 
     // Terminate the server.
     daemon->terminate();
-    tec::println("Exited with %.", result);
+    tec::println("Exited with {}.", result);
     return result.code.value_or(tec::Result::ErrCode::Unspecified);
 }

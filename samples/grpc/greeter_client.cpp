@@ -102,9 +102,6 @@ public:
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Define the internal tracer.
-TEC_DECLARE_TRACER()
-
 int main()
 {
     // Create a client.
@@ -114,7 +111,7 @@ int main()
     // Connect to the gRPC server.
     auto result = client.connect();
     if( !result ) {
-        tec::println("Abnormally exited with %.", result);
+        tec::println("Abnormally exited with {}.", result);
         return result.code.value_or(tec::Result::ErrCode::Unspecified);
     }
 
@@ -125,6 +122,6 @@ int main()
     // Clean up.
     client.close();
 
-    tec::println("Exited with %.", result);
+    tec::println("Exited with {}.", result);
     return result.code.value_or(tec::Result::ErrCode::Unspecified);
 }

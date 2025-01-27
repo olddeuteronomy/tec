@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -130,20 +130,20 @@ protected:
             builder.SetMaxReceiveMessageSize(max_size);
             builder.SetMaxSendMessageSize(max_size);
         }
-        TEC_TRACE("MaxMessageSize is set to % Mb.", params_.max_message_size);
+        TEC_TRACE("MaxMessageSize is set to {} Mb.", params_.max_message_size);
 
         // Set compression algorithm.
         // Note that it overrides any compression level set by SetDefaultCompressionLevel.
         if (params_.compression_algorithm > 0) {
             builder.SetDefaultCompressionAlgorithm(static_cast<TCompressionAlgorithm>(params_.compression_algorithm));
         }
-        TEC_TRACE("CompressionAlgorithm is set to %.", params_.compression_algorithm);
+        TEC_TRACE("CompressionAlgorithm is set to {}.", params_.compression_algorithm);
 
         // Set compression level
         if (params_.compression_level > 0) {
             builder.SetDefaultCompressionLevel(static_cast<TCompressionLevel>(params_.compression_level));
         }
-        TEC_TRACE("CompressionLevel is set to %.", params_.compression_level);
+        TEC_TRACE("CompressionLevel is set to {}.", params_.compression_level);
     }
 
 public:
@@ -193,10 +193,10 @@ public:
         builder.RegisterService(&service);
 
         // Finally assemble the server.
-        TEC_TRACE("starting gRPC server on % ...", params_.addr_uri);
+        TEC_TRACE("starting gRPC server on {} ...", params_.addr_uri);
         server_ = builder.BuildAndStart();
         if( !server_ ) {
-            auto errmsg = format("gRPC Server cannot start on \"%\"", params_.addr_uri);
+            auto errmsg = format("gRPC Server cannot start on \"{}\"", params_.addr_uri);
             TEC_TRACE("!!! Error: %.", errmsg);
             result = {errmsg, Result::Kind::GrpcErr};
             // Signal that the server started, set error result.
@@ -204,7 +204,7 @@ public:
             return;
         }
 
-        TEC_TRACE("server listening on \"%\".", params_.addr_uri);
+        TEC_TRACE("server listening on \"{}\".", params_.addr_uri);
 
         // Signal that the gRPC server is started OK.
         sig_started.set();

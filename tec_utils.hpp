@@ -37,8 +37,6 @@ SOFTWARE.
 #include <ostream>
 #include <sstream>
 #include <string>
-#include <mutex>
-#include <condition_variable>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 
@@ -86,6 +84,7 @@ constexpr const Seconds one_day() { return Seconds(24 * 60 * 60); }
 
 /**
  * @class TResult
+ * @brief Declares an abstract
  * @include{cpp} ex1.cpp
  */
 template <typename ECode=int, typename EDesc=std::string>
@@ -220,8 +219,9 @@ void print(std::ostream* out, const T& arg) {
 template <typename T, typename... Targs>
 void print(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) {
     for( ; *fmt != '\0'; fmt++ ) {
-        if( *fmt == '%' ) {
+        if( *fmt == '{' &&  *(fmt + 1) == '}' ) {
             *out << value;
+            if( *(fmt + 1) != '\0' ) ++fmt;
             print<>(out, fmt + 1, Args...); // recursive call
             return;
         }
@@ -241,7 +241,7 @@ void println(std::ostream* out, const char* fmt, const T& value, Targs&&... Args
 }
 
 
-//! Output to terminal.
+//@{ Output to terminal
 template <typename T>
 void print(const T& arg) {
     std::cout << arg;
@@ -260,7 +260,7 @@ template <typename T, typename... Targs>
 void println(const char* fmt, const T& value, Targs&&... Args) {
     println<>(&std::cout, fmt, value, Args...);
 }
-
+//@}
 
 //! "Print" variadic arguments to a string.
 template <typename T>
@@ -306,73 +306,6 @@ public:
     //! Return duration between start() and stop().
     Duration stop() { return Now<Duration>() - src_;  }
 };
-
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                           Signal
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-//! A classic implementation of Signal based on mutex/cv.
-//! Borrowed from https://stackoverflow.com/questions/14920725/waiting-for-an-atomic-bool.
-class Signal {
-    using Lock = std::lock_guard<std::mutex>;
-    using ULock = std::unique_lock<std::mutex>;
-
-    mutable std::mutex m_;
-    mutable std::condition_variable cv_;
-    mutable bool flag_;
-
-public:
-    //! Constructs
-    Signal()
-        : flag_(false)
-    {}
-
-    bool is_set() const {
-        Lock lock(m_);
-        return flag_;
-    }
-
-    //! Set signalled state and notify all threads that are waiting for.
-    void set() {
-        {
-            Lock lock(m_);
-            flag_ = true;
-        }
-        cv_.notify_all();
-    }
-
-    //! Reset to unsignalled state and notify all threads.
-    void reset() {
-        {
-            Lock lock(m_);
-            flag_ = false;
-        }
-        cv_.notify_all();
-    }
-
-    //! Wait for the signal is set, unconditionally.
-    void wait() const {
-        ULock ulock(m_);
-        cv_.wait(ulock, [this] { return flag_; });
-    }
-
-    /**
-     * @brief      Wait for the signal is set for the specified amount of time.
-     * @param      dur Duration Amount of time to wait for the signal is set.
-     * @return     bool `false` if timeout otherwise `true`.
-     * @sa wait()
-     * @sa Milliseconds
-     */
-    template <typename Duration>
-    bool wait_for(Duration dur) const {
-        ULock ulock(m_);
-        return cv_.wait_for(ulock, dur, [this] { return flag_; });
-    }
-
-}; // Signal
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
