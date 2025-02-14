@@ -36,6 +36,7 @@ SOFTWARE.
 #include <string>
 #include <mutex>
 
+#include "tec/tec_print.hpp"
 #include "tec/tec_utils.hpp"
 
 
@@ -74,7 +75,7 @@ public:
 
     void enter(std::ostream* out) {
         Lock lk(details::trace_mutex::mtx());
-        auto tp = Now<Duration>();
+        auto tp = now<Duration>();
         *out << "[" << tp.count() << "] * " << name_ << " entered.\n";
     }
 
@@ -82,7 +83,7 @@ public:
     template<typename T>
     void trace(std::ostream* out, const T& arg) {
         Lock lk(details::trace_mutex::mtx());
-        auto tp = Now<Duration>().count();
+        auto tp = now<Duration>().count();
         *out << "[" << tp << "] " << name_ << ": ";
         println<>(out, arg);
     }
@@ -91,7 +92,7 @@ public:
     template<typename T, typename... Targs>
     void trace(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) {
         Lock lk(details::trace_mutex::mtx());
-        auto tp = Now<Duration>().count();
+        auto tp = now<Duration>().count();
         *out << "[" << tp << "] " << name_ << ": ";
         println<>(out, fmt, value, Args...);
     }

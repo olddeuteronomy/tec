@@ -1,3 +1,4 @@
+// Time-stamp: <Last changed 2025-02-15 00:19:55 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,18 +25,19 @@ SOFTWARE.
 
 /**
  *   \file tec_grpc_server.hpp
- *   \brief Base gRPC server.
+ *   \brief Generic gRPC server.
  *
- *  Declares a base gRPC server.
+ *  Declares a generic gRPC server.
  *
 */
 
 #pragma once
 
+#include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_utils.hpp" // IWYU pragma: keep
 #include "tec/tec_trace.hpp"
 #include "tec/tec_server.hpp" // IWYU pragma: keep
 #include "tec/grpc/tec_grpc.hpp" // IWYU pragma: keep
-#include "tec/tec_utils.hpp"
 
 
 namespace tec {
@@ -47,20 +49,20 @@ namespace tec {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template <
-    typename TUserService,
+    typename TService,
     typename TGrpcServer,
     typename TGrpcServerBuilder,
     typename TGrpcServerCredentials,
-    typename TGrpc_compression_algorithm,
-    typename TGrpc_compression_level
+    typename TGrpcCompressionAlgorithm,
+    typename TGrpcCompressionLevel
     >
 struct grpc_server_traits {
-    typedef TUserService TService;
-    typedef TGrpcServer TServer;
-    typedef TGrpcServerBuilder TBuilder;
-    typedef TGrpcServerCredentials TCredentials;
-    typedef TGrpc_compression_algorithm TCompressionAlgorithm;
-    typedef TGrpc_compression_level TCompressionLevel;
+    typedef TService Service;
+    typedef TGrpcServer RpcServer;
+    typedef TGrpcServerBuilder Builder;
+    typedef TGrpcServerCredentials Credentials;
+    typedef TGrpcCompressionAlgorithm CompressionAlgorithm;
+    typedef TGrpcCompressionLevel CompressionLevel;
 };
 
 
@@ -71,24 +73,25 @@ struct grpc_server_traits {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template <typename TParams, typename Traits>
-class GrpcServer: public Server {
+class GrpcServer: public Server<TParams> {
 public:
 
-    typedef typename Traits::TService TService;
-    typedef typename Traits::TServer TServer;
-    typedef typename Traits::TBuilder TBuilder;
-    typedef typename Traits::TCredentials TCredentials;
-    typedef typename Traits::TCompressionAlgorithm TCompressionAlgorithm;
-    typedef typename Traits::TCompressionLevel TCompressionLevel;
+    typedef TParams Params;
+    typedef typename Traits::Service Service;
+    typedef typename Traits::RpcServer RpcServer;
+    typedef typename Traits::Builder Builder;
+    typedef typename Traits::Credentials Credentials;
+    typedef typename Traits::CompressionAlgorithm CompressionAlgorithm;
+    typedef typename Traits::CompressionLevel CompressionLevel;
 
 protected:
 
     //! User-defined parameters - must be inherited from ServerParams.
-    TParams params_;
+    Params params_;
 
     //! gRPC specific attributes.
-    std::unique_ptr<TServer> server_;
-    std::shared_ptr<TCredentials> credentials_;
+    std::unique_ptr<RpcServer> server_;
+    std::shared_ptr<Credentials> credentials_;
 
 protected:
 
@@ -121,7 +124,7 @@ protected:
      *
      * @return     void.
      */
-    virtual void set_builder_options(TBuilder& builder) {
+    virtual void set_builder_options(Builder& builder) {
         TEC_ENTER("GrpcServer::set_builder_options");
 
         // Set max message size.
@@ -135,23 +138,27 @@ protected:
         // Set compression algorithm.
         // Note that it overrides any compression level set by SetDefaultCompressionLevel.
         if (params_.compression_algorithm > 0) {
-            builder.SetDefaultCompressionAlgorithm(static_cast<TCompressionAlgorithm>(params_.compression_algorithm));
+            builder.SetDefaultCompressionAlgorithm(static_cast<CompressionAlgorithm>(params_.compression_algorithm));
         }
         TEC_TRACE("CompressionAlgorithm is set to {}.", params_.compression_algorithm);
 
         // Set compression level
         if (params_.compression_level > 0) {
-            builder.SetDefaultCompressionLevel(static_cast<TCompressionLevel>(params_.compression_level));
+            builder.SetDefaultCompressionLevel(static_cast<CompressionLevel>(params_.compression_level));
         }
         TEC_TRACE("CompressionLevel is set to {}.", params_.compression_level);
     }
 
 public:
 
-    GrpcServer(const TParams& params, const std::shared_ptr<TCredentials>& credentials)
-        : params_(params)
-        , credentials_(credentials)
-    {}
+    GrpcServer(const Params& params, const std::shared_ptr<Credentials>& credentials)
+        : Server<Params>{params}
+        , credentials_{credentials}
+    {
+        static_assert(
+            std::is_base_of<ServerParams, Params>::value,
+            "not derived from tec::ServerParams class");
+    }
 
 
     virtual ~GrpcServer() = default;
@@ -175,12 +182,12 @@ public:
         TEC_ENTER("GrpcServer::start");
 
         // Build the server and the service.
-        TService service;
+        Service service;
 
         // Set builder plugins.
         set_plugins();
 
-        TBuilder builder;
+        Builder builder;
 
         // Listen on the given address with given authentication mechanism.
         builder.AddListeningPort(params_.addr_uri, credentials_);
@@ -197,8 +204,8 @@ public:
         server_ = builder.BuildAndStart();
         if( !server_ ) {
             auto errmsg = format("gRPC Server cannot start on \"{}\"", params_.addr_uri);
-            TEC_TRACE("!!! Error: %.", errmsg);
-            result = {errmsg, Result::Kind::GrpcErr};
+            TEC_TRACE("!!! Error: {}.", errmsg);
+            result = {errmsg, Error::Kind::GrpcErr};
             // Signal that the server started, set error result.
             sig_started.set();
             return;

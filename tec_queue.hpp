@@ -1,6 +1,6 @@
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,8 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   \file tec_queue.hpp
- *   \brief Thread safe message queue.
+ *   @file tec_queue.hpp
+ *   @brief Thread safe message queue.
  *
  *  Borrowed from https://stackoverflow.com/questions/15278343/c11-thread-safe-queue
  *  with some extensions (see poll()).
@@ -63,7 +63,7 @@ public:
     //! Add an element to the queue.
     void enqueue(T t) {
         std::lock_guard<std::mutex> lock(m_);
-        q_.push(t);
+        q_.push(std::move(t));
         c_.notify_one();
     }
 

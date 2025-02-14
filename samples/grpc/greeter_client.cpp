@@ -1,6 +1,7 @@
+// Time-stamp: <Last changed 2025-02-15 01:48:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,21 +27,23 @@ SOFTWARE.
  *   \file greeter_client.cpp
  *   \brief A simplest gRPC client.
  *
- *  Create the client and make a single RPC call to the server.
+ *  Create the gRPC client and make some RPC calls to the server.
  *
 */
 
+#include <atomic>
+#include <cstdio>
+#include <csignal>
 
 #include <grpc/compression.h>
 #include <grpcpp/grpcpp.h>
-#include <iostream>
-#include <ostream>
+#include <string>
 
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
 
 #include "tec/grpc/tec_grpc_client.hpp"
-#include "tec/tec_utils.hpp"
+#include "tec/tec_print.hpp"
 
 
 using helloworld::HelloReply;
@@ -50,7 +53,7 @@ using helloworld::Greeter;
 
 // Instantiate gRPC Client parameters.
 struct MyParams: public tec::GrpcClientParams {
-    // Add custom parameters here.
+    // You can add custom parameters here.
 };
 
 // Instantiate Client traits.
@@ -102,8 +105,13 @@ public:
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+std::atomic_bool quit{false};
+
 int main()
 {
+    // Install Ctrl-C handler.
+    std::signal(SIGINT, [](int){quit.store(true);});
+
     // Create a client.
     MyParams params;
     MyClient client(params, grpc::InsecureChannelCredentials());
@@ -112,16 +120,25 @@ int main()
     auto result = client.connect();
     if( !result ) {
         tec::println("Abnormally exited with {}.", result);
-        return result.code.value_or(tec::Result::ErrCode::Unspecified);
+        return result.code.value_or(tec::Error::Code<>::Unspecified);
     }
 
-    // Make a call and print a result.
-    auto val = client.SayHello("world!");
-    std::cout << "<- " << val << std::endl;
+    // Make a request the the server.
+    std::string user{"world"};
+    while( !quit.load() ) {
+        // Make a call and print a result.
+        tec::println("{} ->", user);
+        auto response = client.SayHello(user);
+        tec::println("<- {}", response);
+
+        tec::println("\nPRESS <Return> TO REPEAT THE REQUEST...");
+        tec::println("PRESS <Ctrl-C> THEN <Return> TO QUIT");
+        getchar();
+    }
 
     // Clean up.
     client.close();
 
     tec::println("Exited with {}.", result);
-    return result.code.value_or(tec::Result::ErrCode::Unspecified);
+    return result.code.value_or(tec::Error::Code<>::Unspecified);
 }

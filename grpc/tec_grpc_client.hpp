@@ -1,6 +1,7 @@
+// Time-stamp: <Last changed 2025-02-15 00:48:53 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,17 +25,21 @@ SOFTWARE.
 
 /**
  *   \file tec_grpc_client.hpp
- *   \brief A Documented file.
+ *   \brief gRPC client implementation.
  *
- *  Detailed description
+ *  Defines the gRPC client.
  *
 */
 
 #pragma once
 
+#include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_result.hpp"
 #include "tec/tec_trace.hpp"
-#include "tec/grpc/tec_grpc.hpp" // IWYU pragma: keep
 #include "tec/tec_utils.hpp"
+#include "tec/tec_client.hpp"
+#include "tec/grpc/tec_grpc.hpp" // IWYU pragma: keep
+
 
 namespace tec {
 
@@ -46,18 +51,18 @@ namespace tec {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template <
-    typename TUserService,
+    typename TService,
     typename TGrpcChannel,
     typename TGrpcClientCredentials,
     typename TGrpcChannelArguments,
-    typename TGrpc_compression_algorithm
+    typename TGrpcCompressionAlgorithm
     >
 struct grpc_client_traits {
-    typedef TUserService TService;
-    typedef TGrpcChannel TChannel;
-    typedef TGrpcClientCredentials TCredentials;
-    typedef TGrpcChannelArguments TArguments;
-    typedef TGrpc_compression_algorithm TCompressionAlgorithm;
+    typedef TService Service;
+    typedef TGrpcChannel Channel;
+    typedef TGrpcClientCredentials Credentials;
+    typedef TGrpcChannelArguments Arguments;
+    typedef TGrpcCompressionAlgorithm CompressionAlgorithm;
 
 };
 
@@ -71,31 +76,35 @@ struct grpc_client_traits {
 template <typename TParams, typename Traits>
 class GrpcClient: public Client {
 public:
-    typedef typename Traits::TService TService;
-    typedef typename Traits::TChannel TChannel;
-    typedef typename Traits::TCredentials TCredentials;
-    typedef typename Traits::TArguments TArguments;
-    typedef typename Traits::TCompressionAlgorithm TCompressionAlgorithm;
 
-    // Declare a pointer to CreateChannel function.
+    typedef Traits traits;
+    typedef TParams Params;
+    typedef typename traits::Service Service;
+    typedef typename traits::Channel Channel;
+    typedef typename traits::Credentials Credentials;
+    typedef typename traits::Arguments Arguments;
+    typedef typename traits::CompressionAlgorithm CompressionAlgorithm;
+
+    // Declare a pointer to CreateChannel() gRPC function.
     struct ChannelBuilder {
-        std::shared_ptr<TChannel> (*fptr)(const std::string&, const std::shared_ptr<TCredentials>&, const TArguments&);
+        std::shared_ptr<Channel> (*fptr)(const std::string&, const std::shared_ptr<Credentials>&, const Arguments&);
     };
 
 protected:
-    // Custom parameters - must be inherited from ClientParams.
-    TParams params_;
 
-    // gRPC-specific implementation.
-    std::shared_ptr<TCredentials> credentials_;
-    std::unique_ptr<typename TService::Stub> stub_;
+    // Custom parameters - must be inherited from ClientParams.
+    Params params_;
+
+    // gRPC-specific stuff.
+    std::shared_ptr<Credentials> credentials_;
+    std::unique_ptr<typename Service::Stub> stub_;
     ChannelBuilder channel_builder_;
-    std::shared_ptr<TChannel> channel_;
-    TArguments arguments_;
+    std::shared_ptr<Channel> channel_;
+    Arguments arguments_;
 
 protected:
 
-    // Sets grpc::ChannelArgiments before creating a channel. Can be overwritten.
+    //! Set grpc::ChannelArgiments before creating a channel. Can be overwritten.
     virtual void set_channel_arguments() {
         TEC_ENTER("GrpcClient::set_channel_arguments");
 
@@ -111,40 +120,44 @@ protected:
         // Compression algorithm
         // GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
         if (params_.compression_algorithm > 0) {
-            arguments_.SetCompressionAlgorithm(static_cast<TCompressionAlgorithm>(params_.compression_algorithm));
+            arguments_.SetCompressionAlgorithm(static_cast<CompressionAlgorithm>(params_.compression_algorithm));
         }
         TEC_TRACE("CompressionAlgorithm is set to {}.", params_.compression_algorithm);
     }
 
 public:
-    GrpcClient(const TParams& params,
+    GrpcClient(const Params& params,
                const ChannelBuilder& channel_builder,
-               const std::shared_ptr<TCredentials>& credentials
+               const std::shared_ptr<Credentials>& credentials
         )
         : params_{params}
         , channel_builder_{channel_builder}
         , credentials_{credentials}
-    {}
+    {
+        static_assert(
+            std::is_base_of<ClientParams, Params>::value,
+            "not derived from tec::ClientParams class");
+    }
 
     virtual ~GrpcClient() = default;
 
 
     /**
-     *  @brief Connect to a gRPC server.
+     *  @brief Connect to the gRPC server.
      *
-     *  1) Sets gRPC channel arguments as specified in params_.
+     *  1) Sets gRPC channel arguments as specified in *params*.
      *
      *  2) Creates the gRPC channel.
      *
-     *  3) Connects to a server using `addr_uri' and `connect_timeout'
-     *  provided in `params_'.
+     *  3) Connects to the server using *addr_uri* and *connect_timeout*
+     *  provided in *params*.
      *
      *  @return tec::Result
      */
     Result connect() override {
         TEC_ENTER("GrpcClient::connect");
 
-        // Set channel arguments. Can be overwritten.
+        // Set channel arguments.
         set_channel_arguments();
 
         // Create a channel.
@@ -155,14 +168,14 @@ public:
         auto deadline = std::chrono::system_clock::now() + params_.connect_timeout;
         if (!channel_->WaitForConnected(deadline)) {
             std::string msg{format(
-                    "It took too long (> % ms) to reach out the server on \"{}\"",
+                    "It took too long (> {} ms) to reach out the server on \"{}\"",
                     MilliSec{params_.connect_timeout}.count(), params_.addr_uri)};
             TEC_TRACE("!!! Error: {}.", msg);
-            return {msg, Result::Kind::GrpcErr};
+            return {msg, Error::Kind::GrpcErr};
         }
 
         // Create a stub.
-        stub_ = TService::NewStub(channel_);
+        stub_ = Service::NewStub(channel_);
         TEC_TRACE("connected to {} OK.", params_.addr_uri);
         return {};
     }

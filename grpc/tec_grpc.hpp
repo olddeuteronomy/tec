@@ -1,3 +1,4 @@
+// Time-stamp: <Last changed 2025-02-14 15:49:09 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +25,7 @@ SOFTWARE.
 
 /**
  *   \file tec_grpc.hpp
- *   \brief General gRPC parameters.
+ *   \brief Generic gRPC parameters.
  *
  *  gRPC server/client parameter declarations.
  *
@@ -32,6 +33,8 @@ SOFTWARE.
 
 #pragma once
 
+#include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_client.hpp"
 #include "tec/tec_server.hpp"
 
 
@@ -40,12 +43,12 @@ namespace tec {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                      gRPC default parameters
+*                      gRPC common default parameters
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //! Default maximum message size, in Mb
-constexpr const int kGrpcMaxMessageSize = 64;
+static constexpr const int kGrpcMaxMessageSize = 64;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -53,9 +56,6 @@ constexpr const int kGrpcMaxMessageSize = 64;
 *                     gRPC Server parameters
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-//! Default server URI. Accepts connections from any IPv4 addresses.
-constexpr const char kGrpcServerAddrUri[] = "0.0.0.0:50051";
 
 //! Declare the gRPC health check service builder.
 struct GrpcHealthCheckBuilder {
@@ -70,22 +70,25 @@ struct GrpcReflectionBuilder {
 
 //! gRPC Server parameters.
 struct GrpcServerParams: public ServerParams {
+    //! Default server URI. Accepts connections from any IPv4 addresses.
+    static constexpr const char kDefaultAddrUri[] = "0.0.0.0:50051";
+
     std::string addr_uri;
 
     // ServerBuilder parameters
-    GrpcHealthCheckBuilder health_check_builder;  //!< e.g. {&grpc::EnableDefaultHealthCheckService}
-    GrpcReflectionBuilder reflection_builder;     //!< e.g. {&grpc::reflection::InitProtoReflectionServerBuilderPlugin}
-    int max_message_size;                         //!< kGrpcMaxMessageSize
-    int compression_algorithm;                    //!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
-    int compression_level;                        //!< GRPC_COMPRESS_LEVEL_NONE = 0, GRPC_COMPRESS_LEVEL_LOW, GRPC_COMPRESS_LEVEL_MED, GRPC_COMPRESS_LEVEL_HIGH, GRPC_COMPRESS_LEVEL_COUNT
+    GrpcHealthCheckBuilder health_check_builder;  //!< e.g. {&grpc::EnableDefaultHealthCheckService}.
+    GrpcReflectionBuilder reflection_builder;     //!< e.g. {&grpc::reflection::InitProtoReflectionServerBuilderPlugin}.
+    int max_message_size;                         //!< kGrpcMaxMessageSize, set to 0 to use gRPC's default (4096 bytes).
+    int compression_algorithm;                    //!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT.
+    int compression_level;                        //!< GRPC_COMPRESS_LEVEL_NONE = 0, GRPC_COMPRESS_LEVEL_LOW, GRPC_COMPRESS_LEVEL_MED, GRPC_COMPRESS_LEVEL_HIGH, GRPC_COMPRESS_LEVEL_COUNT.
 
     GrpcServerParams()
-        : addr_uri(kGrpcServerAddrUri)
-        , health_check_builder({nullptr})
-        , reflection_builder({nullptr})
-        , max_message_size(kGrpcMaxMessageSize)
-        , compression_algorithm(0)
-        , compression_level(0)
+        : addr_uri{kDefaultAddrUri}
+        , health_check_builder{nullptr}
+        , reflection_builder{nullptr}
+        , max_message_size{kGrpcMaxMessageSize}
+        , compression_algorithm{0}
+        , compression_level{0}
         {}
 };
 
@@ -98,24 +101,26 @@ struct GrpcServerParams: public ServerParams {
 
 struct GrpcClientParams: public ClientParams {
     //! Default client URI (localhost).
-    static constexpr const char kAddrUri[] = "127.0.0.1:50051";
+    static constexpr const char kDefaultAddrUri[] = "127.0.0.1:50051";
 
-    std::string addr_uri;  //!< kGrpcClientAddrUri
+    std::string addr_uri;  //!< See kDefaultAddrUri.
 
     // Channel arguments
     int max_message_size;      //!< kGrpcMaxMessageSize
     int compression_algorithm; //!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
 
     GrpcClientParams()
-        : addr_uri(kAddrUri)
-        , max_message_size(kGrpcMaxMessageSize)
-        , compression_algorithm(0)
+        : addr_uri{kDefaultAddrUri}
+        , max_message_size{kGrpcMaxMessageSize}
+        , compression_algorithm{0}
     {}
 };
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*                  gRPC metadata on the client side
+ *
+ *                  gRPC metadata on the client side
+ *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //! Get server's metadata on the client side.
@@ -142,7 +147,9 @@ void add_client_metadata(TClientContext& ctx, const std::string& key, const std:
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*                  gRPC metadata on the server side
+ *
+ *                  gRPC metadata on the server side
+ *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //! Get client's metadada on the server side.

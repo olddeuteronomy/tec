@@ -34,7 +34,11 @@ SOFTWARE.
 #include <condition_variable>
 
 
-/** @class Semaphore
+namespace tec {
+
+
+/**
+ * @class      Semaphore
  * @brief      Declares an abstract semaphore.
  *
  * @details    Signalled when a predicate returns `true.`
@@ -104,13 +108,13 @@ public:
 
 }; // Semaphore
 
-//! A boolean semaphore; signals when `value` is set to `true`.
+//! The boolean semaphore signals when `value` is set to `true`.
 using SemaphoreBool = Semaphore<bool>;
-//! An integer semaphore; signals when a predicate returns `true`.
+//! The integer semaphore signals when a predicate returns `true`.
 using SemaphoreInt = Semaphore<int>;
 
 
-//! Extends `SemaphoreBool` with `set() method.
+//! Extends `SemaphoreBool` with `set()` method.
 class Signal: public SemaphoreBool {
 public:
     //! Constructs a boolean semaphore.
@@ -118,3 +122,6 @@ public:
     //! Set signalled state.
     void set() { set_value(true); }
 };
+
+
+} // ::tec

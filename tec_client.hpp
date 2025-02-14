@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-14 16:33:47 by magnolia>
+// Time-stamp: <Last changed 2025-02-14 15:26:55 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,8 +24,8 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   @file tec_server.hpp
- *   @brief Defines an abstract Server.
+ *   \file tec_client.hpp
+ *   \brief Defines an abstract Client class.
  *
 */
 
@@ -34,7 +34,6 @@ SOFTWARE.
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_result.hpp"
 #include "tec/tec_utils.hpp"
-#include "tec/tec_semaphore.hpp"
 
 
 namespace tec {
@@ -42,58 +41,38 @@ namespace tec {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                       Server Parameters
+*                   Abstract Client Interface
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-struct ServerParams {
-    ///{@ Default timeouts.
-    static constexpr const MilliSec kStartTimeout{Seconds{2}};
-    static constexpr const MilliSec kShutdownTimeout{Seconds{10}};
-    //}@
+//! Generic Clients parameters.
+struct ClientParams {
+    //! Default client connection timeout (5 sec).
+    static constexpr const MilliSec kConnectTimeout{Seconds{5}};
 
-    MilliSec start_timeout;    //!< Start timeout in milliseconds.
-    MilliSec shutdown_timeout; //!< Shutdown timeout in milliseconds.
+    //! Connection timeout.
+    MilliSec connect_timeout;
 
-    ServerParams()
-        : start_timeout(kStartTimeout)
-        , shutdown_timeout(kShutdownTimeout)
+    ClientParams()
+        : connect_timeout(kConnectTimeout)
     {}
 };
 
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                    Abstract Server Interface
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-template <typename TParams>
-class Server {
-
+//! The generic Client class.
+class Client {
 public:
-    typedef TParams Params;
+    Client() = default;
+    Client(const Client&) = delete;
+    Client(Client&&) = delete;
+    virtual ~Client() = default;
 
-protected:
-    Params params_;
+    //! Connect to the server.
+    virtual Result connect() = 0;
 
-public:
-    Server(const Params& params)
-        : params_{params}
-    {
-    }
-
-    Server(const Server&) = delete;
-    Server(Server&&) = delete;
-
-    virtual ~Server() = default;
-
-    constexpr Params params() const { return params_; }
-
-    virtual void start(Signal&, Result&) = 0;
-    virtual void shutdown(Signal&) = 0;
-
-}; // ::Server
+    //! Close connection.
+    virtual void close() = 0;
+};
 
 
-} // ::tec
+} // :tec

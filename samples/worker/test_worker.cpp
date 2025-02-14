@@ -1,6 +1,7 @@
+// Time-stamp: <Last changed 2025-02-12 21:44:09 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2024 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +24,12 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_result.hpp"
 #include "tec/tec_trace.hpp"
 #include "tec/tec_utils.hpp"
 #include "tec/tec_worker.hpp"
+#include "tec/tec_worker_thread.hpp"
+#include <thread>
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,23 +39,30 @@ SOFTWARE.
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // Test parameters
-struct WorkerParams
+struct TestParams
 {
-  int count;
-  tec::Seconds init_delay;
-  tec::Result init_result; // To emulate init() failure
-  tec::Seconds process_delay;
-  tec::Seconds finalize_delay;
-  tec::Result finalize_result; // To emulate finalize() failure
-  tec::Seconds worker_delay;
+    tec::Seconds init_delay;
+    tec::Result init_result; // To emulate on_init() failure
+    tec::Seconds process_delay;
+    tec::Seconds exit_delay;
+    tec::Result exit_result; // To emulate on_exit() failure
 };
 
-
-// Instantiate Worker class using default tec::Message.
-using Worker = tec::Worker<WorkerParams>;
+// Instantiate Test Worker class using default tec::Message.
+struct TestMessage: public tec::WorkerMessage {
+    int counter;
+};
 
 // Test command.
-static constexpr const tec::Message::cmd_t CMD_CALL_PROCESS = 1;
+constexpr static const tec::WorkerMessage::Command CMD_CALL_PROCESS = 1;
+
+// Instantiate TestWorker
+using TestWorkerTraits = tec::worker_traits<
+    TestParams,
+    TestMessage
+    >;
+using TestWorker = tec::WorkerThread<TestWorkerTraits>;
+
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -60,81 +71,69 @@ static constexpr const tec::Message::cmd_t CMD_CALL_PROCESS = 1;
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-class MyWorker: public Worker {
+class MyWorker: public TestWorker {
+private:
+    int counter{1};
+
 public:
-    MyWorker(const WorkerParams& params) : Worker(params) {}
+    MyWorker(const TestParams& params)
+        : TestWorker{params}
+    {
+        // Register handler.
+        register_handler(
+            CMD_CALL_PROCESS,
+            [](auto worker, auto msg){
+                TEC_ENTER("CMD_CALL_PROCESS");
+                TEC_TRACE("counter={}", msg.counter);
+                if( msg.counter <= 10 ) {
+                    // Continue processing.
+                    std::this_thread::sleep_for(worker.params().process_delay);
+                    worker.send({{CMD_CALL_PROCESS}, msg.counter + 1});
+                }
+                else {
+                    // Stop message loop.
+                    worker.send(tec::quit<TestMessage>());
+                }
+            });
+    }
 
 protected:
-    tec::Result init() override {
-        TEC_ENTER("Test::init()");
-
-        // Emulate error.
-        if( !params_.init_result ) {
-            TEC_TRACE(params_.init_result);
-            return params_.init_result;
+    tec::Result on_init() override {
+        std::this_thread::sleep_for(params().init_delay);
+        if( params().init_result ) {
+            // Initiate processing.
+            send({{CMD_CALL_PROCESS}, counter});
         }
-        // Pause.
-        std::this_thread::sleep_for(params_.init_delay);
-
-        // Initiate processing.
-        send({CMD_CALL_PROCESS});
-        return{};
+        return params().init_result;
     }
 
-    void process(const tec::Message&) override
-    {
-        TEC_ENTER("Test::process()");
-        TEC_TRACE("count={}.", ++params_.count);
-
-        // Pause...
-        std::this_thread::sleep_for(params_.process_delay);
-
-        if( params_.count >= 10 ) {
-            // Quit message loop.
-            send({tec::Message::QUIT});
-        }
-        else {
-            // ... otherwise repeat processing.
-            send({CMD_CALL_PROCESS});
-        }
-    }
-
-    tec::Result finalize() override
-    {
-        TEC_ENTER("Test::finalize()");
-        // Pause...
-        std::this_thread::sleep_for(params_.finalize_delay);
-        // Return result.
-        return params_.finalize_result;
+    tec::Result on_exit() override {
+        return params().exit_result;
     }
 };
 
 
 tec::Result test_worker() {
     // Emulate delays and errors.
-    WorkerParams params{
-        /*int count*/ 0,
+    TestParams params{
+        .init_delay = tec::Seconds{2},
+        .init_result = {}, // Set to {1, "on_init() failed"} to emulate on_init() error.
+        .process_delay = tec::Seconds{1},
+        .exit_delay = tec::Seconds{2},
+        .exit_result =  {2, "on_exit() failed"}, // Set to {2, "on_exit() failed"} to emulate on_exit() error.
 
-        /*Seconds init_delay*/ tec::Seconds{5},
-        /*tec::Result  init_result*/ {}, // Set to {1, "init() failed"} to emulate init() error.
-
-        /*Seconds process_delay*/ tec::Seconds{1}, // 1, delay in process() callback.
-
-        /*Seconds finalize_delay*/ tec::Seconds{2},
-        /*tec::Result  finalize_result*/ {2, "finalize() failed"}, // Set to {2, "finalize() failed"} to emulate finalize() error.
-
-        /*Seconds worker_delay*/ tec::Seconds{10} // Delay between worker's run() and terminate().
     };
-    MyWorker worker(params);
+    auto daemon{tec::Daemon::Builder<MyWorker>{}(params)};
 
     // Start the worker and check for initialization error.
-    if( !worker.run() ) {
-        return worker.result();
+    auto result = daemon->run();
+    if( !result ) {
+        return result;
     }
 
     // Wait for worker is finished.
-    worker.sig_terminated().wait();
-    return worker.result();
+    daemon->sig_terminated().wait();
+    return daemon->terminate();
 }
 
 
@@ -144,8 +143,7 @@ tec::Result test_worker() {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-int main()
-{
+int main() {
     tec::println("*** Running {} built at {}, {} with {} ***", __FILE__, __DATE__, __TIME__, __TEC_COMPILER_NAME__);
 
     auto result = test_worker();
@@ -154,5 +152,5 @@ int main()
     tec::print("Press <Enter> to quit ...");
     std::getchar();
 
-    return result.code.value_or(tec::Result::ErrCode::Unspecified);
+    return result.code.value_or(tec::Error::Code<>::Unspecified);
 }

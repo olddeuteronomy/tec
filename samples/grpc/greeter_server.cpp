@@ -1,3 +1,4 @@
+// Time-stamp: <Last changed 2025-02-15 01:48:41 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,24 +25,29 @@ SOFTWARE.
 
 /**
  *   \file greeter_server.cpp
- *   \brief A Documented file.
+ *   \brief A simplest gRPC server.
  *
- *  Detailed description.
+ *  Create the gRPC server and run it.
  *
 */
+
+#include <memory>
+#include <csignal>
 
 #include <grpc/compression.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/health_check_service_interface.h>
-#include <memory>
 
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
 
-#include "tec/grpc/tec_grpc_server.hpp"
+#include "tec/tec_result.hpp"
+#include "tec/tec_semaphore.hpp"
 #include "tec/tec_trace.hpp"
-#include "tec/tec_utils.hpp"
+#include "tec/tec_worker.hpp"
+#include "tec/tec_server_worker.hpp"
+#include "tec/grpc/tec_grpc_server.hpp"
 
 
 using grpc::Status;
@@ -51,14 +57,16 @@ using helloworld::HelloReply;
 using helloworld::HelloRequest;
 
 
-// Instantiate gRPC service - logic and data behind the server's behavior.
+// Implement gRPC service - logic and data behind the server's behavior.
 class MyService final : public Greeter::Service
 {
     Status SayHello(ServerContext* context, const HelloRequest* request, HelloReply* reply) override
     {
         TEC_ENTER("Greeter::SayHello");
+
         std::string prefix("Hello ");
-        reply->set_message(prefix + request->name());
+        reply->set_message(prefix + request->name() + "!");
+
         TEC_TRACE("request.name=\"{}\".\n", request->name());
         return Status::OK;
     }
@@ -83,14 +91,24 @@ using MyServerTraits = tec::grpc_server_traits<
 
 // Instantiate gRPC server parameters.
 struct MyServerParams: public tec::GrpcServerParams {
-    // Add custom parameters here.
+    // You can add custom parameters here.
 };
 
 // Instantiate gRPC Server.
-using MyServer = tec::GrpcServer<MyServerParams, MyServerTraits>;
+class MyServer: public tec::GrpcServer<MyServerParams, MyServerTraits> {
+public:
+    MyServer(const MyServerParams& params)
+        : tec::GrpcServer<MyServerParams, MyServerTraits>{params, grpc::InsecureServerCredentials()}
+    {}
+};
 
-// Instantiate gRPC Worker.
-using MyServerWorker = tec::ServerWorker<MyServerParams, MyServer>;
+// Instantiate gRPC Server Worker.
+using MyMessage = tec::WorkerMessage;
+using MyWorkerTraits = tec::worker_traits<
+    MyServerParams,
+    MyMessage
+    >;
+using MyServerWorker = tec::ServerWorker<MyWorkerTraits, MyServer>;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,44 +117,46 @@ using MyServerWorker = tec::ServerWorker<MyServerParams, MyServer>;
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-std::unique_ptr<tec::Daemon> build_daemon(const MyServerParams& params) {
-    MyServerParams params_ = params;
-    // Set additional server parameters.
-    params_.health_check_builder = {&grpc::EnableDefaultHealthCheckService};
-    params_.reflection_builder = {&grpc::reflection::InitProtoReflectionServerBuilderPlugin};
-
-    // Create the server.
-    std::unique_ptr<MyServer> server(new MyServer(
-        params_,
-        grpc::InsecureServerCredentials()));
-
-    // Return the server worker.
-    return std::unique_ptr<tec::Daemon>(new MyServerWorker(params_, std::move(server)));
-}
+tec::Signal sig_quit;
 
 
-int main() {
-    // Build the daemon.
+tec::Result test() {
+    // The gRPC daemon.
     MyServerParams params;
+
+    // Set additional gRPC server parameters.
+    params.health_check_builder = {&grpc::EnableDefaultHealthCheckService};
+    params.reflection_builder = {&grpc::reflection::InitProtoReflectionServerBuilderPlugin};
+
     // [TEST]
     // params.start_timeout = tec::MilliSec{1};
     // [TEST]
     // params.addr_uri = "";
-    tec::DaemonBuilder<MyServerParams> builder{build_daemon};
-    std::unique_ptr<tec::Daemon> daemon{builder(params)};
+    auto daemon{MyServerWorker::DaemonBuilder<MyServerWorker, MyServer>{}(params)};
 
     // Run the daemon
     auto result = daemon->run();
     if( !result ) {
         tec::println("Abnormal exited with {}.", result);
+        return result;
     }
 
-    // Wait for <Enter> key pressed to terminate the server if OK.
-    if( result )
-        getchar();
+    // Wait for <Ctrl-C> pressed to terminate the server.
+    tec::println("\nPRESS <Ctrl-C> TO QUIT THE SERVER");
+    sig_quit.wait();
 
     // Terminate the server.
-    daemon->terminate();
-    tec::println("Exited with {}.", result);
-    return result.code.value_or(tec::Result::ErrCode::Unspecified);
+    result = daemon->terminate();
+    return result;
+}
+
+
+int main() {
+    // Install Ctrl-C handler.
+    std::signal(SIGINT, [](int){ sig_quit.set(); });
+
+    auto result = test();
+
+    tec::println("\nExited with {}", result);
+    return result.code.value_or(tec::Error::Code<>::Unspecified);
 }

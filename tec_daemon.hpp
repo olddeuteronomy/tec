@@ -1,4 +1,3 @@
-// Time-stamp: <Last changed 2025-02-14 16:33:47 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,8 +23,8 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   @file tec_server.hpp
- *   @brief Defines an abstract Server.
+ *   @file tec_daemon.hpp
+ *   @brief Declares an asbstract Daemin class.
  *
 */
 
@@ -33,67 +32,65 @@ SOFTWARE.
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_result.hpp"
-#include "tec/tec_utils.hpp"
 #include "tec/tec_semaphore.hpp"
 
 
 namespace tec {
 
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                       Server Parameters
+*                     Abstract Daemon
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-struct ServerParams {
-    ///{@ Default timeouts.
-    static constexpr const MilliSec kStartTimeout{Seconds{2}};
-    static constexpr const MilliSec kShutdownTimeout{Seconds{10}};
-    //}@
+/**
+ * @brief      An abstract Daemon class.
+ *
+ * @details A daemon, by definition, is a process or thread that
+ * runs continuously as a background process and wakes up to handle
+ * periodic service requests.
+ *
+ * tec::Daemon defines the minimum set of methods that should be implemented:
+ * *run* and *terminate* as well as required signals.
+ */
+class Daemon {
+public:
+    Daemon() = default;
+    virtual ~Daemon() = default;
 
-    MilliSec start_timeout;    //!< Start timeout in milliseconds.
-    MilliSec shutdown_timeout; //!< Shutdown timeout in milliseconds.
+    /**
+     * @brief      Start the Daemon's thread.
+     * @return     tec::Result
+     * @sa tec::Result
+     */
+    virtual Result run() = 0;
 
-    ServerParams()
-        : start_timeout(kStartTimeout)
-        , shutdown_timeout(kShutdownTimeout)
-    {}
+    /**
+     * @brief      Terminate the Daemon's thread.
+     * @return     tec::Result
+     * @sa tec::Result
+     */
+    virtual Result terminate() = 0;
+
+    //! Signals when the Daemon is started.
+    virtual const Signal& sig_running() const = 0;
+
+    //! Signals when the Daemon is initialized (possible, with error).
+    virtual const Signal& sig_inited() const = 0;
+
+    //! Signals when the Daemon is terminated.
+    virtual const Signal& sig_terminated() const = 0;
+
+public:
+    template <typename Derived>
+    struct Builder {
+        std::unique_ptr<Daemon> operator()(typename Derived::Params& params) {
+            static_assert(std::is_base_of<Daemon, Derived>::value,
+                "not derived from tec::Daemon class");
+            return std::make_unique<Derived>(params);
+        }
+    };
 };
-
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                    Abstract Server Interface
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-template <typename TParams>
-class Server {
-
-public:
-    typedef TParams Params;
-
-protected:
-    Params params_;
-
-public:
-    Server(const Params& params)
-        : params_{params}
-    {
-    }
-
-    Server(const Server&) = delete;
-    Server(Server&&) = delete;
-
-    virtual ~Server() = default;
-
-    constexpr Params params() const { return params_; }
-
-    virtual void start(Signal&, Result&) = 0;
-    virtual void shutdown(Signal&) = 0;
-
-}; // ::Server
 
 
 } // ::tec
