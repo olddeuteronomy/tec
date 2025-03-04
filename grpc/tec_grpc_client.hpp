@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-15 00:48:53 by magnolia>
+// Time-stamp: <Last changed 2025-02-19 15:04:33 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -163,6 +163,8 @@ public:
         // Create a channel.
         // If failed, a lame channel (one on which all operations fail) is created.
         channel_ = channel_builder_.fptr(params_.addr_uri, credentials_, arguments_);
+
+        TEC_TRACE("Connecting to {} ...", params_.addr_uri);
 
         // Connect to the server with timeout.
         auto deadline = std::chrono::system_clock::now() + params_.connect_timeout;

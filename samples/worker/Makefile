@@ -1,14 +1,13 @@
 ###############################################################################
 # To force rebuild with `clang++' (default):
-#    make [-k] -B
+#    make [-k] -B TEST=worker|server
 # To force rebuild with `g++':
-#    make [-k] -B GCC=1
+#    make [-k] -B GCC=1 TEST=worker|server
 ###############################################################################
-TESTNAME := worker
 
-###############################################################################
-#                         DO NOT EDIT BELOW THIS LINE                         #
-###############################################################################
+ifndef TEST
+$(error TEST is not defined! Use make -k -B TEST=testname)
+endif
 
 # OS
 ifeq ($(OS),Windows_NT)
@@ -23,6 +22,7 @@ ifdef GCC
 CC = g++
 TARGET_SUFFIX = _gcc$(EXE_SUFFIX)
 else
+# clang is default
 CLANG = 1
 CC = clang++
 TARGET_SUFFIX = _clang$(EXE_SUFFIX)
@@ -37,7 +37,7 @@ MKDIR_P = mkdir -p
 endif
 
 # Compilation parameters
-TARGET = $(TESTNAME)$(TARGET_SUFFIX)
+TARGET = $(TEST)$(TARGET_SUFFIX)
 CPPFLAGS = -std=c++17 -Wall -pthread -O2 -g
 INCLUDES = -I../../..
 OUTDIR = out
@@ -64,7 +64,7 @@ endif
 
 
 # Compile the target
-$(OUTDIR)/$(TARGET): test_$(TESTNAME).cpp
-	$(CC) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) test_$(TESTNAME).cpp -o $(OUTDIR)/$(TARGET)
+$(OUTDIR)/$(TARGET): test_$(TEST).cpp
+	$(CC) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) test_$(TEST).cpp -o $(OUTDIR)/$(TARGET)
 
 all: $(OUTDIR)/$(TARGET)
