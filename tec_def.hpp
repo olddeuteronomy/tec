@@ -1,3 +1,4 @@
+// Time-stamp: <Last changed 2025-03-07 17:52:35 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -49,30 +50,36 @@ SOFTWARE.
 // Check clang
   // This pragma has been removed to make the code cleaner:
   // #pragma clang diagnostic ignored "-Wmicrosoft-template-shadow"
-  #define __TEC_CLANG__ 1
+  #define __TEC_CLANG__         1
   #define __TEC_COMPILER_NAME__ "clang++"
 
-  #define __TEC_CLANG_MAJOR__      __clang_major__
-  #define __TEC_CLANG_MINOR__      __clang_minor__
-  #define __TEC_CLANG_PATCHLEVEL__ __clang_patchlevel__
+  #define __TEC_COMPILER_VER_MAJOR__      __clang_major__
+  #define __TEC_COMPILER_VER_MINOR__      __clang_minor__
+  #define __TEC_COMPILER_VER_PATCHLEVEL__ __clang_patchlevel__
   #define __TEC_INT__  __INT_WIDTH__
   #define __TEC_LONG__ __LONG_WIDTH__
   #define __TEC_PTR__  __INTPTR_WIDTH__
 
 #elif defined(__GNUC__)
 // Check gcc
-  #define __TEC_GNUC__            __GNUC__
+  #define __TEC_GNUC__          __GNUC__
   #define __TEC_COMPILER_NAME__ "g++"
 
-  #define __TEC_GNUC_MINOR__      __GNUC_MINOR__
-  #define __TEC_GNUC_PATCHLEVEL__ __GNUC_PATCHLEVEL__
+  #define __TEC_COMPILER_VER_MAJOR__      __GNUC__
+  #define __TEC_COMPILER_VER_MINOR__      __GNUC_MINOR__
+  #define __TEC_COMPILER_VER_PATCHLEVEL__ __GNUC_PATCHLEVEL__
   #define __TEC_INT__  __SIZEOF_INT__<<3
   #define __TEC_LONG__ __SIZEOF_LONG__<<3
   #define __TEC_PTR__  __SIZEOF_POINTER__<<3
 
 #elif defined(__TEC_WINDOWS__)
 // Windows-specific
+  #define __TEC_MSC__           _MSC_VER
   #define __TEC_COMPILER_NAME__ "cl"
+
+  #define __TEC_COMPILER_VER_MAJOR__      _MSC_VER
+  #define __TEC_COMPILER_VER_MINOR__      0 // TODO
+  #define __TEC_COMPILER_VER_PATCHLEVEL__ _MSC_BUILD
 
   #if defined(_WIN64)
     #define __TEC_INT__  32

@@ -106,9 +106,12 @@ struct TResult {
 
     //! Output Result to a stream.
     friend std::ostream& operator << (std::ostream& out, const TResult& result) {
-        out << "[" << kind_as_string(result.kind) << "]"
-            << " Code=" << (result.ok() ? TCode{0} : result.code.value_or(Error::Code<TCode>::Unspecified))
+        out << "[" << kind_as_string(result.kind) << "]";
+        if( !result.ok() ) {
+            out
+            << " Code=" << result.code.value_or(Error::Code<TCode>::Unspecified)
             << " Desc=\"" << (result.desc.has_value() ? result.desc.value() : "") << "\"";
+        }
         return out;
     }
 

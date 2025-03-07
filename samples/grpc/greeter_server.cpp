@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-15 01:48:41 by magnolia>
+// Time-stamp: <Last changed 2025-03-07 17:53:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -39,12 +39,14 @@ SOFTWARE.
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/health_check_service_interface.h>
 
+// #include <google/protobuf/runtime_version.h> // To disable weird clangd-18 error
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
 
+#include "tec/tec_def.hpp"
+#include "tec/tec_print.hpp"
 #include "tec/tec_result.hpp"
 #include "tec/tec_semaphore.hpp"
-#include "tec/tec_trace.hpp"
 #include "tec/tec_worker.hpp"
 #include "tec/tec_server_worker.hpp"
 #include "tec/grpc/tec_grpc_server.hpp"
@@ -57,17 +59,21 @@ using helloworld::HelloReply;
 using helloworld::HelloRequest;
 
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                             Service
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 // Implement gRPC service - logic and data behind the server's behavior.
 class MyService final : public Greeter::Service
 {
     Status SayHello(ServerContext* context, const HelloRequest* request, HelloReply* reply) override
     {
-        TEC_ENTER("Greeter::SayHello");
+        tec::println("\nREQUEST: <- \"{}\"", request->name());
+        reply->set_message("Hello " + request->name() + "!");
 
-        std::string prefix("Hello ");
-        reply->set_message(prefix + request->name() + "!");
-
-        TEC_TRACE("request.name=\"{}\".\n", request->name());
+        tec::println("REPLY:   -> \"{}\"", reply->message());
         return Status::OK;
     }
 };
@@ -75,7 +81,7 @@ class MyService final : public Greeter::Service
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                             MAIN
+*                              MAIN
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -130,16 +136,18 @@ tec::Result test() {
 
     // [TEST]
     // params.start_timeout = tec::MilliSec{1};
-    // [TEST]
     // params.addr_uri = "";
+    // [/TEST]
     auto daemon{MyServerWorker::DaemonBuilder<MyServerWorker, MyServer>{}(params)};
 
     // Run the daemon
+    tec::println("Starting ...");
     auto result = daemon->run();
     if( !result ) {
         tec::println("Abnormal exited with {}.", result);
         return result;
     }
+    tec::println("Server listening on \"{}\"", params.addr_uri);
 
     // Wait for <Ctrl-C> pressed to terminate the server.
     tec::println("\nPRESS <Ctrl-C> TO QUIT THE SERVER");
@@ -155,6 +163,11 @@ int main() {
     // Install Ctrl-C handler.
     std::signal(SIGINT, [](int){ sig_quit.set(); });
 
+    tec::println("*** Running gRPC {} server built at {}, {} with {} {}.{} ***",
+                 grpc_version_string(),
+                 __DATE__, __TIME__,
+                 __TEC_COMPILER_NAME__,
+                 __TEC_COMPILER_VER_MAJOR__, __TEC_COMPILER_VER_MINOR__);
     auto result = test();
 
     tec::println("\nExited with {}", result);

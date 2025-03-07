@@ -72,7 +72,7 @@ $(info $(shell ${MKDIR_P} $(OUTDIR)))
 endif
 
 
-TEC_CXXFLAGS := -I$(HOME)/lib/grpc/include -I$(HOME)/workspace/devel -D_TEC_TRACE_ON
+TEC_CXXFLAGS := -I$(HOME)/lib/grpc/include -I$(HOME)/workspace/devel
 HOST_SYSTEM = $(shell uname | cut -f 1 -d_)
 SYSTEM ?= $(HOST_SYSTEM)
 CPPFLAGS += `pkg-config --cflags protobuf grpc`
