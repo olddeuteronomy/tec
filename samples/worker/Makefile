@@ -11,29 +11,30 @@ endif
 
 # OS
 ifeq ($(OS),Windows_NT)
-    detected_OS := Windows
+	detected_OS := Windows
 	EXE_SUFFIX := .exe
 else
 	detected_OS := $(uname -o)
 endif
 
 # Compilers
+# gcc is optional
 ifdef GCC
-CC = g++
-TARGET_SUFFIX = _gcc$(EXE_SUFFIX)
+	CC = g++
+	TARGET_SUFFIX = _gcc$(EXE_SUFFIX)
 else
 # clang is default
-CLANG = 1
-CC = clang++
-TARGET_SUFFIX = _clang$(EXE_SUFFIX)
+	CLANG = 1
+	CC = clang++
+	TARGET_SUFFIX = _clang$(EXE_SUFFIX)
 endif
 
 
 # Platform dependent commands
 ifeq ($(detected_OS),Windows)
-MKDIR_P = MKDIR
+	MKDIR_P = MKDIR
 else
-MKDIR_P = mkdir -p
+	MKDIR_P = mkdir -p
 endif
 
 # Compilation parameters
@@ -48,10 +49,10 @@ DEFS = -D_TEC_TRACE_ON
 
 # Just for fun - colorize compiler output
 ifdef GCC
-EXTRAS = -fdiagnostics-color=always
+	EXTRAS = -fdiagnostics-color=always
 else
 ifdef CLANG
-EXTRAS = -fcolor-diagnostics
+	EXTRAS = -fcolor-diagnostics
 endif
 endif
 
