@@ -1,3 +1,4 @@
+// Time-stamp: <Last changed 2025-03-14 01:41:31 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -46,11 +47,19 @@ namespace tec {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+//! Outputs a single `arg` to the stream.
 template <typename T>
 void print(std::ostream* out, const T& arg) {
     *out << arg;
 }
 
+/**
+ * @brief      Prints variadic arguments to the stream.
+ * @param      out *std::stream* An output stream.
+ * @param      fmt *std::string* A format string.
+ * @param      value *T* The first argument to output.
+ * @param      Arg *Targs* Extra arguments.
+ */
 template <typename T, typename... Targs>
 void print(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) {
     for( ; *fmt != '\0'; fmt++ ) {
@@ -64,19 +73,19 @@ void print(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) 
     }
 }
 
+//! Prints a single argument with newline to the stream.
 template <typename T>
 void println(std::ostream* out, const T& arg) {
     *out << arg << std::endl;
 }
 
+//! Prints variadic arguments with newline to the stream.
 template <typename T, typename... Targs>
 void println(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) {
     print<>(out, fmt, value, Args...);
     *out << std::endl;
 }
 
-
-//@{ Output to std::out
 template <typename T>
 void print(const T& arg) {
     std::cout << arg;
@@ -95,9 +104,8 @@ template <typename T, typename... Targs>
 void println(const char* fmt, const T& value, Targs&&... Args) {
     println<>(&std::cout, fmt, value, Args...);
 }
-//@}
 
-//! "Print" variadic arguments to a string.
+//! Stores representation of the single argument in a new string.
 template <typename T>
 std::string format(const T& arg) {
     std::ostringstream buf;
@@ -105,7 +113,7 @@ std::string format(const T& arg) {
     return buf.str();
 }
 
-// Recursive call.
+//! Stores representation of the arguments in a new string.
 template <typename T, typename... Targs>
 std::string format(const char* fmt, const T& value, Targs&&... Args) {
     std::ostringstream buf;

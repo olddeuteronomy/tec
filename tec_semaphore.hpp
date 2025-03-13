@@ -1,3 +1,4 @@
+// Time-stamp: <Last changed 2025-03-14 01:36:09 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +25,7 @@ SOFTWARE.
 
 /**
  *   @file tec_semaphore.hpp
- *   @brief Declares an abstract semaphore class.
+ *   @brief Declares a generalized semaphore.
 */
 
 #pragma once
@@ -39,15 +40,14 @@ namespace tec {
 
 /**
  * @class      Semaphore
- * @brief      Declares an abstract semaphore.
- *
- * @details    Signalled when a predicate returns `true.`
+ * @brief      A generalized semaphore.
+ * @details    Signalled when a predicate returns `true`.
  *
  */
 template <typename Value>
 class Semaphore {
 public:
-    //! A predicate to check out as a functional object.
+    //! A predicate to check out.
     using Predicate = std::function<bool(const Value&)>;
 
 private:
@@ -95,10 +95,9 @@ public:
 
     /**
      * @brief      Wait for the predicate returns `true` for the specified amount of time.
-     * @param      dur Duration Amount of time to wait for the signal is set.
+     * @param      dur *Duration* Amount of time to wait for the signal is set.
      * @return     bool `false` if timeout otherwise `true`.
      * @sa wait()
-     * @sa Milliseconds
      */
     template <typename Duration>
     bool wait_for(Duration dur) const {
@@ -108,16 +107,20 @@ public:
 
 }; // Semaphore
 
-//! The boolean semaphore signals when `value` is set to `true`.
+//! The predefined boolean semaphore signals when the `value` is set to `true`.
 using SemaphoreBool = Semaphore<bool>;
-//! The integer semaphore signals when a predicate returns `true`.
+//! The predefined integer semaphore signals when a predicate returns `true`.
 using SemaphoreInt = Semaphore<int>;
 
 
-//! Extends `SemaphoreBool` with `set()` method.
+/**
+ * @brief      Specialized boolean semaphore.
+ * @details    Extends `SemaphoreBool` with the `set()` method.
+ * @include signal.cpp
+ */
 class Signal: public SemaphoreBool {
 public:
-    //! Constructs a boolean semaphore.
+    //! Constructs a boolean semaphore in non-signalled state.
     Signal(): SemaphoreBool([](auto f){return f;}) {}
     //! Set signalled state.
     void set() { set_value(true); }

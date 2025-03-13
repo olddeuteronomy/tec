@@ -1,3 +1,4 @@
+// Time-stamp: <Last changed 2025-03-14 01:45:53 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +25,7 @@ SOFTWARE.
 
 /**
  *   @file tec_result.hpp
- *   @brief A result of execution.
+ *   @brief A generalized result of execution.
 */
 
 
@@ -89,8 +90,7 @@ inline constexpr const char* kind_as_string(Error::Kind k)  {
 
 /**
  * @class TResult
- * @brief Declares an abstract result of execution.
- * @include{cpp} ex1.cpp
+ * @brief Declares a generalized result of execution.
  */
 template <typename TCode=int, typename TDesc=std::string>
 struct TResult {
@@ -124,6 +124,7 @@ struct TResult {
 
     /**
      * @brief      Constructs a successful TResult (class is Error::Kind::Ok).
+     * @snippet result.cpp OK
      */
     TResult()
         : kind{Error::Kind::Ok}
@@ -131,8 +132,8 @@ struct TResult {
 
     /**
      * @brief      Constructs an error TResult with unspecified error code.
-     *
-     * @param      _kind Error class.
+     * @param      _kind *Error::Kind* class.
+     * @snippet result.cpp Unspecified
      */
     TResult(Error::Kind _kind)
         : kind{_kind}
@@ -141,9 +142,9 @@ struct TResult {
 
     /**
      * @brief      Constructs an unspecified error TResult with description.
-     *
-     * @param      _desc Error description.
-     * @param      _kind Error class (default Error::Kind::Err, a generic error).
+     * @param      _desc *TDesc* Error description.
+     * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
+     * @snippet result.cpp Description
      */
     TResult(const TDesc& _desc, Error::Kind _kind = Error::Kind::Err)
         : kind{_kind}
@@ -153,9 +154,9 @@ struct TResult {
 
     /**
      * @brief      Constructs an error TResult w/o description.
-     *
-     * @param      _code Error code.
-     * @param      _kind Error class (default Error::Kind::Err, a generic error).
+     * @param      _code *TCode* Error code.
+     * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
+     * @snippet result.cpp Errcode
      */
     TResult(const TCode& _code, Error::Kind _kind = Error::Kind::Err)
         : kind{_kind}
@@ -164,10 +165,10 @@ struct TResult {
 
     /**
      * @brief      Constructs an error TResult with description.
-     *
-     * @param      _code Error code.
-     * @param      _desc Error description.
-     * @param      _kind Error class (default Error::Kind::Err, a generic error).
+     * @param      _code *TCode* Error code.
+     * @param      _desc *TDesc* Error description.
+     * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
+     * @snippet result.cpp CD
      */
     TResult(const TCode& _code, const TDesc& _desc, Error::Kind _kind = Error::Kind::Err)
         : kind{_kind}
@@ -175,10 +176,13 @@ struct TResult {
         , desc{_desc}
     {}
 
-};
+}; // ::TResult
 
 
-//! Specialize the default Result{int, std::string}.
+/**
+ * @class Result
+ * @brief Specializes the default tec::TResult<int, std::string>.
+ */
 using Result = TResult<>;
 
 } // ::tec
