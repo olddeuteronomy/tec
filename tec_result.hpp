@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-14 01:45:53 by magnolia>
+// Time-stamp: <Last changed 2025-03-25 00:19:30 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -59,7 +59,7 @@ struct Error {
     };
 
     //! Generic error codes.
-    template <typename TCode=int>
+    template <typename TCode = int>
     struct Code {
         constexpr static const TCode Unspecified{-1}; //!< Unspecified error code.
     };
@@ -92,7 +92,7 @@ inline constexpr const char* kind_as_string(Error::Kind k)  {
  * @class TResult
  * @brief Declares a generalized result of execution.
  */
-template <typename TCode=int, typename TDesc=std::string>
+template <typename TCode, typename TDesc>
 struct TResult {
 
     Error::Kind kind;          //!< Error class.
@@ -180,9 +180,9 @@ struct TResult {
 
 
 /**
- * @class Result
- * @brief Specializes the default tec::TResult<int, std::string>.
+ * @brief Specializes the default TResult<int, std::string>.
  */
-using Result = TResult<>;
+typedef TResult<int, std::string> Result;
+
 
 } // ::tec

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-12 21:44:09 by magnolia>
+// Time-stamp: <Last changed 2025-03-25 00:41:17 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -38,7 +38,7 @@ SOFTWARE.
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Test parameters
+// Test parameters.
 struct TestParams
 {
     tec::Seconds init_delay;
@@ -91,7 +91,7 @@ public:
                     worker.send({{CMD_CALL_PROCESS}, msg.counter + 1});
                 }
                 else {
-                    // Stop message loop.
+                    // Stop message loop and terminate the Worker.
                     worker.send(tec::quit<TestMessage>());
                 }
             });
@@ -123,16 +123,21 @@ tec::Result test_worker() {
         .exit_result =  {2, "on_exit() failed"}, // Set to {2, "on_exit() failed"} to emulate on_exit() error.
 
     };
+
+    // Build the daemon.
     auto daemon{tec::Daemon::Builder<MyWorker>{}(params)};
 
-    // Start the worker and check for initialization error.
+    // Start the daemon and check for an initialization error.
     auto result = daemon->run();
     if( !result ) {
         return result;
     }
 
-    // Wait for worker is finished.
+    // Wait for daemon is finished.
     daemon->sig_terminated().wait();
+
+    // This call to `terminate)()' is not required if we don't want to get
+    // the result of daemon termination.
     return daemon->terminate();
 }
 

@@ -1,3 +1,4 @@
+// Time-stamp: <Last changed 2025-03-24 23:52:27 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,8 +24,8 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   @file tec_daemon.hpp
- *   @brief Declares an asbstract Daemin class.
+ *   @file  tec_daemon.hpp
+ *   @brief Declares an asbstract Daemon class.
  *
 */
 
@@ -50,7 +51,7 @@ namespace tec {
  * runs continuously as a background process and wakes up to handle
  * periodic service requests.
  *
- * tec::Daemon defines the minimum set of methods that should be implemented:
+ * Daemon defines the minimum set of methods that should be implemented:
  * *run* and *terminate* as well as required signals.
  */
 class Daemon {
@@ -59,16 +60,14 @@ public:
     virtual ~Daemon() = default;
 
     /**
-     * @brief      Start the Daemon's thread.
-     * @return     tec::Result
-     * @sa tec::Result
+     * @brief      Starts the Daemon's thread.
+     * @return     Result
      */
     virtual Result run() = 0;
 
     /**
-     * @brief      Terminate the Daemon's thread.
-     * @return     tec::Result
-     * @sa tec::Result
+     * @brief      Terminates the Daemon's thread.
+     * @return     Result
      */
     virtual Result terminate() = 0;
 

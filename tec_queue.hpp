@@ -1,3 +1,4 @@
+// Time-stamp: <Last changed 2025-03-24 17:01:25 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +25,7 @@ SOFTWARE.
 
 /**
  *   @file tec_queue.hpp
- *   @brief Thread safe message queue.
+ *   @brief The generalized thread-safe message queue.
  *
  *  Borrowed from https://stackoverflow.com/questions/15278343/c11-thread-safe-queue
  *  with some extensions (see poll()).
@@ -43,6 +44,7 @@ SOFTWARE.
 namespace tec {
 
 
+//! Implements the generalized thread-safe queue.
 template <class T>
 class SafeQueue {
 private:
@@ -51,24 +53,28 @@ private:
     mutable std::condition_variable c_;
 
 public:
-    //! Construct the empty queue.
+    //! Constructs the empty queue.
     SafeQueue(void)
-        : q_()
-        , m_()
-        , c_()
+        : q_{}
+        , m_{}
+        , c_{}
     {}
 
     ~SafeQueue(void) {}
 
-    //! Add an element to the queue.
+    /**
+     * @brief      Adds an element/message to the queue.
+     * @details    _Moves_ the element to the queue.
+     * @param      t T an element to add.
+     */
     void enqueue(T t) {
         std::lock_guard<std::mutex> lock(m_);
         q_.push(std::move(t));
         c_.notify_one();
     }
 
-    //! Get the front element and remove it from the queue.
-    //! If the queue is empty, wait till an element is avaiable.
+    //! Gets the front element and remove it from the queue.
+    //! If the queue is empty, waits till an element is avaiable.
     T dequeue(void) {
         std::unique_lock<std::mutex> lock(m_);
         while( q_.empty() )
@@ -81,8 +87,18 @@ public:
         return val;
     }
 
-    //! Wait till a message is avaiable.
-    //! Returns false if msg.quit() is set, otherwise true.
+    /**
+     * @brief      Implements message polling.
+     *
+     * @details    Waits till a message is avaiable (the queue is not empty),
+     * removes the message from the queue, and moves the message to
+     * the *msg* argument.
+     *
+     * @param      msg Derived from WorkerMessage.
+     * @note       *msg* should implements the *quit()* method.
+     * @return     bool *false* if *msg.quit()* is *true*.
+     * @sa WorkerMessage
+     */
     bool poll(T& msg) {
         msg = std::move(dequeue());
         return !msg.quit();

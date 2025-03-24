@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-14 01:41:31 by magnolia>
+// Time-stamp: <Last changed 2025-03-25 00:15:11 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -54,7 +54,7 @@ void print(std::ostream* out, const T& arg) {
 }
 
 /**
- * @brief      Prints variadic arguments to the stream.
+ * @brief      Outputs variadic arguments to the stream.
  * @param      out *std::stream* An output stream.
  * @param      fmt *std::string* A format string.
  * @param      value *T* The first argument to output.
@@ -73,33 +73,42 @@ void print(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) 
     }
 }
 
-//! Prints a single argument with newline to the stream.
+//! Outputs a single argument to the stream, ending with a newline.
 template <typename T>
 void println(std::ostream* out, const T& arg) {
     *out << arg << std::endl;
 }
 
-//! Prints variadic arguments with newline to the stream.
+//! Outputs variadic arguments to the stream, ending with a new line.
 template <typename T, typename... Targs>
 void println(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) {
     print<>(out, fmt, value, Args...);
     *out << std::endl;
 }
 
+//! Prints a single argument to the standard output stream
+//! (std::cout).
 template <typename T>
 void print(const T& arg) {
     std::cout << arg;
 }
 
+//! Prints variadic arguments to the standard output stream
+//! (std::cout).
 template <typename T, typename... Targs>
 void print(const char* fmt, const T& value, Targs&&... Args) {
     print<>(&std::cout, fmt, value, Args...);
 }
 
+//! Prints a single argument to the standard output stream
+//! (std::cout), ending with a newline.
 template <typename T>
 void println(const T& arg) {
     println<>(&std::cout, arg);
 }
+
+//! Prints variadic arguments to the standard output stream
+//! (std::cout), ending with a newline.
 template <typename T, typename... Targs>
 void println(const char* fmt, const T& value, Targs&&... Args) {
     println<>(&std::cout, fmt, value, Args...);

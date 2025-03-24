@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-13 03:06:32 by magnolia>
+// Time-stamp: <Last changed 2025-03-25 00:17:29 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -80,6 +80,7 @@ TMessage quit() { TMessage msg; msg.command = WorkerMessage::QUIT; return msg; }
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+//! Declares a Worker traits - a pair of TParams and TMessage types.
 template <
     typename TParams,
     typename TMessage
@@ -128,26 +129,36 @@ public:
     constexpr Params params() const { return params_; }
 
     /**
-     * @brief      Return a result of the Worker's thread execution.
+     * @brief Return a result of the Worker's thread execution.
      *
-     * @details    Set by the Worker's thread as a result of *on_init()* or *on_exit()* callbacks.
+     * @details Set by the Worker's thread as a result of *on_init()*
+     * or *on_exit()* callbacks.
      *
-     * @return     tec::Result
+     * @return tec::Result
      */
     virtual Result result() = 0;
 
     /**
-     * @brief      Send a message to be dispatched by the Worker's thread.
+     * @brief Send a message to be dispatched by the Worker's thread.
      *
-     * @details    Should return *false* if the Worker's thread is not initialized.
+     * @details Should return *false* if the Worker's thread is not
+     * initialized.
      *
-     * @param      TMessage
+     * @param Message A message to send.
      *
-     * @return     bool
+     * @return bool
      */
     virtual bool send(const Message&) = 0;
 
 
+    /**
+     * @brief      function description
+     *
+     * @details    detailed description
+     *
+     * @param cmd
+     * @param handler Callback handler to register.
+     */
     void register_handler(WorkerMessage::Command cmd, Handler handler) {
         // Remove existing handler.
         if( auto slot = slots_.find(cmd); slot != slots_.end() ) {
@@ -168,23 +179,29 @@ protected:
      *  the Worker should stop message processing and quit the Worker's thread
      *  immediately. *on_exit()* callback **will not be called** in this case.
      *
-     *  @return tec::Result
+     *  @note Default implementation does nothing.
+     *  @return Result
      */
     virtual Result on_init() { return {}; }
 
     /**
-     *  @brief Assign a callback to be called on exiting from the Worker's thread.
+     *  @brief The callback to be called on exiting from the Worker's thread.
      *
      *  @note This callback **will not be called**
      *  if *on_init* callback returned Result other than Error::Kind::Ok.
      *
+     *  @note Default implementation does nothing.
      *  @return tec::Result Error::Kind::Ok by default.
-     *  @sa tec::Result
+     *  @sa Result
      */
     virtual Result on_exit() { return {}; }
 
 
-    //! Dispatch a message.
+    /**
+     * @brief      Dispatch a message by calling the corresponding message handler.
+     * @param      msg A message to dispatch.
+     * @sa register_handler()
+     */
     virtual void dispatch(const Message& msg) {
         if( auto slot = slots_.find(msg.command); slot != slots_.end() ) {
             slot->second(std::ref(*this), msg);
@@ -194,7 +211,7 @@ protected:
 private:
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      *
-     *                     Message dispatcher
+     *                     Message handlers
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

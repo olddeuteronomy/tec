@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-13 01:45:09 by magnolia>
+// Time-stamp: <Last changed 2025-03-24 16:02:01 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -247,14 +247,15 @@ public:
 
 
     /**
-     *  @brief  Send a message to the Worker thread.
+     *  @brief  Sends a WorkerMessage (or any structure derived from WorkerMessage)
+     *  to the Worker thread.
      *
      *  If no Worker thread exists,
-     *  the message will not be sent, returning `false`.
+     *  the message will not be sent, returning *false*.
      *
-     *  @note Derived from tec::Worker.
+     *  @note Derived from Worker.
      *
-     *  @param  msg a message to send.
+     *  @param  msg WorkerMessage to send.
      *  @return bool
      */
     bool send(const Message& msg) override {
@@ -278,7 +279,7 @@ public:
      *  to stop the message polling, then waits for
      *  *sig_terminated* signalled to close the Worker thread.
      *
-     *  @note Derived from tec::Daemon.
+     *  @note Derived from Daemon.
      *
      *  @return tec::Result
      */
