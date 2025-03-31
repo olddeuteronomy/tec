@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-25 00:17:29 by magnolia>
+// Time-stamp: <Last changed 2025-03-31 19:04:51 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -51,11 +51,9 @@ namespace tec {
  * @brief      A basic message to manage the Worker.
  *
  * @details    Message implements quit() to indicate that
- * Worker's thread message polling should stop.
+ * Worker thread message polling should stop.
  *
  * @note All user-defined messages should be derived from WorkerMessage.
- *
- * @sa tec::SafeQueue::poll()
  */
 struct WorkerMessage {
     typedef unsigned long Command;
@@ -80,7 +78,7 @@ TMessage quit() { TMessage msg; msg.command = WorkerMessage::QUIT; return msg; }
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Declares a Worker traits - a pair of TParams and TMessage types.
+//! Declares the Worker trait - a pair of TParams and TMessage types.
 template <
     typename TParams,
     typename TMessage
@@ -99,15 +97,15 @@ struct worker_traits {
 /**
  * @brief      An abstract Worker class.
  *
- * @details Extends the Daemon class with the *send()* method that is used to
- * manage the Worker's thread and defines message handlers and default callbacks.
+ * @details Extends the Daemon class with the `send()` method that is used to
+ * manage the Worker's thread.
+ * Defines message handlers and default callbacks `on_init()` and `on_exit()`.
  *
  */
 template <typename Traits>
 class Worker : public Daemon
 {
 public:
-
     typedef Traits traits;
     typedef typename traits::Params Params;
     typedef typename traits::Message Message;
@@ -115,8 +113,16 @@ public:
     //! Message handler.
     typedef void (*Handler)(Worker<Traits>&, const Message&);
 
-public:
+protected:
+    // Worker parameters.
+    Params params_;
 
+private:
+    // Message handlers.
+    std::unordered_map<typename Message::Command, Handler> slots_;
+
+public:
+    //! Constructs the Worker.
     Worker(const Params& params)
         : Daemon{}
         , params_{params}
@@ -125,24 +131,24 @@ public:
 
     virtual ~Worker() = default;
 
-    //! Return Worker parameters.
+    //! Returns Worker parameters.
     constexpr Params params() const { return params_; }
 
     /**
-     * @brief Return a result of the Worker's thread execution.
+     * @brief Returns a result of the Worker execution.
      *
-     * @details Set by the Worker's thread as a result of *on_init()*
-     * or *on_exit()* callbacks.
+     * @details Should be implemented by a derived class as a result
+     * of *on_init()* or *on_exit()* callbacks.
      *
-     * @return tec::Result
+     * @return Result
      */
     virtual Result result() = 0;
 
     /**
-     * @brief Send a message to be dispatched by the Worker's thread.
+     * @brief Sends a message to be dispatched by the Worker.
      *
-     * @details Should return *false* if the Worker's thread is not
-     * initialized.
+     * @details Should return `false` if the Worker is not
+     * initialized properly (`on_init()` returned an error).
      *
      * @param Message A message to send.
      *
@@ -150,16 +156,12 @@ public:
      */
     virtual bool send(const Message&) = 0;
 
-
     /**
-     * @brief      function description
-     *
-     * @details    detailed description
-     *
+     * @brief Registers a message handler.
      * @param cmd
-     * @param handler Callback handler to register.
+     * @param handler A handler to register.
      */
-    void register_handler(WorkerMessage::Command cmd, Handler handler) {
+    void register_handler(typename Message::Command cmd, Handler handler) {
         // Remove existing handler.
         if( auto slot = slots_.find(cmd); slot != slots_.end() ) {
             slots_.erase(cmd);
@@ -168,37 +170,32 @@ public:
     }
 
 protected:
-
-    //! Worker parameters.
-    Params params_;
-
     /**
-     *  @brief The callback to be called on worker initialization.
+     *  @brief A callback to be called on worker initialization.
      *
-     *  @note If *on_init()* returns Result other than Error::Kind::Ok,
-     *  the Worker should stop message processing and quit the Worker's thread
-     *  immediately. *on_exit()* callback **will not be called** in this case.
+     *  @note If `on_init()` returns Result other than `Error::Kind::Ok`,
+     *  the Worker should stop message processing and quit the Worker thread
+     *  immediately. `on_exit()` callback **will not be called** in this case.
      *
-     *  @note Default implementation does nothing.
-     *  @return Result
+     *  @note Default implementation does nothing returning Error::Kind::Ok.
+     *  @return Result `Error::Kind::Ok` by default.
      */
     virtual Result on_init() { return {}; }
 
     /**
-     *  @brief The callback to be called on exiting from the Worker's thread.
+     *  @brief A callback to be called on exiting from the Worker's thread.
      *
-     *  @note This callback **will not be called**
-     *  if *on_init* callback returned Result other than Error::Kind::Ok.
+     *  @note This callback **will not be called** if `on_init()`
+     *  callback returned Result other than `Error::Kind::Ok`.
      *
-     *  @note Default implementation does nothing.
-     *  @return tec::Result Error::Kind::Ok by default.
-     *  @sa Result
+     *  @note Default implementation does nothing returning `Error::Kind::Ok`.
+     *  @return Result `Error::Kind::Ok` by default.
      */
     virtual Result on_exit() { return {}; }
 
 
     /**
-     * @brief      Dispatch a message by calling the corresponding message handler.
+     * @brief      Dispatches a message by calling the corresponding message handler.
      * @param      msg A message to dispatch.
      * @sa register_handler()
      */
@@ -207,15 +204,6 @@ protected:
             slot->second(std::ref(*this), msg);
         }
     }
-
-private:
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     *
-     *                     Message handlers
-     *
-     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-    std::unordered_map<WorkerMessage::Command, Handler> slots_;
 
 public:
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

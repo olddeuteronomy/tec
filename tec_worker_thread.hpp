@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-24 16:02:01 by magnolia>
+// Time-stamp: <Last changed 2025-03-31 19:07:17 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,7 +25,7 @@ SOFTWARE.
 
 /**
  *   @file tec_worker_thread.hpp
- *   @brief Implements a WorkerThread class.
+ *   @brief Implements the WorkerThread class.
  *
  * Manages a Windows-ish thread using message loop.
  *
@@ -48,13 +48,21 @@ namespace tec {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*              Default implementation of the Worker class
+*                         Worker thread
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/**
+ * @brief      function description
+ *
+ * @details    detailed description
+ *
+ * @param      param
+ *
+ * @return     return type
+ */
 template <typename Traits>
 class WorkerThread: public Worker<Traits> {
-
 public:
     using id_t = std::thread::id;
 
@@ -66,11 +74,6 @@ protected:
     using Lock = std::lock_guard<std::mutex>;
 
 private:
-
-    // Worker internal thread.
-    std::thread thread_;
-    id_t thread_id_;
-
     // Signals.
     Signal sig_running_;
     Signal sig_inited_;
@@ -83,28 +86,29 @@ private:
     Result result_;
     std::mutex mtx_result_;
 
-    // run() synch.
+    // run()/terminate() sync.
     bool flag_running_;
-    std::mutex mtx_running_;
-
-    // terminate() synch.
     bool flag_terminated_;
-    std::mutex mtx_terminated_;
+    std::mutex mtx_thread_proc_;
+
+    // Internal Worker thread.
+    std::thread thread_;
+    id_t thread_id_;
 
 public:
 
     /**
-     *  @brief Create the Worker thread in the suspended state.
+     *  @brief Creates the Worker thread in the suspended state.
      *
      *  Use `run()` to start the Worker thread.
      *
-     *  @sa tec::Worker::run()
+     *  @sa Worker::run()
      */
     WorkerThread(const Params& params)
         : Worker<traits>(params)
-        , thread_{details<traits>::thread_proc, std::ref(*this)}
         , flag_running_{false}
         , flag_terminated_{false}
+        , thread_{details<traits>::thread_proc, std::ref(*this)}
     {}
 
     WorkerThread(const WorkerThread&) = delete;
@@ -119,7 +123,7 @@ public:
     //! Worker thread ID.
     id_t id() const { return thread_id_; }
 
-    //! Result of execution.
+    //! Gets result of execution.
     Result result() override final {
         Lock lk(mtx_result_);
         return result_;
@@ -135,15 +139,13 @@ public:
     const Signal& sig_terminated() const override final { return sig_terminated_; }
 
 private:
+    // Internal.
     void set_result(Result result) {
         Lock lk(mtx_result_);
         result_ = result;
     }
 
-    void send_private(const Message& msg) {
-        mq_.enqueue(msg);
-    }
-
+    // Sets the signal on exiting from `thread_proc'.
     struct OnExit {
         Signal& sig_;
 
@@ -155,15 +157,15 @@ private:
     // WE HIDE THREAD PROCEDURE INSIDE A STRUCT TO INSTANTIATE
     // DIFFERENT STATIC PROCEDURES OWNED BY DIFFERENT WORKERS.
     //-----------------------------------------------------------------
-    template <typename>
+    template <typename traits>
     struct details {
         static void thread_proc(WorkerThread<traits>& wt) {
             TEC_ENTER("WorkerThread::thread_proc");
 
             // `sig_terminated' will signal on exit.
-            OnExit on_terminating(wt.sig_terminated_);
+            OnExit on_terminating{wt.sig_terminated_};
 
-            // We obtain thread_id and then we are waiting for sig_begin
+            // We obtain thread_id and then we are waiting for `sig_begin'
             // to resume the thread, see run().
             wt.thread_id_ = std::this_thread::get_id();
             TEC_TRACE("thread {} created.", wt.id());
@@ -175,26 +177,29 @@ private:
             auto init_result = wt.on_init();
             TEC_TRACE("on_init() returned {}.", init_result);
             wt.set_result(init_result);
-            if( !init_result) {
-                // If error, send QUIT immediately.
-                wt.send_private(quit<Message>());
-            }
 
             // Signals the Worker is inited, no matter if initialization failed.
             wt.sig_inited_.set();
             TEC_TRACE("`sig_inited' signalled.");
 
-            // Start message polling.
-            TEC_TRACE("entering message loop.");
-            Message msg;
-            while( wt.mq_.poll(msg) ) {
-                TEC_TRACE("received Message [cmd={}].", msg.command);
-                // Process a user-defined message.
-                wt.dispatch(msg);
+            if( wt.result() ) {
+                // Start message polling if inited successfully.
+                TEC_TRACE("entering message loop.");
+                bool stop = false;
+                do {
+                    auto msg = wt.mq_.dequeue();
+                    TEC_TRACE("received Message [cmd={}].", msg.command);
+                    if( !msg.quit() ) {
+                        wt.dispatch(msg);
+                    }
+                    else {
+                        stop = true;
+                    }
+                } while( !stop );
+                TEC_TRACE("leaving message loop.");
             }
-            TEC_TRACE("leaving message loop.");
 
-            // Finalize the Worker if it has been inited successfully.
+            // Finalize the Worker only if it has been inited successfully.
             if( wt.result() ) {
                 TEC_TRACE("on_exit() called ...");
                 auto exit_result = wt.on_exit();
@@ -209,16 +214,41 @@ private:
 public:
 
     /**
-     *  @brief Start the Worker thread message polling.
+     *  @brief  Sends a WorkerMessage (or any class derived from WorkerMessage)
+     *  to the Worker thread.
      *
-     *  Resumes the Worker thread by setting the *sig_running* signal,
-     *  then waits for on_init() callback completed.
+     *  If no Worker thread exists,
+     *  the message will not be sent, returning `false`.
+     *
+     *  @note Derived from Worker.
+     *
+     *  @param  msg WorkerMessage to send.
+     *  @return bool
+     */
+    bool send(const Message& msg) override {
+        TEC_ENTER("WorkerThread::send");
+        if( result() && thread_.joinable() ) {
+            mq_.enqueue(msg);
+            TEC_TRACE("Message [cmd={}] sent.", msg.command);
+            return true;
+        }
+        else {
+            // No working thread.
+            return false;
+        }
+    }
+
+    /**
+     *  @brief Starts the Worker thread message polling.
+     *
+     *  Resumes the Worker thread by setting the `sig_running` signal,
+     *  then waits for `on_init()` callback completed.
      *
      *  @note Derived from tec::Daemon.
      *  @return tec::Result
      */
     Result run() override {
-        Lock lk{mtx_running_};
+        Lock lk{mtx_thread_proc_};
         TEC_ENTER("WorkerThread::run");
 
         if( !thread_.joinable() ) {
@@ -245,46 +275,19 @@ public:
         return result();
     }
 
-
     /**
-     *  @brief  Sends a WorkerMessage (or any structure derived from WorkerMessage)
-     *  to the Worker thread.
-     *
-     *  If no Worker thread exists,
-     *  the message will not be sent, returning *false*.
-     *
-     *  @note Derived from Worker.
-     *
-     *  @param  msg WorkerMessage to send.
-     *  @return bool
-     */
-    bool send(const Message& msg) override {
-        TEC_ENTER("WorkerThread::send");
-        if( thread_.joinable() ) {
-            mq_.enqueue(msg);
-            TEC_TRACE("Message [cmd={}] sent.", msg.command);
-            return true;
-        }
-        else {
-            // No working thread.
-            return false;
-        }
-    }
-
-
-    /**
-     *  @brief Terminate the Worker thread.
+     *  @brief Terminates the Worker thread.
      *
      *  Sends Message::QUIT message to the message queue
-     *  to stop the message polling, then waits for
-     *  *sig_terminated* signalled to close the Worker thread.
+     *  to stop the message polling if inited successfully, then waits for
+     *  `sig_terminated` signalled to terminate the Worker thread.
      *
      *  @note Derived from Daemon.
      *
      *  @return tec::Result
      */
     Result terminate() override {
-        Lock lk{mtx_terminated_};
+        Lock lk{mtx_thread_proc_};
         TEC_ENTER("WorkerThread::terminate");
 
         if( flag_terminated_ ) {
@@ -297,9 +300,11 @@ public:
             return result();
         }
 
-        // Send Message::QUIT.
-        send(quit<Message>());
-        TEC_TRACE("QUIT sent.");
+        // Send Message::QUIT if normal exiting.
+        if( result() ) {
+            send(quit<Message>());
+            TEC_TRACE("QUIT sent.");
+        }
 
         // Waits for the thread to finish its execution
         TEC_TRACE("waiting for thread {} to finish ...", id());

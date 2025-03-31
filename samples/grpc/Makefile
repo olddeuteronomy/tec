@@ -15,7 +15,7 @@
 #
 
 #
-# Portions Copyright (c) 2022-2024 The Emacs Cat
+# Portions Copyright (c) 2022-2025 The Emacs Cat
 #
 
 ###############################################################################

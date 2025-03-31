@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-25 00:41:17 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 01:43:52 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -56,7 +56,7 @@ struct TestMessage: public tec::WorkerMessage {
 // Test command.
 constexpr static const tec::WorkerMessage::Command CMD_CALL_PROCESS = 1;
 
-// Instantiate TestWorker
+// Instantiate TestWorker.
 using TestWorkerTraits = tec::worker_traits<
     TestParams,
     TestMessage
@@ -72,9 +72,6 @@ using TestWorker = tec::WorkerThread<TestWorkerTraits>;
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 class MyWorker: public TestWorker {
-private:
-    int counter{1};
-
 public:
     MyWorker(const TestParams& params)
         : TestWorker{params}
@@ -99,10 +96,11 @@ public:
 
 protected:
     tec::Result on_init() override {
+        // Emulates some extra processing.
         std::this_thread::sleep_for(params().init_delay);
         if( params().init_result ) {
-            // Initiate processing.
-            send({{CMD_CALL_PROCESS}, counter});
+            // Initiate processing, starting with 1.
+            send({{CMD_CALL_PROCESS}, 1});
         }
         return params().init_result;
     }
@@ -136,7 +134,7 @@ tec::Result test_worker() {
     // Wait for daemon is finished.
     daemon->sig_terminated().wait();
 
-    // This call to `terminate)()' is not required if we don't want to get
+    // This call to `terminate)()` is not required if we don't want to get
     // the result of daemon termination.
     return daemon->terminate();
 }

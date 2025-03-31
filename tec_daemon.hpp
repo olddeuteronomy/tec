@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-24 23:52:27 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 01:30:45 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -51,8 +51,8 @@ namespace tec {
  * runs continuously as a background process and wakes up to handle
  * periodic service requests.
  *
- * Daemon defines the minimum set of methods that should be implemented:
- * *run* and *terminate* as well as required signals.
+ * Daemon defines the minimum set of methods that should be implemented,
+ * such as `run()`,  `terminate()`,  as well as required signals.
  */
 class Daemon {
 public:
@@ -81,6 +81,14 @@ public:
     virtual const Signal& sig_terminated() const = 0;
 
 public:
+    /**
+     * @brief      Creates the Daemon using a derived class.
+     * @details Used to hide the detailed implementation of
+     * a Daemon-derived class.
+     *
+     * @param      params Derived::Params
+     * @return     std::unique_ptr<Daemon>
+     */
     template <typename Derived>
     struct Builder {
         std::unique_ptr<Daemon> operator()(typename Derived::Params& params) {

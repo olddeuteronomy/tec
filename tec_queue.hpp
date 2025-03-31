@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-24 17:01:25 by magnolia>
+// Time-stamp: <Last changed 2025-03-31 15:36:04 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,12 +24,10 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   @file tec_queue.hpp
+ *   @file  tec_queue.hpp
  *   @brief The generalized thread-safe message queue.
  *
  *  Borrowed from https://stackoverflow.com/questions/15278343/c11-thread-safe-queue
- *  with some extensions (see poll()).
- *
 */
 
 #pragma once
@@ -63,7 +61,7 @@ public:
     ~SafeQueue(void) {}
 
     /**
-     * @brief      Adds an element/message to the queue.
+     * @brief      Adds an element to the queue.
      * @details    _Moves_ the element to the queue.
      * @param      t T an element to add.
      */
@@ -73,8 +71,11 @@ public:
         c_.notify_one();
     }
 
-    //! Gets the front element and remove it from the queue.
-    //! If the queue is empty, waits till an element is avaiable.
+    /**
+     * @brief      Returns the front element and removes it from the queue.
+     * @details    If the queue is empty, waits till an element is avaiable.
+     * @return     T
+     */
     T dequeue(void) {
         std::unique_lock<std::mutex> lock(m_);
         while( q_.empty() )
@@ -87,24 +88,7 @@ public:
         return val;
     }
 
-    /**
-     * @brief      Implements message polling.
-     *
-     * @details    Waits till a message is avaiable (the queue is not empty),
-     * removes the message from the queue, and moves the message to
-     * the *msg* argument.
-     *
-     * @param      msg Derived from WorkerMessage.
-     * @note       *msg* should implements the *quit()* method.
-     * @return     bool *false* if *msg.quit()* is *true*.
-     * @sa WorkerMessage
-     */
-    bool poll(T& msg) {
-        msg = std::move(dequeue());
-        return !msg.quit();
-    }
-
-};
+}; // ::SafeQueue
 
 
 } // ::tec

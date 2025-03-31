@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-14 01:36:09 by magnolia>
+// Time-stamp: <Last changed 2025-03-31 14:22:35 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -69,7 +69,7 @@ public:
         , pred_(std::function(std::move(pred)))
     {}
 
-    //! Assign a new value to the semaphore and notify all other threads.
+    //! Assigns a new value to the semaphore and notify all other threads.
     void set_value(const Value& new_value) {
         {
             Lock lock(m_);
@@ -78,7 +78,7 @@ public:
         cv_.notify_all();
     }
 
-    //! Reset the semaphore to the inital state and notify all other threads.
+    //! Resets the semaphore to the inital state and notify all other threads.
     void reset() {
         {
             Lock lock(m_);
@@ -87,14 +87,14 @@ public:
         cv_.notify_all();
     }
 
-    //! Wait for the predicate returns `true`, unconditionally.
+    //! Waits for the predicate returns `true`, unconditionally.
     void wait() const {
         ULock ulock(m_);
         cv_.wait(ulock, [this]{ return pred_(value_);});
     }
 
     /**
-     * @brief      Wait for the predicate returns `true` for the specified amount of time.
+     * @brief      Waits for the predicate returns `true` for the specified amount of time.
      * @param      dur *Duration* Amount of time to wait for the signal is set.
      * @return     bool `false` if timeout otherwise `true`.
      * @sa wait()
@@ -123,7 +123,7 @@ public:
     //! Constructs a boolean semaphore in non-signalled state.
     Signal(): SemaphoreBool([](auto f){return f;}) {}
     //! Set signalled state.
-    void set() { set_value(true); }
+    inline void set() { set_value(true); }
 };
 
 
