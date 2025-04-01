@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-14 16:33:47 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 13:45:30 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,7 +32,7 @@ SOFTWARE.
 #pragma once
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_result.hpp"
+#include "tec/tec_status.hpp"
 #include "tec/tec_utils.hpp"
 #include "tec/tec_semaphore.hpp"
 
@@ -48,7 +48,7 @@ namespace tec {
 
 struct ServerParams {
     ///{@ Default timeouts.
-    static constexpr const MilliSec kStartTimeout{Seconds{2}};
+    static constexpr const MilliSec kStartTimeout{Seconds{5}};
     static constexpr const MilliSec kShutdownTimeout{Seconds{10}};
     //}@
 
@@ -56,8 +56,8 @@ struct ServerParams {
     MilliSec shutdown_timeout; //!< Shutdown timeout in milliseconds.
 
     ServerParams()
-        : start_timeout(kStartTimeout)
-        , shutdown_timeout(kShutdownTimeout)
+        : start_timeout{kStartTimeout}
+        , shutdown_timeout{kShutdownTimeout}
     {}
 };
 
@@ -90,7 +90,7 @@ public:
 
     constexpr Params params() const { return params_; }
 
-    virtual void start(Signal&, Result&) = 0;
+    virtual void start(Signal&, Status&) = 0;
     virtual void shutdown(Signal&) = 0;
 
 }; // ::Server

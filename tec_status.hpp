@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-25 00:19:30 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 13:49:04 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,8 +24,8 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   @file tec_result.hpp
- *   @brief A generalized result of execution.
+ *   @file tec_status.hpp
+ *   @brief A generalized status of execution.
 */
 
 
@@ -52,7 +52,7 @@ struct Error {
         , IOErr      //!< IO failure
         , RuntimeErr //!< Runtime error
         , NetErr     //!< Network error
-        , GrpcErr    //!< gRPC error
+        , RpcErr     //!< RPC error
         , TimeoutErr //!< Timeout error
         , Invalid    //!< Invalid data or state
         , System     //!< System error
@@ -73,7 +73,7 @@ inline constexpr const char* kind_as_string(Error::Kind k)  {
     case Error::Kind::IOErr: { return "IO"; }
     case Error::Kind::RuntimeErr: { return "Runtime"; }
     case Error::Kind::NetErr: { return "Network"; }
-    case Error::Kind::GrpcErr: { return "gRpc"; }
+    case Error::Kind::RpcErr: { return "Rpc"; }
     case Error::Kind::TimeoutErr: { return "Timeout"; }
     case Error::Kind::Invalid: { return "Invalid"; }
     case Error::Kind::System: { return "System"; }
@@ -84,16 +84,16 @@ inline constexpr const char* kind_as_string(Error::Kind k)  {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                       TResult of execution
+*                       Status of execution
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /**
- * @class TResult
- * @brief Declares a generalized result of execution.
+ * @class TStatus
+ * @brief Declares a generalized status of execution.
  */
 template <typename TCode, typename TDesc>
-struct TResult {
+struct TStatus {
 
     Error::Kind kind;          //!< Error class.
     std::optional<TCode> code; //!< Error code (optional).
@@ -104,18 +104,18 @@ struct TResult {
     //! Operator: Is everything OK?
     constexpr operator bool() const { return ok(); }
 
-    //! Output Result to a stream.
-    friend std::ostream& operator << (std::ostream& out, const TResult& result) {
-        out << "[" << kind_as_string(result.kind) << "]";
-        if( !result.ok() ) {
+    //! Output Status to a stream.
+    friend std::ostream& operator << (std::ostream& out, const TStatus& status) {
+        out << "[" << kind_as_string(status.kind) << "]";
+        if( !status.ok() ) {
             out
-            << " Code=" << result.code.value_or(Error::Code<TCode>::Unspecified)
-            << " Desc=\"" << (result.desc.has_value() ? result.desc.value() : "") << "\"";
+            << " Code=" << status.code.value_or(Error::Code<TCode>::Unspecified)
+            << " Desc=\"" << (status.desc.has_value() ? status.desc.value() : "") << "\"";
         }
         return out;
     }
 
-    //! Return Result as a string.
+    //! Return Status as a string.
     std::string as_string() {
         std::ostringstream buf;
         buf << *this;
@@ -123,66 +123,66 @@ struct TResult {
     }
 
     /**
-     * @brief      Constructs a successful TResult (class is Error::Kind::Ok).
-     * @snippet result.cpp OK
+     * @brief      Constructs a successful TStatus (class is Error::Kind::Ok).
+     * @snippet status.cpp OK
      */
-    TResult()
+    TStatus()
         : kind{Error::Kind::Ok}
     {}
 
     /**
-     * @brief      Constructs an error TResult with unspecified error code.
+     * @brief      Constructs an error TStatus with unspecified error code.
      * @param      _kind *Error::Kind* class.
-     * @snippet result.cpp Unspecified
+     * @snippet status.cpp Unspecified
      */
-    TResult(Error::Kind _kind)
+    TStatus(Error::Kind _kind)
         : kind{_kind}
         , code{Error::Code<TCode>::Unspecified}
     {}
 
     /**
-     * @brief      Constructs an unspecified error TResult with description.
+     * @brief      Constructs an unspecified error TStatus with description.
      * @param      _desc *TDesc* Error description.
      * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
-     * @snippet result.cpp Description
+     * @snippet status.cpp Description
      */
-    TResult(const TDesc& _desc, Error::Kind _kind = Error::Kind::Err)
+    TStatus(const TDesc& _desc, Error::Kind _kind = Error::Kind::Err)
         : kind{_kind}
         , code{Error::Code<TCode>::Unspecified}
         , desc{_desc}
     {}
 
     /**
-     * @brief      Constructs an error TResult w/o description.
+     * @brief      Constructs an error TStatus w/o description.
      * @param      _code *TCode* Error code.
      * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
-     * @snippet result.cpp Errcode
+     * @snippet status.cpp Errcode
      */
-    TResult(const TCode& _code, Error::Kind _kind = Error::Kind::Err)
+    TStatus(const TCode& _code, Error::Kind _kind = Error::Kind::Err)
         : kind{_kind}
         , code{_code}
     {}
 
     /**
-     * @brief      Constructs an error TResult with description.
+     * @brief      Constructs an error TStatus with description.
      * @param      _code *TCode* Error code.
      * @param      _desc *TDesc* Error description.
      * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
-     * @snippet result.cpp CD
+     * @snippet status.cpp CD
      */
-    TResult(const TCode& _code, const TDesc& _desc, Error::Kind _kind = Error::Kind::Err)
+    TStatus(const TCode& _code, const TDesc& _desc, Error::Kind _kind = Error::Kind::Err)
         : kind{_kind}
         , code{_code}
         , desc{_desc}
     {}
 
-}; // ::TResult
+}; // ::TStatus
 
 
 /**
- * @brief Specializes the default TResult<int, std::string>.
+ * @brief Specializes the default TStatus<int, std::string>.
  */
-typedef TResult<int, std::string> Result;
+typedef TStatus<int, std::string> Status;
 
 
 } // ::tec

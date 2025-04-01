@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-19 15:04:33 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 13:50:11 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,7 +34,7 @@ SOFTWARE.
 #pragma once
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_result.hpp"
+#include "tec/tec_status.hpp"
 #include "tec/tec_trace.hpp"
 #include "tec/tec_utils.hpp"
 #include "tec/tec_client.hpp"
@@ -104,7 +104,7 @@ protected:
 
 protected:
 
-    //! Set grpc::ChannelArgiments before creating a channel. Can be overwritten.
+    //! Sets grpc::ChannelArgiments before creating a channel. Can be overwritten.
     virtual void set_channel_arguments() {
         TEC_ENTER("GrpcClient::set_channel_arguments");
 
@@ -152,9 +152,9 @@ public:
      *  3) Connects to the server using *addr_uri* and *connect_timeout*
      *  provided in *params*.
      *
-     *  @return tec::Result
+     *  @return Status
      */
-    Result connect() override {
+    Status connect() override {
         TEC_ENTER("GrpcClient::connect");
 
         // Set channel arguments.
@@ -173,7 +173,7 @@ public:
                     "It took too long (> {} ms) to reach out the server on \"{}\"",
                     MilliSec{params_.connect_timeout}.count(), params_.addr_uri)};
             TEC_TRACE("!!! Error: {}.", msg);
-            return {msg, Error::Kind::GrpcErr};
+            return {msg, Error::Kind::RpcErr};
         }
 
         // Create a stub.

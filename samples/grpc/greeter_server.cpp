@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-07 17:53:43 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 15:15:30 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -45,7 +45,7 @@ SOFTWARE.
 
 #include "tec/tec_def.hpp"
 #include "tec/tec_print.hpp"
-#include "tec/tec_result.hpp"
+#include "tec/tec_status.hpp"
 #include "tec/tec_semaphore.hpp"
 #include "tec/tec_worker.hpp"
 #include "tec/tec_server_worker.hpp"
@@ -126,7 +126,7 @@ using MyServerWorker = tec::ServerWorker<MyWorkerTraits, MyServer>;
 tec::Signal sig_quit;
 
 
-tec::Result test() {
+tec::Status test() {
     // The gRPC daemon.
     MyServerParams params;
 
@@ -138,14 +138,14 @@ tec::Result test() {
     // params.start_timeout = tec::MilliSec{1};
     // params.addr_uri = "";
     // [/TEST]
-    auto daemon{MyServerWorker::DaemonBuilder<MyServerWorker, MyServer>{}(params)};
+    auto daemon = MyServerWorker::DaemonBuilder<MyServerWorker, MyServer>{}(params);
 
     // Run the daemon
     tec::println("Starting ...");
-    auto result = daemon->run();
-    if( !result ) {
-        tec::println("Abnormal exited with {}.", result);
-        return result;
+    auto status = daemon->run();
+    if( !status ) {
+        tec::println("Abnormal exited with {}.", status);
+        return status;
     }
     tec::println("Server listening on \"{}\"", params.addr_uri);
 
@@ -154,8 +154,8 @@ tec::Result test() {
     sig_quit.wait();
 
     // Terminate the server.
-    result = daemon->terminate();
-    return result;
+    status = daemon->terminate();
+    return status;
 }
 
 
@@ -168,8 +168,8 @@ int main() {
                  __DATE__, __TIME__,
                  __TEC_COMPILER_NAME__,
                  __TEC_COMPILER_VER_MAJOR__, __TEC_COMPILER_VER_MINOR__);
-    auto result = test();
+    auto status = test();
 
-    tec::println("\nExited with {}", result);
-    return result.code.value_or(tec::Error::Code<>::Unspecified);
+    tec::println("\nExited with {}", status);
+    return status.code.value_or(tec::Error::Code<>::Unspecified);
 }

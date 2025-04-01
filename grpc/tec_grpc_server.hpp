@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-15 00:19:55 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 13:47:57 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -168,17 +168,17 @@ public:
      *  @brief Start the RPC server.
      *
      *  Registers the service, builds and runs the server.
-     *  This procedure doesn't quit until Server::shutdown() is called
+     *  This procedure doesn't quit until `Server::shutdown()` is called
      *  from *another* thread.
      *
      *  Worker provides a suitable mechanism to manage
      *  Server as a daemon (or as MS Windows service).
      *
      *  @param sig_started Signal Signals GrpcSever is started, possible with error.
-     *  @param result tec::Result
-     *  @sa tec::Server
+     *  @param result Status
+     *  @sa Server
      */
-    void start(Signal& sig_started, Result& result) override {
+    void start(Signal& sig_started, Status& status) override {
         TEC_ENTER("GrpcServer::start");
 
         // Build the server and the service.
@@ -205,7 +205,7 @@ public:
         if( !server_ ) {
             auto errmsg = format("gRPC Server cannot start on \"{}\"", params_.addr_uri);
             TEC_TRACE("!!! Error: {}.", errmsg);
-            result = {errmsg, Error::Kind::GrpcErr};
+            status = {errmsg, Error::Kind::RpcErr};
             // Signal that the server started, set error result.
             sig_started.set();
             return;

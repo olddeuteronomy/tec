@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-14 16:37:47 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 14:26:16 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -31,10 +31,11 @@ SOFTWARE.
 
 #pragma once
 
+#include <memory>
+
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_worker_thread.hpp"
 #include "tec/tec_server.hpp"
-#include <memory>
 
 
 namespace tec {
@@ -55,8 +56,8 @@ private:
 
     Signal sig_started_;
     Signal sig_stopped_;
-    Result result_started_;
-    Result result_stopped_;
+    Status status_started_;
+    Status status_stopped_;
 
 public:
 
@@ -65,10 +66,10 @@ public:
         : WorkerThread<Traits>{params}
         // Now ServerWorker owns the server!
         , server_{std::move(server)}
-        // Start the paused server thread. Resume it by sig_run_server_thread_.set().
+        // Starts the paused server thread. Resume it by sig_run_server_thread_.set().
         , server_thread_{new std::thread([&]{
             sig_run_server_thread_.wait();
-            server_->start(sig_started_, result_started_);
+            server_->start(sig_started_, status_started_);
         })}
     {
     }
@@ -81,7 +82,7 @@ public:
 
 protected:
 
-    Result on_init() override {
+    Status on_init() override {
         TEC_ENTER("ServerWorker::on_init");
 
         // Resume the server thread.
@@ -94,17 +95,17 @@ protected:
             server_thread_->detach();
             return {"Server start timeout", Error::Kind::TimeoutErr};
         }
-        if( !result_started_ ) {
+        if( !status_started_ ) {
             // Something wrong happened, release the server thread.
             server_thread_->join();
-            return result_started_;
+            return status_started_;
         }
 
         // Everything is OK.
         return {};
     }
 
-    Result on_exit() override {
+    Status on_exit() override {
         TEC_ENTER("ServerWorker::on_exit");
 
         if( !server_thread_->joinable() ) {
@@ -123,14 +124,14 @@ protected:
             server_thread_->detach();
             // Report timeout.
             TEC_TRACE("!!! Error: Server shutdown timeout.");
-            result_stopped_ = {"Server shutdown timeout", Error::Kind::TimeoutErr};
+            status_stopped_ = {"Server shutdown timeout", Error::Kind::TimeoutErr};
         }
         else {
             server_thread_->join();
         }
 
         shutdown_thread.join();
-        return result_stopped_;
+        return status_stopped_;
     }
 
 public:

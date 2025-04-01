@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 01:43:52 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 14:35:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +24,7 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_result.hpp"
+#include "tec/tec_status.hpp"
 #include "tec/tec_trace.hpp"
 #include "tec/tec_utils.hpp"
 #include "tec/tec_worker.hpp"
@@ -42,10 +42,10 @@ SOFTWARE.
 struct TestParams
 {
     tec::Seconds init_delay;
-    tec::Result init_result; // To emulate on_init() failure
+    tec::Status init_result; // To emulate on_init() failure
     tec::Seconds process_delay;
     tec::Seconds exit_delay;
-    tec::Result exit_result; // To emulate on_exit() failure
+    tec::Status exit_result; // To emulate on_exit() failure
 };
 
 // Instantiate Test Worker class using default tec::Message.
@@ -95,7 +95,7 @@ public:
     }
 
 protected:
-    tec::Result on_init() override {
+    tec::Status on_init() override {
         // Emulates some extra processing.
         std::this_thread::sleep_for(params().init_delay);
         if( params().init_result ) {
@@ -105,13 +105,13 @@ protected:
         return params().init_result;
     }
 
-    tec::Result on_exit() override {
+    tec::Status on_exit() override {
         return params().exit_result;
     }
 };
 
 
-tec::Result test_worker() {
+tec::Status test_worker() {
     // Emulate delays and errors.
     TestParams params{
         .init_delay = tec::Seconds{2},
@@ -135,7 +135,7 @@ tec::Result test_worker() {
     daemon->sig_terminated().wait();
 
     // This call to `terminate)()` is not required if we don't want to get
-    // the result of daemon termination.
+    // the status of daemon termination.
     return daemon->terminate();
 }
 
@@ -149,11 +149,11 @@ tec::Result test_worker() {
 int main() {
     tec::println("*** Running {} built at {}, {} with {} ***", __FILE__, __DATE__, __TIME__, __TEC_COMPILER_NAME__);
 
-    auto result = test_worker();
+    auto status = test_worker();
 
-    tec::println("\nExited with {}", result);
+    tec::println("\nExited with {}", status);
     tec::print("Press <Enter> to quit ...");
     std::getchar();
 
-    return result.code.value_or(tec::Error::Code<>::Unspecified);
+    return status.code.value_or(tec::Error::Code<>::Unspecified);
 }

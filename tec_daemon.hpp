@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 01:30:45 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 14:12:16 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,7 +32,7 @@ SOFTWARE.
 #pragma once
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_result.hpp"
+#include "tec/tec_status.hpp"
 #include "tec/tec_semaphore.hpp"
 
 
@@ -51,8 +51,9 @@ namespace tec {
  * runs continuously as a background process and wakes up to handle
  * periodic service requests.
  *
- * Daemon defines the minimum set of methods that should be implemented,
- * such as `run()`,  `terminate()`,  as well as required signals.
+ * The abstract Daemon defines the minimum set of methods that should
+ * be implemented, such as `run()`, `terminate()`, as well as required
+ * signals.
  */
 class Daemon {
 public:
@@ -61,15 +62,15 @@ public:
 
     /**
      * @brief      Starts the Daemon's thread.
-     * @return     Result
+     * @return     Status
      */
-    virtual Result run() = 0;
+    virtual Status run() = 0;
 
     /**
      * @brief      Terminates the Daemon's thread.
-     * @return     Result
+     * @return     Status
      */
-    virtual Result terminate() = 0;
+    virtual Status terminate() = 0;
 
     //! Signals when the Daemon is started.
     virtual const Signal& sig_running() const = 0;

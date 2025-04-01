@@ -1,9 +1,9 @@
 #include "tec/tec_print.hpp"
-#include "tec/tec_result.hpp"
+#include "tec/tec_status.hpp"
 #include <string>
 
 //! [OK]
-tec::Result do_something1() {
+tec::Status do_something1() {
     // ...
     // Everything is OK.
     return {};
@@ -11,7 +11,7 @@ tec::Result do_something1() {
 //! [OK]
 
 //! [Unspecified]
-tec::Result do_something2() {
+tec::Status do_something2() {
     // ...
     // IO error with unspecified error code [-1].
     return {tec::Error::Kind::IOErr};
@@ -19,7 +19,7 @@ tec::Result do_something2() {
 //! [Unspecified]
 
 //! [Description]
-tec::Result do_something3() {
+tec::Status do_something3() {
     // ...
     // IO error with description and unspecified error code [-1].
     return {"Cannot open a file", tec::Error::Kind::IOErr};
@@ -27,7 +27,7 @@ tec::Result do_something3() {
 //! [Description]
 
 //! [Errcode]
-tec::Result do_something4() {
+tec::Status do_something4() {
     // ...
     // Generic error with error code 200.
     return {200};
@@ -35,7 +35,7 @@ tec::Result do_something4() {
 //! [Errcode]
 
 //! [CD]
-tec::Result do_something5() {
+tec::Status do_something5() {
     std::string addr{"127.0.0.1"};
     // ...
     // Network error with code and description.

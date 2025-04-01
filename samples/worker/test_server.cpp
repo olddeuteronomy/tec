@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-14 16:54:55 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 14:41:27 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
-#include "tec/tec_result.hpp"
+#include "tec/tec_status.hpp"
 #include "tec/tec_semaphore.hpp"
 #include "tec/tec_worker.hpp"
 #include "tec/tec_server.hpp"
@@ -59,10 +59,10 @@ public:
         : tec::Server<TestParams>{params}
     {}
 
-    void start(tec::Signal& sig_started, tec::Result& result) override {
+    void start(tec::Signal& sig_started, tec::Status& status) override {
         // Emulate error:
-        // result = {"cannot start the server"};
-        tec::println("Server started with {} ...", result);
+        // status = {"cannot start the server"};
+        tec::println("Server started with {} ...", status);
         sig_started.set();
     }
 
@@ -88,25 +88,23 @@ using TestServerWorker = tec::ServerWorker<TestServerTraits, TestServer>;
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-tec::Result test_server() {
+tec::Status test_server() {
     TestParams params;
 
-    // Build the daemon.
-    // auto daemon{TestServerWorker::DaemonBuilder<TestServerWorker, TestServer>{}(params)};
     // Build the worker.
     auto daemon{TestServerWorker::Builder<TestServerWorker, TestServer>{}(params)};
 
     // Run it and check for initialization result.
-    auto result = daemon->run();
-    if( !result ) {
-        tec::println("run(): {}", result);
-        return result;
+    auto status = daemon->run();
+    if( !status ) {
+        tec::println("run(): {}", status);
+        return status;
     }
 
     std::cout << "Press <Return> to shutdown the server" << std::endl;
     std::getchar();
 
-    // If we want to get the server shutdown result.
+    // If we want to get the server shutdown status.
     // return daemon->terminate();
     return {};
 }

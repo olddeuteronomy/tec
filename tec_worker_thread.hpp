@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-31 19:07:17 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 14:42:44 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -82,9 +82,9 @@ private:
     // Message queue.
     SafeQueue<Message> mq_;
 
-    // Result of execution.
-    Result result_;
-    std::mutex mtx_result_;
+    // Status of execution.
+    Status status_;
+    std::mutex mtx_status_;
 
     // run()/terminate() sync.
     bool flag_running_;
@@ -124,9 +124,9 @@ public:
     id_t id() const { return thread_id_; }
 
     //! Gets result of execution.
-    Result result() override final {
-        Lock lk(mtx_result_);
-        return result_;
+    Status status() override final {
+        Lock lk(mtx_status_);
+        return status_;
     }
 
     //! Signals that Worker thread has started.
@@ -140,9 +140,9 @@ public:
 
 private:
     // Internal.
-    void set_result(Result result) {
-        Lock lk(mtx_result_);
-        result_ = result;
+    void set_status(Status status) {
+        Lock lk(mtx_status_);
+        status_ = status;
     }
 
     // Sets the signal on exiting from `thread_proc'.
@@ -174,15 +174,15 @@ private:
 
             // Initialize the Worker and set the result.
             TEC_TRACE("on_init() called ...");
-            auto init_result = wt.on_init();
-            TEC_TRACE("on_init() returned {}.", init_result);
-            wt.set_result(init_result);
+            auto init_status = wt.on_init();
+            TEC_TRACE("on_init() returned {}.", init_status);
+            wt.set_status(init_status);
 
             // Signals the Worker is inited, no matter if initialization failed.
             wt.sig_inited_.set();
             TEC_TRACE("`sig_inited' signalled.");
 
-            if( wt.result() ) {
+            if( wt.status() ) {
                 // Start message polling if inited successfully.
                 TEC_TRACE("entering message loop.");
                 bool stop = false;
@@ -200,11 +200,11 @@ private:
             }
 
             // Finalize the Worker only if it has been inited successfully.
-            if( wt.result() ) {
+            if( wt.status() ) {
                 TEC_TRACE("on_exit() called ...");
-                auto exit_result = wt.on_exit();
-                TEC_TRACE("on_exit() returned {}.", exit_result);
-                wt.set_result(exit_result);
+                auto exit_status = wt.on_exit();
+                TEC_TRACE("on_exit() returned {}.", exit_status);
+                wt.set_status(exit_status);
             }
 
             // `sig_terminated' signals on exit, see OnExit struct defined above.
@@ -227,13 +227,13 @@ public:
      */
     bool send(const Message& msg) override {
         TEC_ENTER("WorkerThread::send");
-        if( result() && thread_.joinable() ) {
+        if( status() && thread_.joinable() ) {
             mq_.enqueue(msg);
             TEC_TRACE("Message [cmd={}] sent.", msg.command);
             return true;
         }
         else {
-            // No working thread.
+            // No message loop.
             return false;
         }
     }
@@ -244,10 +244,10 @@ public:
      *  Resumes the Worker thread by setting the `sig_running` signal,
      *  then waits for `on_init()` callback completed.
      *
-     *  @note Derived from tec::Daemon.
-     *  @return tec::Result
+     *  @note Derived from Daemon.
+     *  @return Status
      */
-    Result run() override {
+    Status run() override {
         Lock lk{mtx_thread_proc_};
         TEC_ENTER("WorkerThread::run");
 
@@ -272,7 +272,7 @@ public:
         sig_inited_.wait();
 
         // Return the result of thread initialization.
-        return result();
+        return status();
     }
 
     /**
@@ -284,24 +284,24 @@ public:
      *
      *  @note Derived from Daemon.
      *
-     *  @return tec::Result
+     *  @return Status
      */
-    Result terminate() override {
+    Status terminate() override {
         Lock lk{mtx_thread_proc_};
         TEC_ENTER("WorkerThread::terminate");
 
         if( flag_terminated_ ) {
             TEC_TRACE("WARNING: Worker thread already terminated!");
-            return result();
+            return status();
         }
 
         if( !thread_.joinable() ) {
             TEC_TRACE("WARNING: no thread exists!");
-            return result();
+            return status();
         }
 
         // Send Message::QUIT if normal exiting.
-        if( result() ) {
+        if( status() ) {
             send(quit<Message>());
             TEC_TRACE("QUIT sent.");
         }
@@ -312,7 +312,7 @@ public:
         TEC_TRACE("thread {} finished OK.", id());
 
         flag_terminated_ = true;
-        return result();
+        return status();
     }
 
 }; // ::WorkerThread

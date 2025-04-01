@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-31 19:04:51 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 14:38:52 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -135,14 +135,14 @@ public:
     constexpr Params params() const { return params_; }
 
     /**
-     * @brief Returns a result of the Worker execution.
+     * @brief Returns the Status of the Worker execution.
      *
      * @details Should be implemented by a derived class as a result
      * of *on_init()* or *on_exit()* callbacks.
      *
-     * @return Result
+     * @return Status
      */
-    virtual Result result() = 0;
+    virtual Status status() = 0;
 
     /**
      * @brief Sends a message to be dispatched by the Worker.
@@ -173,14 +173,14 @@ protected:
     /**
      *  @brief A callback to be called on worker initialization.
      *
-     *  @note If `on_init()` returns Result other than `Error::Kind::Ok`,
+     *  @note If `on_init()` returns Status other than `Error::Kind::Ok`,
      *  the Worker should stop message processing and quit the Worker thread
      *  immediately. `on_exit()` callback **will not be called** in this case.
      *
      *  @note Default implementation does nothing returning Error::Kind::Ok.
      *  @return Result `Error::Kind::Ok` by default.
      */
-    virtual Result on_init() { return {}; }
+    virtual Status on_init() { return {}; }
 
     /**
      *  @brief A callback to be called on exiting from the Worker's thread.
@@ -189,9 +189,9 @@ protected:
      *  callback returned Result other than `Error::Kind::Ok`.
      *
      *  @note Default implementation does nothing returning `Error::Kind::Ok`.
-     *  @return Result `Error::Kind::Ok` by default.
+     *  @return Status `Error::Kind::Ok` by default.
      */
-    virtual Result on_exit() { return {}; }
+    virtual Status on_exit() { return {}; }
 
 
     /**

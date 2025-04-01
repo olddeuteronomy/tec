@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-14 15:26:55 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 13:42:44 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,7 +32,7 @@ SOFTWARE.
 #pragma once
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_result.hpp"
+#include "tec/tec_status.hpp"
 #include "tec/tec_utils.hpp"
 
 
@@ -68,7 +68,7 @@ public:
     virtual ~Client() = default;
 
     //! Connect to the server.
-    virtual Result connect() = 0;
+    virtual Status connect() = 0;
 
     //! Close connection.
     virtual void close() = 0;
