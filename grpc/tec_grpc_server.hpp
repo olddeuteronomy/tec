@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 13:47:57 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 15:56:57 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -97,10 +97,7 @@ protected:
 
     /**
      * @brief      Sets builder plugins such as HealthCheck and Reflection.
-     *
      * @details    Called *before* the builder is created. Can be overwritten.
-     *
-     * @param      None.
      * @return     None.
      */
     virtual void set_plugins() {
@@ -119,10 +116,7 @@ protected:
 
     /**
      * @brief      Sets various builder options such as MaxMessageSize etc.
-     *
      * @details    Called *after* the builder is created. Can be overwritten.
-     *
-     * @return     void.
      */
     virtual void set_builder_options(Builder& builder) {
         TEC_ENTER("GrpcServer::set_builder_options");
@@ -174,8 +168,8 @@ public:
      *  Worker provides a suitable mechanism to manage
      *  Server as a daemon (or as MS Windows service).
      *
-     *  @param sig_started Signal Signals GrpcSever is started, possible with error.
-     *  @param result Status
+     *  @param sig_started Signal signals on GrpcSever is started, possible with error.
+     *  @param status Status
      *  @sa Server
      */
     void start(Signal& sig_started, Status& status) override {
@@ -224,7 +218,7 @@ public:
      *
      *  Closes all connections, shuts the server down.
      *
-     *  @param sig_stopped Signalled on gRPC server is stopped.
+     *  @param sig_stopped Signal signals on gRPC server is stopped.
      *  @return none
      */
     void shutdown(Signal& sig_stopped) override {

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-31 14:22:35 by magnolia>
+// Time-stamp: <Last changed 2025-04-06 23:52:08 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -41,7 +41,7 @@ namespace tec {
 /**
  * @class      Semaphore
  * @brief      A generalized semaphore.
- * @details    Signalled when a predicate returns `true`.
+ * @details    Signalled when the predicate returns `true`.
  *
  */
 template <typename Value>
@@ -116,7 +116,7 @@ using SemaphoreInt = Semaphore<int>;
 /**
  * @brief      Specialized boolean semaphore.
  * @details    Extends `SemaphoreBool` with the `set()` method.
- * @include signal.cpp
+ * @include snp_signal.cpp
  */
 class Signal: public SemaphoreBool {
 public:

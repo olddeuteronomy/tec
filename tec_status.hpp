@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 13:49:04 by magnolia>
+// Time-stamp: <Last changed 2025-04-01 16:04:25 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -124,7 +124,7 @@ struct TStatus {
 
     /**
      * @brief      Constructs a successful TStatus (class is Error::Kind::Ok).
-     * @snippet status.cpp OK
+     * @snippet snp_status.cpp OK
      */
     TStatus()
         : kind{Error::Kind::Ok}
@@ -133,7 +133,7 @@ struct TStatus {
     /**
      * @brief      Constructs an error TStatus with unspecified error code.
      * @param      _kind *Error::Kind* class.
-     * @snippet status.cpp Unspecified
+     * @snippet snp_status.cpp Unspecified
      */
     TStatus(Error::Kind _kind)
         : kind{_kind}
@@ -144,7 +144,7 @@ struct TStatus {
      * @brief      Constructs an unspecified error TStatus with description.
      * @param      _desc *TDesc* Error description.
      * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
-     * @snippet status.cpp Description
+     * @snippet snp_status.cpp Description
      */
     TStatus(const TDesc& _desc, Error::Kind _kind = Error::Kind::Err)
         : kind{_kind}
@@ -156,7 +156,7 @@ struct TStatus {
      * @brief      Constructs an error TStatus w/o description.
      * @param      _code *TCode* Error code.
      * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
-     * @snippet status.cpp Errcode
+     * @snippet snp_status.cpp Errcode
      */
     TStatus(const TCode& _code, Error::Kind _kind = Error::Kind::Err)
         : kind{_kind}
@@ -168,7 +168,7 @@ struct TStatus {
      * @param      _code *TCode* Error code.
      * @param      _desc *TDesc* Error description.
      * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
-     * @snippet status.cpp CD
+     * @snippet snp_status.cpp CD
      */
     TStatus(const TCode& _code, const TDesc& _desc, Error::Kind _kind = Error::Kind::Err)
         : kind{_kind}
