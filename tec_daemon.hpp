@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 14:12:16 by magnolia>
+// Time-stamp: <Last changed 2025-04-08 19:17:38 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -58,27 +58,29 @@ namespace tec {
 class Daemon {
 public:
     Daemon() = default;
+    Daemon(const Daemon&) = delete;
+    Daemon(Daemon&&) = delete;
     virtual ~Daemon() = default;
 
     /**
-     * @brief      Starts the Daemon's thread.
+     * @brief      Starts the Daemon.
      * @return     Status
      */
     virtual Status run() = 0;
 
     /**
-     * @brief      Terminates the Daemon's thread.
+     * @brief      Terminates the Daemon.
      * @return     Status
      */
     virtual Status terminate() = 0;
 
-    //! Signals when the Daemon is started.
+    //! Signals after the Daemon has been started.
     virtual const Signal& sig_running() const = 0;
 
-    //! Signals when the Daemon is initialized (possible, with error).
+    //! Signals after the Daemon has been initialized (possible, with error).
     virtual const Signal& sig_inited() const = 0;
 
-    //! Signals when the Daemon is terminated.
+    //! Signals after the Daemon has been terminated.
     virtual const Signal& sig_terminated() const = 0;
 
 public:

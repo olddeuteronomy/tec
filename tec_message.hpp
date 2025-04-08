@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-08 18:52:56 by magnolia>
+// Time-stamp: <Last changed 2025-04-08 16:32:36 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,56 +24,42 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   @file tec_client.hpp
- *   @brief Declares an abstract Client class.
+ *   @file tec_message.hpp
+ *   @brief Defines a basic WorkerMessage.
  *
 */
 
 #pragma once
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_status.hpp"
-#include "tec/tec_utils.hpp"
 
 
 namespace tec {
 
+/**
+ * @brief      A basic message to manage the Worker.
+ *
+ * @details    WorkerMessage implements quit() to indicate that
+ * Worker thread message polling should stop.
+ *
+ * @note All user-defined messages should be derived from WorkerMessage.
+ * @sa Worker
+ */
+struct WorkerMessage {
+    typedef unsigned long Command;
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                   Abstract Client Interface
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    //! The quit command. Stops message processing. See Worker.
+    static constexpr const Command QUIT{0};
 
-//! Generic Clients parameters.
-struct ClientParams {
-    //! Default client connection timeout (5 sec).
-    static constexpr const MilliSec kConnectTimeout{Seconds{5}};
+    Command command; //!< A command.
 
-    //! Connection timeout.
-    MilliSec connect_timeout;
-
-    ClientParams()
-        : connect_timeout(kConnectTimeout)
-    {}
+    //! Indicates that the Worker's message loop should be terminated.
+    constexpr bool quit() const { return (command == WorkerMessage::QUIT); }
 };
 
+//! Null message. Send it to Worker to quit the message loop and
+//! terminate the Worker's thread.
+template <typename TMessage>
+TMessage nullmsg() { TMessage msg; msg.command = WorkerMessage::QUIT; return msg; }
 
-//! Abstract Client class.
-class Client {
-public:
-    Client() = default;
-    Client(const Client&) = delete;
-    Client(Client&&) = delete;
-
-    virtual ~Client() = default;
-
-    //! Connect to the server.
-    virtual Status connect() = 0;
-
-    //! Close connection.
-    virtual void close() = 0;
-};
-
-
-} // :tec
+} // ::tec

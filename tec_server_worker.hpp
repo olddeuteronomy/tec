@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 14:26:16 by magnolia>
+// Time-stamp: <Last changed 2025-04-08 22:16:30 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,15 +34,20 @@ SOFTWARE.
 #include <memory>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_worker_thread.hpp"
+#include "tec/tec_worker.hpp"
 #include "tec/tec_server.hpp"
 
 
 namespace tec {
 
-
+/**
+ * @brief      The Worker that owns a Server.
+ *
+ * @details    Starts and shutdowns the Server.
+ *
+ */
 template <typename Traits, typename TServer>
-class ServerWorker: public WorkerThread<Traits> {
+class ServerWorker: public Worker<Traits> {
 public:
     typedef Traits traits ;
     typedef typename traits::Params Params;
@@ -61,18 +66,20 @@ private:
 
 public:
 
-    //! Initialize with a Server.
+    //! Initialize the Worker with a Server.
     ServerWorker(const Params& params, std::unique_ptr<TServer> server)
-        : WorkerThread<Traits>{params}
+        : Worker<Traits>(params)
         // Now ServerWorker owns the server!
         , server_{std::move(server)}
-        // Starts the paused server thread. Resume it by sig_run_server_thread_.set().
+        // Starts the paused server thread.
         , server_thread_{new std::thread([&]{
             sig_run_server_thread_.wait();
-            server_->start(sig_started_, status_started_);
-        })}
+            server_->start(sig_started_, status_started_); })}
     {
     }
+
+    ServerWorker(const ServerWorker&) = delete;
+    ServerWorker(ServerWorker&&) = delete;
 
     virtual ~ServerWorker() {
         if( server_thread_->joinable() ) {
@@ -91,7 +98,7 @@ protected:
         // Wait for the server is started.
         if( !sig_started_.wait_for(this->params().start_timeout) ) {
             // Timeout!
-            TEC_TRACE("!!! Error: server start timeout");
+            TEC_TRACE("!!! Error: server start timeout -- served detached");
             server_thread_->detach();
             return {"Server start timeout", Error::Kind::TimeoutErr};
         }
@@ -140,19 +147,28 @@ public:
      *                       Server Worker Builders
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-    //! Server Worker builder.
+
+    /**
+     * @brief      Worker builder.
+     *
+     * @details    Creates a new ServerWorker and returns it as a Worker.
+     *
+     * @param      params ServerWorker parameters.
+     *
+     * @return     std::unique_ptr<Worker>
+     */
     template <typename Derived, typename ServerDerived>
     struct Builder {
         std::unique_ptr<Worker<typename Derived::traits>>
         operator()(typename Derived::Params& params)
         {
-            // Check for a Derived class is derived from the tec::Worker class.
+            // Check for a Derived class is derived from the Worker class.
             static_assert(
                 std::is_base_of<Worker<typename Derived::traits>, Derived>::value,
                 "not derived from tec::Worker class");
             // Check for a ServerDerived class is derived from the tec::Server class.
             static_assert(
-                std::is_base_of<Server<typename Derived::Params>, ServerDerived>::value,
+                std::is_base_of<Server, ServerDerived>::value,
                 "not derived from tec::Server class");
             // Check for a Parameters class is derived from the tec::ServerParameters class.
             static_assert(
@@ -162,7 +178,15 @@ public:
         }
     };
 
-    //! Server Daemon builder.
+    /**
+     * @brief      Worker builder.
+     *
+     * @details    Creates a new ServerWorker and returns it as a Daemon.
+     *
+     * @param      params ServerWorker parameters.
+     *
+     * @return     std::unique_ptr<Worker>
+     */
     template <typename Derived, typename ServerDerived>
     struct DaemonBuilder {
         std::unique_ptr<Daemon>
@@ -174,7 +198,7 @@ public:
                 "not derived from tec::Worker class");
             // Check for a ServerDerived class is derived from the tec::Server class.
             static_assert(
-                std::is_base_of<Server<typename Derived::Params>, ServerDerived>::value,
+                std::is_base_of<Server, ServerDerived>::value,
                 "not derived from tec::Server class");
             // Check for a Parameters class is derived from the tec::ServerParameters class.
             static_assert(

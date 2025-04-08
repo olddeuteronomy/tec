@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 13:50:11 by magnolia>
+// Time-stamp: <Last changed 2025-04-08 22:57:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -50,6 +50,7 @@ namespace tec {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+//! gRPC client definition traits.
 template <
     typename TService,
     typename TGrpcChannel,
@@ -85,7 +86,7 @@ public:
     typedef typename traits::Arguments Arguments;
     typedef typename traits::CompressionAlgorithm CompressionAlgorithm;
 
-    // Declare a pointer to CreateChannel() gRPC function.
+    //! Declares a pointer to CreateChannel() gRPC function.
     struct ChannelBuilder {
         std::shared_ptr<Channel> (*fptr)(const std::string&, const std::shared_ptr<Credentials>&, const Arguments&);
     };
@@ -104,7 +105,7 @@ protected:
 
 protected:
 
-    //! Sets grpc::ChannelArgiments before creating a channel. Can be overwritten.
+    //! Set grpc::ChannelArgiments *before* creating a channel. Can be overwritten.
     virtual void set_channel_arguments() {
         TEC_ENTER("GrpcClient::set_channel_arguments");
 
@@ -126,6 +127,7 @@ protected:
     }
 
 public:
+    //! Constructs a GrpcClient.
     GrpcClient(const Params& params,
                const ChannelBuilder& channel_builder,
                const std::shared_ptr<Credentials>& credentials

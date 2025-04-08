@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 14:41:27 by magnolia>
+// Time-stamp: <Last changed 2025-04-08 22:21:34 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -27,8 +27,6 @@ SOFTWARE.
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
-#include "tec/tec_status.hpp"
-#include "tec/tec_semaphore.hpp"
 #include "tec/tec_worker.hpp"
 #include "tec/tec_server.hpp"
 #include "tec/tec_server_worker.hpp"
@@ -40,23 +38,23 @@ SOFTWARE.
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Define the test ServerMessage.
+// Test ServerMessage.
 struct TestMessage: public tec::WorkerMessage {};
 
-// Define the test ServerParams.
+// Test ServerParams.
 struct TestParams: public tec::ServerParams {};
 
-// Define Server and Worker traits
+// Declare ServerWorker traits.
 using TestServerTraits = tec::worker_traits<
     TestParams,
     TestMessage
     >;
 
-// Define the test Server.
-class TestServer: public tec::Server<TestParams> {
+// Implement the test Server.
+class TestServer: public tec::Server {
 public:
     TestServer(const TestParams& params)
-        : tec::Server<TestParams>{params}
+        : tec::Server()
     {}
 
     void start(tec::Signal& sig_started, tec::Status& status) override {
@@ -91,7 +89,7 @@ using TestServerWorker = tec::ServerWorker<TestServerTraits, TestServer>;
 tec::Status test_server() {
     TestParams params;
 
-    // Build the worker.
+    // Build the deamon.
     auto daemon{TestServerWorker::Builder<TestServerWorker, TestServer>{}(params)};
 
     // Run it and check for initialization result.
@@ -105,8 +103,7 @@ tec::Status test_server() {
     std::getchar();
 
     // If we want to get the server shutdown status.
-    // return daemon->terminate();
-    return {};
+    return daemon->terminate();
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

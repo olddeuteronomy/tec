@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 13:45:30 by magnolia>
+// Time-stamp: <Last changed 2025-04-08 21:36:07 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -42,7 +42,7 @@ namespace tec {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                       Server Parameters
+*                       Gereric Server Parameters
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -68,30 +68,39 @@ struct ServerParams {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-template <typename TParams>
 class Server {
-
 public:
-    typedef TParams Params;
-
-protected:
-    Params params_;
-
-public:
-    Server(const Params& params)
-        : params_{params}
-    {
-    }
-
+    Server() = default;
     Server(const Server&) = delete;
     Server(Server&&) = delete;
 
     virtual ~Server() = default;
 
-    constexpr Params params() const { return params_; }
+    /**
+     * @brief      Start the server.
+     *
+     * @param      sig_started Signalled after server has been started, possible with error.
+     * @param      status Error::Kind::Timeout, or any other error, or Ok.
+     *
+     * @note In gRPC, if started successfully, `start()` doesn't
+     * return until `shutdown()` called from another thread. In this
+     * case, as well as in the case of timeout, `start()` **shouldn't**
+     * modify the `status` argument.
+     *
+     * @sa Signal
+     * @sa Status
+     */
+    virtual void start(Signal& sig_started, Status& status) = 0;
 
-    virtual void start(Signal&, Status&) = 0;
-    virtual void shutdown(Signal&) = 0;
+    /**
+     * @brief      Shutdown the server.
+     *
+     * @param      sig_stopped Signalled after server has been stopped, possible with error.
+     * @return     Status Error::Kind::Timeout, or any other error, or Ok.
+     *
+     * @sa Signal
+     */
+    virtual void shutdown(Signal& sig_stopped) = 0;
 
 }; // ::Server
 

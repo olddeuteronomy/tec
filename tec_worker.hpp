@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 14:38:52 by magnolia>
+// Time-stamp: <Last changed 2025-04-08 17:12:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,7 +25,7 @@ SOFTWARE.
 
 /**
  *   @file tec_worker.hpp
- *   @brief Declares an abstract Worker class.
+ *   @brief Implements a Worker class derived from Daemon.
  *
 */
 
@@ -33,44 +33,16 @@ SOFTWARE.
 
 #include <type_traits>
 #include <unordered_map>
+#include <thread>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_trace.hpp"
+#include "tec/tec_message.hpp"
+#include "tec/tec_status.hpp"
+#include "tec/tec_queue.hpp"
 #include "tec/tec_daemon.hpp"
 
-
 namespace tec {
-
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                            Message
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-/**
- * @brief      A basic message to manage the Worker.
- *
- * @details    Message implements quit() to indicate that
- * Worker thread message polling should stop.
- *
- * @note All user-defined messages should be derived from WorkerMessage.
- */
-struct WorkerMessage {
-    typedef unsigned long Command;
-
-    //! The quit message loop command.
-    static constexpr const Command QUIT{0};
-
-    Command command; //!< A command.
-
-    //! Indicates that the Worker's message loop should be terminated.
-    inline bool quit() const { return (command == WorkerMessage::QUIT); }
-};
-
-//! Null message. Send it to the Worker to quit the message loop.
-template <typename TMessage>
-TMessage quit() { TMessage msg; msg.command = WorkerMessage::QUIT; return msg; }
-
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
@@ -90,76 +62,144 @@ struct worker_traits {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                         Abstract Worker
+*                              Worker
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /**
- * @brief      An abstract Worker class.
+ * @brief      A Worker class implementing message polling.
  *
  * @details Extends the Daemon class with the `send()` method that is used to
  * manage the Worker's thread.
- * Defines message handlers and default callbacks `on_init()` and `on_exit()`.
- *
+ * Also,
+ * 1) Defines message handlers;
+ * 2) Implements default callbacks `on_init()` and `on_exit()`;
+ * 3) Defines an internal thread procedure that implements message polling;
+ * 4) Implements required Signals (see Daemon).
  */
 template <typename Traits>
 class Worker : public Daemon
 {
 public:
+
     typedef Traits traits;
     typedef typename traits::Params Params;
     typedef typename traits::Message Message;
+
+    using id_t = std::thread::id;
 
     //! Message handler.
     typedef void (*Handler)(Worker<Traits>&, const Message&);
 
 protected:
+
+    using Lock = std::lock_guard<std::mutex>;
+
     // Worker parameters.
     Params params_;
 
 private:
+
     // Message handlers.
     std::unordered_map<typename Message::Command, Handler> slots_;
 
+    // Signals.
+    Signal sig_running_;
+    Signal sig_inited_;
+    Signal sig_terminated_;
+
+    // Message queue.
+    SafeQueue<Message> mq_;
+
+    // Status of execution.
+    Status status_;
+    std::mutex mtx_status_;
+
+    // run()/terminate() sync.
+    bool flag_running_;
+    bool flag_terminated_;
+    std::mutex mtx_thread_proc_;
+
+    // Internal Worker thread.
+    std::thread thread_;
+    id_t thread_id_;
+
 public:
-    //! Constructs the Worker.
+
+    /**
+     *  @brief Constructs s Worker thread in the suspended state.
+     *
+     *  Use `run()` to start the Worker thread.
+     *
+     *  @sa Worker::run()
+     */
     Worker(const Params& params)
-        : Daemon{}
+        : Daemon()
         , params_{params}
-    {
+        , flag_running_{false}
+        , flag_terminated_{false}
+        , thread_{details<traits>::thread_proc, std::ref(*this)}
+    {}
+
+    Worker(const Worker&) = delete;
+    Worker(Worker&&) = delete;
+
+    virtual ~Worker() {
+        if( thread_.joinable() ) {
+            terminate();
+        }
     }
 
-    virtual ~Worker() = default;
+    //! Worker thread ID.
+    id_t id() const { return thread_id_; }
 
     //! Returns Worker parameters.
     constexpr Params params() const { return params_; }
 
-    /**
-     * @brief Returns the Status of the Worker execution.
-     *
-     * @details Should be implemented by a derived class as a result
-     * of *on_init()* or *on_exit()* callbacks.
-     *
-     * @return Status
-     */
-    virtual Status status() = 0;
+    //! Gets result of execution.
+    Status status()  {
+        Lock lk(mtx_status_);
+        return status_;
+    }
+
+    //! Signals that Worker thread has started.
+    const Signal& sig_running() const override final { return sig_running_; }
+
+    //! Signals that Worker thread has inited (possible, with error).
+    const Signal& sig_inited() const override final { return sig_inited_; }
+
+    //! Signals that Worker thread has terminated.
+    const Signal& sig_terminated() const override final { return sig_terminated_; }
 
     /**
-     * @brief Sends a message to be dispatched by the Worker.
+     *  @brief  Sends a WorkerMessage (or any class derived from WorkerMessage)
+     *  to the Worker thread.
      *
-     * @details Should return `false` if the Worker is not
-     * initialized properly (`on_init()` returned an error).
+     *  If no Worker thread exists,
+     *  the message will not be sent, returning `false`.
      *
-     * @param Message A message to send.
+     *  @note Derived from Worker.
      *
-     * @return bool
+     *  @param  msg WorkerMessage to send.
+     *  @return bool
      */
-    virtual bool send(const Message&) = 0;
+    bool send(const Message& msg) {
+        TEC_ENTER("Worker::send");
+        if( status() && thread_.joinable() ) {
+            mq_.enqueue(msg);
+            TEC_TRACE("Message [cmd={}] sent.", msg.command);
+            return true;
+        }
+        else {
+             // No message loop.
+            return false;
+        }
+    }
 
     /**
      * @brief Registers a message handler.
      * @param cmd
-     * @param handler A handler to register.
+     * @param handler A handler of the corresponding message.
      */
     void register_handler(typename Message::Command cmd, Handler handler) {
         // Remove existing handler.
@@ -169,21 +209,96 @@ public:
         slots_[cmd] = {handler};
     }
 
+private:
+
+    // Internal.
+    void set_status(Status status) {
+        Lock lk(mtx_status_);
+        status_ = status;
+    }
+
+    // Sets the signal on exiting from `thread_proc'.
+    struct OnExit {
+        Signal& sig_;
+
+        OnExit(Signal& sig): sig_{sig} {}
+        ~OnExit() { sig_.set(); }
+    };
+
+    //-----------------------------------------------------------------
+    // WE HIDE THREAD PROCEDURE INSIDE A STRUCT TO INSTANTIATE
+    // DIFFERENT STATIC PROCEDURES OWNED BY DIFFERENT WORKERS.
+    //-----------------------------------------------------------------
+    template <typename traits>
+    struct details {
+        static void thread_proc(Worker<traits>& wt) {
+            TEC_ENTER("Worker::thread_proc");
+
+            // `sig_terminated' will signal on exit.
+            OnExit on_terminating{wt.sig_terminated_};
+
+            // We obtain thread_id and then we are waiting for `sig_begin'
+            // to resume the thread, see run().
+            wt.thread_id_ = std::this_thread::get_id();
+            TEC_TRACE("thread {} created.", wt.id());
+            wt.sig_running_.wait();
+            TEC_TRACE("`sig_running' received.");
+
+            // Initialize the Worker and set the result.
+            TEC_TRACE("on_init() called ...");
+            auto init_status = wt.on_init();
+            TEC_TRACE("on_init() returned {}.", init_status);
+            wt.set_status(init_status);
+
+            // Signals the Worker is inited, no matter if initialization failed.
+            wt.sig_inited_.set();
+            TEC_TRACE("`sig_inited' signalled.");
+
+            if( wt.status() ) {
+                // Start message polling if inited successfully.
+                TEC_TRACE("entering message loop.");
+                bool stop = false;
+                do {
+                    auto msg = wt.mq_.dequeue();
+                    TEC_TRACE("received Message [cmd={}].", msg.command);
+                    if( !msg.quit() ) {
+                        wt.dispatch(msg);
+                    }
+                    else {
+                        stop = true;
+                    }
+                } while( !stop );
+                TEC_TRACE("leaving message loop.");
+            }
+
+            // Finalize the Worker ONLY IF it has been inited successfully.
+            if( wt.status() ) {
+                TEC_TRACE("on_exit() called ...");
+                auto exit_status = wt.on_exit();
+                TEC_TRACE("on_exit() returned {}.", exit_status);
+                wt.set_status(exit_status);
+            }
+
+            // `sig_terminated' signals on exit, see OnExit struct defined above.
+        }
+    };
+
 protected:
+
     /**
-     *  @brief A callback to be called on worker initialization.
+     *  @brief A callback that is invoked on Worker initialization.
      *
      *  @note If `on_init()` returns Status other than `Error::Kind::Ok`,
      *  the Worker should stop message processing and quit the Worker thread
      *  immediately. `on_exit()` callback **will not be called** in this case.
      *
      *  @note Default implementation does nothing returning Error::Kind::Ok.
-     *  @return Result `Error::Kind::Ok` by default.
+     *  @return Status `Error::Kind::Ok` by default.
      */
     virtual Status on_init() { return {}; }
 
     /**
-     *  @brief A callback to be called on exiting from the Worker's thread.
+     *  @brief A callback that is invoked on exiting from the Worker's thread.
      *
      *  @note This callback **will not be called** if `on_init()`
      *  callback returned Result other than `Error::Kind::Ok`.
@@ -206,13 +321,90 @@ protected:
     }
 
 public:
+
+        /**
+     *  @brief Starts the Worker thread message polling.
+     *
+     *  Resumes the Worker thread by setting the `sig_running` signal,
+     *  then waits for `on_init()` callback completed.
+     *
+     *  @note Derived from Daemon.
+     *  @return Status
+     */
+    Status run() override {
+        Lock lk{mtx_thread_proc_};
+        TEC_ENTER("Worker::run");
+
+        if( !thread_.joinable() ) {
+            // No thread exists, possible system failure.
+            TEC_TRACE("no active thread.");
+            return {"no active thread", Error::Kind::System};
+        }
+
+        if( flag_running_ ) {
+            TEC_TRACE("WARNING: Worker thread is already running!");
+            return {};
+        }
+
+        // Resume the thread.
+        flag_running_ = true;
+        sig_running_.set();
+        TEC_TRACE("`sig_running' signalled.");
+
+        // Wait for thread initialization completed.
+        TEC_TRACE("waiting for `sig_inited' signalled ...");
+        sig_inited_.wait();
+
+        // Return the result of thread initialization.
+        return status();
+    }
+
+    /**
+     *  @brief Terminates the Worker thread.
+     *
+     *  Sends Message::QUIT message to the message queue
+     *  to stop the message polling if inited successfully, then waits for
+     *  `sig_terminated` signalled to terminate the Worker thread.
+     *
+     *  @note Derived from Daemon.
+     *  @return Status
+     */
+    Status terminate() override {
+        Lock lk{mtx_thread_proc_};
+        TEC_ENTER("Worker::terminate");
+
+        if( flag_terminated_ ) {
+            TEC_TRACE("WARNING: Worker thread already terminated!");
+            return status();
+        }
+
+        if( !thread_.joinable() ) {
+            TEC_TRACE("WARNING: no thread exists!");
+            return status();
+        }
+
+        // Send Message::QUIT if normal exiting.
+        if( status() ) {
+            send(nullmsg<Message>());
+            TEC_TRACE("QUIT sent.");
+        }
+
+        // Waits for the thread to finish its execution
+        TEC_TRACE("waiting for thread {} to finish ...", id());
+        thread_.join();
+        TEC_TRACE("thread {} finished OK.", id());
+
+        flag_terminated_ = true;
+        return status();
+    }
+
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      *
      *                        Worker buider
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-    //! Builds the Worker from a derived class.
+    //! Builds the Worker from a derived class (including itself).
     template <typename Derived>
     struct Builder {
         std::unique_ptr<Worker<typename Derived::traits>>

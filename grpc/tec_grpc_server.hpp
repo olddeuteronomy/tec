@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 15:56:57 by magnolia>
+// Time-stamp: <Last changed 2025-04-08 23:02:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,8 +24,8 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   \file tec_grpc_server.hpp
- *   \brief Generic gRPC server.
+ *   @file tec_grpc_server.hpp
+ *   @brief Generic gRPC server.
  *
  *  Declares a generic gRPC server.
  *
@@ -73,7 +73,7 @@ struct grpc_server_traits {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template <typename TParams, typename Traits>
-class GrpcServer: public Server<TParams> {
+class GrpcServer: public Server {
 public:
 
     typedef TParams Params;
@@ -98,7 +98,6 @@ protected:
     /**
      * @brief      Sets builder plugins such as HealthCheck and Reflection.
      * @details    Called *before* the builder is created. Can be overwritten.
-     * @return     None.
      */
     virtual void set_plugins() {
         TEC_ENTER("GrpcServer::set_plugins");
@@ -146,7 +145,8 @@ protected:
 public:
 
     GrpcServer(const Params& params, const std::shared_ptr<Credentials>& credentials)
-        : Server<Params>{params}
+        : Server()
+        , params_{params}
         , credentials_{credentials}
     {
         static_assert(
@@ -154,21 +154,19 @@ public:
             "not derived from tec::ServerParams class");
     }
 
-
     virtual ~GrpcServer() = default;
 
-
     /**
-     *  @brief Start the RPC server.
+     *  @brief Starts the RPC server.
      *
      *  Registers the service, builds and runs the server.
-     *  This procedure doesn't quit until `Server::shutdown()` is called
+     *  This procedure doesn't quit until `Server::shutdown()` is invoked
      *  from *another* thread.
      *
      *  Worker provides a suitable mechanism to manage
      *  Server as a daemon (or as MS Windows service).
      *
-     *  @param sig_started Signal signals on GrpcSever is started, possible with error.
+     *  @param sig_started Signal signals on GrpcSever has been started, possible with error.
      *  @param status Status
      *  @sa Server
      */
@@ -214,7 +212,7 @@ public:
     }
 
     /**
-     *  @brief Shutdown the gRPC server.
+     *  @brief Shutdowns the gRPC server.
      *
      *  Closes all connections, shuts the server down.
      *

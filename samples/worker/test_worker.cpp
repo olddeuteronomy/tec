@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 14:35:46 by magnolia>
+// Time-stamp: <Last changed 2025-04-08 18:50:38 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -28,7 +28,6 @@ SOFTWARE.
 #include "tec/tec_trace.hpp"
 #include "tec/tec_utils.hpp"
 #include "tec/tec_worker.hpp"
-#include "tec/tec_worker_thread.hpp"
 #include <thread>
 
 
@@ -41,14 +40,14 @@ SOFTWARE.
 // Test parameters.
 struct TestParams
 {
-    tec::Seconds init_delay;
-    tec::Status init_result; // To emulate on_init() failure
-    tec::Seconds process_delay;
-    tec::Seconds exit_delay;
-    tec::Status exit_result; // To emulate on_exit() failure
+  tec::Seconds init_delay;
+  tec::Status  init_result; // To emulate on_init() failure
+  tec::Seconds process_delay;
+  tec::Seconds exit_delay;
+  tec::Status  exit_result; // To emulate on_exit() failure
 };
 
-// Instantiate Test Worker class using default tec::Message.
+// Test message.
 struct TestMessage: public tec::WorkerMessage {
     int counter;
 };
@@ -61,8 +60,7 @@ using TestWorkerTraits = tec::worker_traits<
     TestParams,
     TestMessage
     >;
-using TestWorker = tec::WorkerThread<TestWorkerTraits>;
-
+using TestWorker = tec::Worker<TestWorkerTraits>;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -74,29 +72,29 @@ using TestWorker = tec::WorkerThread<TestWorkerTraits>;
 class MyWorker: public TestWorker {
 public:
     MyWorker(const TestParams& params)
-        : TestWorker{params}
+        : TestWorker(params)
     {
-        // Register handler.
+        // Register handler for CMD_CALL_PROCESS.
         register_handler(
             CMD_CALL_PROCESS,
             [](auto worker, auto msg){
                 TEC_ENTER("CMD_CALL_PROCESS");
                 TEC_TRACE("counter={}", msg.counter);
                 if( msg.counter <= 10 ) {
-                    // Continue processing.
+                    // Continue processing by sending CMD_CALL_PROCESS again.
                     std::this_thread::sleep_for(worker.params().process_delay);
                     worker.send({{CMD_CALL_PROCESS}, msg.counter + 1});
                 }
                 else {
-                    // Stop message loop and terminate the Worker.
-                    worker.send(tec::quit<TestMessage>());
+                    // Quit message loop and terminate the Worker.
+                    worker.send(tec::nullmsg<TestMessage>());
                 }
             });
     }
 
 protected:
     tec::Status on_init() override {
-        // Emulates some extra processing.
+        // Emulates some extra processing and possible initialization error.
         std::this_thread::sleep_for(params().init_delay);
         if( params().init_result ) {
             // Initiate processing, starting with 1.
@@ -111,31 +109,31 @@ protected:
 };
 
 
-tec::Status test_worker() {
+tec::Status test_daemon() {
     // Emulate delays and errors.
     TestParams params{
-        .init_delay = tec::Seconds{2},
-        .init_result = {}, // Set to {1, "on_init() failed"} to emulate on_init() error.
+        .init_delay    = tec::Seconds{2},
+        .init_result   = {1, "on_init() failed"}, // Set to {1, "on_init() failed"} to emulate on_init() error.
         .process_delay = tec::Seconds{1},
-        .exit_delay = tec::Seconds{2},
-        .exit_result =  {2, "on_exit() failed"}, // Set to {2, "on_exit() failed"} to emulate on_exit() error.
+        .exit_delay    = tec::Seconds{2},
+        .exit_result   =  {2, "on_exit() failed"}, // Set to {2, "on_exit() failed"} to emulate on_exit() error.
 
     };
 
-    // Build the daemon.
+    // Build a daemon using the derived MyWorker.
     auto daemon{tec::Daemon::Builder<MyWorker>{}(params)};
 
     // Start the daemon and check for an initialization error.
-    auto result = daemon->run();
-    if( !result ) {
-        return result;
+    auto status = daemon->run();
+    if( !status ) {
+        return status;
     }
 
     // Wait for daemon is finished.
     daemon->sig_terminated().wait();
 
-    // This call to `terminate)()` is not required if we don't want to get
-    // the status of daemon termination.
+    // This call to `terminate)()` is not required
+    // if we don't want to get the status of daemon termination.
     return daemon->terminate();
 }
 
@@ -147,9 +145,11 @@ tec::Status test_worker() {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 int main() {
-    tec::println("*** Running {} built at {}, {} with {} ***", __FILE__, __DATE__, __TIME__, __TEC_COMPILER_NAME__);
+    tec::println("*** Running {} built at {}, {} with {} ***",
+                 __FILE__, __DATE__, __TIME__, __TEC_COMPILER_NAME__);
 
-    auto status = test_worker();
+    // Run the daemon.
+    auto status = test_daemon();
 
     tec::println("\nExited with {}", status);
     tec::print("Press <Enter> to quit ...");
