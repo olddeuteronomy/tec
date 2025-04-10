@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-08 22:16:30 by magnolia>
+// Time-stamp: <Last changed 2025-04-10 03:05:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -71,11 +71,15 @@ public:
         : Worker<Traits>(params)
         // Now ServerWorker owns the server!
         , server_{std::move(server)}
-        // Starts the paused server thread.
+        // Start the server thread then wait for `sig_run_server_thread` signalled.
         , server_thread_{new std::thread([&]{
             sig_run_server_thread_.wait();
             server_->start(sig_started_, status_started_); })}
     {
+        // Check for a TServer class is derived from the tec::Server class.
+        static_assert(
+            std::is_base_of<Server, TServer>::value,
+            "not derived from tec::Server class");
     }
 
     ServerWorker(const ServerWorker&) = delete;
@@ -89,16 +93,17 @@ public:
 
 protected:
 
+    //! Resume the server and try to start the server.
     Status on_init() override {
         TEC_ENTER("ServerWorker::on_init");
 
         // Resume the server thread.
         sig_run_server_thread_.set();
 
-        // Wait for the server is started.
+        // Wait for the server has been started.
         if( !sig_started_.wait_for(this->params().start_timeout) ) {
             // Timeout!
-            TEC_TRACE("!!! Error: server start timeout -- served detached");
+            TEC_TRACE("!!! Error: server start timeout -- server detached");
             server_thread_->detach();
             return {"Server start timeout", Error::Kind::TimeoutErr};
         }
@@ -112,6 +117,8 @@ protected:
         return {};
     }
 
+
+    // Shutdown the server on exiting from the Worker thread.
     Status on_exit() override {
         TEC_ENTER("ServerWorker::on_exit");
 
@@ -149,62 +156,57 @@ public:
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     /**
-     * @brief      Worker builder.
-     *
-     * @details    Creates a new ServerWorker and returns it as a Worker.
-     *
+     * @brief      Daemon builder.
+     * @details    Creates a new ServerWorker and returns it as a Daemon.
      * @param      params ServerWorker parameters.
-     *
-     * @return     std::unique_ptr<Worker>
+     * @return     std::unique_ptr<Daemon>
      */
-    template <typename Derived, typename ServerDerived>
-    struct Builder {
-        std::unique_ptr<Worker<typename Derived::traits>>
-        operator()(typename Derived::Params& params)
+    template <typename WorkerDerived, typename ServerDerived>
+    struct DaemonBuilder {
+        std::unique_ptr<Daemon>
+        operator()(typename WorkerDerived::Params const& params)
         {
-            // Check for a Derived class is derived from the Worker class.
+            // Check for a Derived class is derived from the tec::Daemon class.
             static_assert(
-                std::is_base_of<Worker<typename Derived::traits>, Derived>::value,
+                std::is_base_of<Daemon, WorkerDerived>::value,
                 "not derived from tec::Worker class");
             // Check for a ServerDerived class is derived from the tec::Server class.
             static_assert(
                 std::is_base_of<Server, ServerDerived>::value,
                 "not derived from tec::Server class");
-            // Check for a Parameters class is derived from the tec::ServerParameters class.
+            // Check for a Params class is derived from the tec::ServerParameters class.
             static_assert(
-                std::is_base_of<ServerParams, typename Derived::Params>::value,
+                std::is_base_of<ServerParams, typename WorkerDerived::Params>::value,
                 "not derived from tec::ServerParams class");
-            return std::make_unique<Derived>(params, std::make_unique<ServerDerived>(params));
+            return std::make_unique<WorkerDerived>(params, std::make_unique<ServerDerived>(params));
         }
     };
 
+
     /**
      * @brief      Worker builder.
-     *
-     * @details    Creates a new ServerWorker and returns it as a Daemon.
-     *
+     * @details    Creates a new ServerWorker and returns it as a Worker.
      * @param      params ServerWorker parameters.
-     *
      * @return     std::unique_ptr<Worker>
      */
-    template <typename Derived, typename ServerDerived>
-    struct DaemonBuilder {
-        std::unique_ptr<Daemon>
-        operator()(typename Derived::Params& params)
+    template <typename WorkerDerived, typename ServerDerived>
+    struct WorkerBuilder {
+        std::unique_ptr<Worker<typename WorkerDerived::traits>>
+        operator()(typename WorkerDerived::Params const& params)
         {
             // Check for a Derived class is derived from the tec::Worker class.
             static_assert(
-                std::is_base_of<Daemon, Derived>::value,
+                std::is_base_of<Worker<typename WorkerDerived::traits>, WorkerDerived>::value,
                 "not derived from tec::Worker class");
             // Check for a ServerDerived class is derived from the tec::Server class.
             static_assert(
                 std::is_base_of<Server, ServerDerived>::value,
                 "not derived from tec::Server class");
-            // Check for a Parameters class is derived from the tec::ServerParameters class.
+            // Check for a Params class is derived from the tec::ServerParameters class.
             static_assert(
-                std::is_base_of<ServerParams, typename Derived::Params>::value,
+                std::is_base_of<ServerParams, typename WorkerDerived::Params>::value,
                 "not derived from tec::ServerParams class");
-            return std::make_unique<Derived>(params, std::make_unique<ServerDerived>(params));
+            return std::make_unique<WorkerDerived>(params, std::make_unique<ServerDerived>(params));
         }
     };
 

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-08 17:12:43 by magnolia>
+// Time-stamp: <Last changed 2025-04-09 16:47:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -67,7 +67,7 @@ struct worker_traits {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /**
- * @brief      A Worker class implementing message polling.
+ * @brief      A Worker class implements message polling.
  *
  * @details Extends the Daemon class with the `send()` method that is used to
  * manage the Worker's thread.
@@ -113,7 +113,6 @@ private:
 
     // Status of execution.
     Status status_;
-    std::mutex mtx_status_;
 
     // run()/terminate() sync.
     bool flag_running_;
@@ -157,10 +156,7 @@ public:
     constexpr Params params() const { return params_; }
 
     //! Gets result of execution.
-    Status status()  {
-        Lock lk(mtx_status_);
-        return status_;
-    }
+    Status status() const  { return status_; }
 
     //! Signals that Worker thread has started.
     const Signal& sig_running() const override final { return sig_running_; }
@@ -185,7 +181,7 @@ public:
      */
     bool send(const Message& msg) {
         TEC_ENTER("Worker::send");
-        if( status() && thread_.joinable() ) {
+        if( status_ && thread_.joinable() ) {
             mq_.enqueue(msg);
             TEC_TRACE("Message [cmd={}] sent.", msg.command);
             return true;
@@ -210,12 +206,6 @@ public:
     }
 
 private:
-
-    // Internal.
-    void set_status(Status status) {
-        Lock lk(mtx_status_);
-        status_ = status;
-    }
 
     // Sets the signal on exiting from `thread_proc'.
     struct OnExit {
@@ -244,17 +234,16 @@ private:
             wt.sig_running_.wait();
             TEC_TRACE("`sig_running' received.");
 
-            // Initialize the Worker and set the result.
+            // Initialize the Worker and set a status.
             TEC_TRACE("on_init() called ...");
-            auto init_status = wt.on_init();
-            TEC_TRACE("on_init() returned {}.", init_status);
-            wt.set_status(init_status);
+            wt.status_ = wt.on_init();
+            TEC_TRACE("on_init() returned {}.", wt.status_);
 
             // Signals the Worker is inited, no matter if initialization failed.
             wt.sig_inited_.set();
             TEC_TRACE("`sig_inited' signalled.");
 
-            if( wt.status() ) {
+            if( wt.status_ ) {
                 // Start message polling if inited successfully.
                 TEC_TRACE("entering message loop.");
                 bool stop = false;
@@ -272,11 +261,11 @@ private:
             }
 
             // Finalize the Worker ONLY IF it has been inited successfully.
-            if( wt.status() ) {
+            if( wt.status_ ) {
                 TEC_TRACE("on_exit() called ...");
-                auto exit_status = wt.on_exit();
-                TEC_TRACE("on_exit() returned {}.", exit_status);
-                wt.set_status(exit_status);
+                // Set exiting status.
+                wt.status_ = wt.on_exit();
+                TEC_TRACE("on_exit() returned {}.", wt.status_);
             }
 
             // `sig_terminated' signals on exit, see OnExit struct defined above.
@@ -331,7 +320,7 @@ public:
      *  @note Derived from Daemon.
      *  @return Status
      */
-    Status run() override {
+    Status run() override final {
         Lock lk{mtx_thread_proc_};
         TEC_ENTER("Worker::run");
 
@@ -356,7 +345,7 @@ public:
         sig_inited_.wait();
 
         // Return the result of thread initialization.
-        return status();
+        return status_;
     }
 
     /**
@@ -369,22 +358,22 @@ public:
      *  @note Derived from Daemon.
      *  @return Status
      */
-    Status terminate() override {
+    Status terminate() override final {
         Lock lk{mtx_thread_proc_};
         TEC_ENTER("Worker::terminate");
 
         if( flag_terminated_ ) {
             TEC_TRACE("WARNING: Worker thread already terminated!");
-            return status();
+            return status_;
         }
 
         if( !thread_.joinable() ) {
             TEC_TRACE("WARNING: no thread exists!");
-            return status();
+            return status_;
         }
 
         // Send Message::QUIT if normal exiting.
-        if( status() ) {
+        if( status_ ) {
             send(nullmsg<Message>());
             TEC_TRACE("QUIT sent.");
         }
@@ -395,7 +384,7 @@ public:
         TEC_TRACE("thread {} finished OK.", id());
 
         flag_terminated_ = true;
-        return status();
+        return status_;
     }
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -408,7 +397,7 @@ public:
     template <typename Derived>
     struct Builder {
         std::unique_ptr<Worker<typename Derived::traits>>
-        operator()(typename Derived::Params& params) {
+        operator()(typename Derived::Params const& params) {
             static_assert(std::is_base_of<Worker<typename Derived::traits>, Derived>::value,
                 "not derived from tec::Worker class");
             return std::make_unique<Derived>(params);

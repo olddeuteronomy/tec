@@ -1,3 +1,4 @@
+// Time-stamp: <Last changed 2025-04-09 15:26:10 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -57,11 +58,17 @@ struct trace_mutex {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                       A simple and dumb Tracer
+*                       A simple Tracer
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-template <typename Duration = MilliSec>
+/**
+ * @brief      A simple Tracer.
+ * @details    Define _TEC_TRACE macro to enable tracing.
+ *
+ * @snippet snp_tracer.cpp tr
+ */
+template <typename Duration=MilliSec>
 class Tracer {
     using Lock = std::lock_guard<std::mutex>;
 
@@ -69,8 +76,9 @@ class Tracer {
 
 public:
 
-    Tracer(const char* name):
-        name_{name} {}
+    Tracer(const char* name)
+        : name_{name}
+        {}
 
 
     void enter(std::ostream* out) {
@@ -110,6 +118,10 @@ public:
 #if defined(_TEC_TRACE_ON)
 // Trace is enabled.
 
+/**
+@def TEC_ENTER(name)
+Prints `name` (usually a function name) to the console.
+*/
 #if defined(__TEC_WINDOWS__)
   // Windows-specific version of TEC_ENTER.
   #define TEC_ENTER(name) Tracer<> tracer__(name); tracer__.enter(&std::cout)
@@ -117,6 +129,10 @@ public:
   #define TEC_ENTER(name) tec::Tracer<> tracer__(name); tracer__.enter(&std::cout)
 #endif
 
+/**
+@def TEC_TRACE(format_string, args...)
+Prints formatted tracing prefixed with the '*' to the console.
+*/
 #define TEC_TRACE(...)  tracer__.trace(&std::cout, __VA_ARGS__)
 
 #else

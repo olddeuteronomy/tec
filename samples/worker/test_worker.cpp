@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-08 18:50:38 by magnolia>
+// Time-stamp: <Last changed 2025-04-10 00:58:06 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -113,7 +113,7 @@ tec::Status test_daemon() {
     // Emulate delays and errors.
     TestParams params{
         .init_delay    = tec::Seconds{2},
-        .init_result   = {1, "on_init() failed"}, // Set to {1, "on_init() failed"} to emulate on_init() error.
+        .init_result   = {}, // Set to {1, "on_init() failed"} to emulate on_init() error.
         .process_delay = tec::Seconds{1},
         .exit_delay    = tec::Seconds{2},
         .exit_result   =  {2, "on_exit() failed"}, // Set to {2, "on_exit() failed"} to emulate on_exit() error.

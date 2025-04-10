@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-08 22:21:34 by magnolia>
+// Time-stamp: <Last changed 2025-04-09 17:08:08 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -85,15 +85,23 @@ using TestServerWorker = tec::ServerWorker<TestServerTraits, TestServer>;
 *                        Test proc
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+// #define DAEMON
 
 tec::Status test_server() {
     TestParams params;
 
-    // Build the deamon.
-    auto daemon{TestServerWorker::Builder<TestServerWorker, TestServer>{}(params)};
+#if defined(DAEMON)
+    // Build a daemon.
+    auto svr{TestServerWorker::DaemonBuilder<TestServerWorker, TestServer>{}(params)};
+    tec::println("*** Using Daemon.");
+#else
+    // Build a worker.
+    auto svr{TestServerWorker::WorkerBuilder<TestServerWorker, TestServer>{}(params)};
+    tec::println("*** Using Worker.");
+#endif
 
     // Run it and check for initialization result.
-    auto status = daemon->run();
+    auto status = svr->run();
     if( !status ) {
         tec::println("run(): {}", status);
         return status;
@@ -103,7 +111,7 @@ tec::Status test_server() {
     std::getchar();
 
     // If we want to get the server shutdown status.
-    return daemon->terminate();
+    return svr->terminate();
 }
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
