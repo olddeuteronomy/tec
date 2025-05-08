@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-09 15:26:10 by magnolia>
+// Time-stamp: <Last changed 2025-05-08 15:12:30 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -37,6 +37,7 @@ SOFTWARE.
 #include <string>
 #include <mutex>
 
+#include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
 #include "tec/tec_utils.hpp"
 
@@ -53,6 +54,7 @@ struct trace_mutex {
         return __mtx_trace;
     }
 };
+
 } //::details
 
 
@@ -73,36 +75,44 @@ class Tracer {
     using Lock = std::lock_guard<std::mutex>;
 
     std::string name_;
+    std::ostream* out_;
 
 public:
 
-    Tracer(const char* name)
+    Tracer(const char* name, std::ostream* out)
         : name_{name}
-        {}
+        , out_{out}
+    {}
 
-
-    void enter(std::ostream* out) {
+    ~Tracer()
+    {
         Lock lk(details::trace_mutex::mtx());
         auto tp = now<Duration>();
-        *out << "[" << tp.count() << "] * " << name_ << " entered.\n";
+        *out_ << "[" << tp.count() << "] - " << name_ << " exited.\n";
+    }
+
+    void enter() {
+        Lock lk(details::trace_mutex::mtx());
+        auto tp = now<Duration>();
+        *out_ << "[" << tp.count() << "] + " << name_ << " entered.\n";
     }
 
 
     template<typename T>
-    void trace(std::ostream* out, const T& arg) {
+    void trace(const T& arg) {
         Lock lk(details::trace_mutex::mtx());
         auto tp = now<Duration>().count();
-        *out << "[" << tp << "] " << name_ << ": ";
-        println<>(out, arg);
+        *out_ << "[" << tp << "] " << name_ << ": ";
+        println<>(out_, arg);
     }
 
 
     template<typename T, typename... Targs>
-    void trace(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) {
+    void trace(const char* fmt, const T& value, Targs&&... Args) {
         Lock lk(details::trace_mutex::mtx());
         auto tp = now<Duration>().count();
-        *out << "[" << tp << "] " << name_ << ": ";
-        println<>(out, fmt, value, Args...);
+        *out_ << "[" << tp << "] " << name_ << ": ";
+        println<>(out_, fmt, value, Args...);
     }
 
 }; // ::Tracer
@@ -124,16 +134,16 @@ Prints `name` (usually a function name) to the console.
 */
 #if defined(__TEC_WINDOWS__)
   // Windows-specific version of TEC_ENTER.
-  #define TEC_ENTER(name) Tracer<> tracer__(name); tracer__.enter(&std::cout)
+  #define TEC_ENTER(name) Tracer<> tracer__(name, &std::cout); tracer__.enter()
 #else
-  #define TEC_ENTER(name) tec::Tracer<> tracer__(name); tracer__.enter(&std::cout)
+  #define TEC_ENTER(name) tec::Tracer<> tracer__(name, &std::cout); tracer__.enter()
 #endif
 
 /**
 @def TEC_TRACE(format_string, args...)
 Prints formatted tracing prefixed with the '*' to the console.
 */
-#define TEC_TRACE(...)  tracer__.trace(&std::cout, __VA_ARGS__)
+#define TEC_TRACE(...)  tracer__.trace(__VA_ARGS__)
 
 #else
 // No trace, please.

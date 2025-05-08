@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-10 00:58:06 by magnolia>
+// Time-stamp: <Last changed 2025-05-09 01:37:19 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,7 +33,7 @@ SOFTWARE.
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                           Test Worker
+*                           TestWorker
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -47,47 +47,26 @@ struct TestParams
   tec::Status  exit_result; // To emulate on_exit() failure
 };
 
-// Test message.
-struct TestMessage: public tec::WorkerMessage {
-    int counter;
-};
 
-// Test command.
-constexpr static const tec::WorkerMessage::Command CMD_CALL_PROCESS = 1;
-
-// Instantiate TestWorker.
-using TestWorkerTraits = tec::worker_traits<
-    TestParams,
-    TestMessage
-    >;
-using TestWorker = tec::Worker<TestWorkerTraits>;
-
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                              MyWorker
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-class MyWorker: public TestWorker {
+class TestWorker: public tec::Worker<TestParams> {
 public:
-    MyWorker(const TestParams& params)
-        : TestWorker(params)
+    TestWorker(const TestParams& params)
+        : tec::Worker<TestParams>{params}
     {
         // Register handler for CMD_CALL_PROCESS.
-        register_handler(
-            CMD_CALL_PROCESS,
+        register_handler<int>(
             [](auto worker, auto msg){
-                TEC_ENTER("CMD_CALL_PROCESS");
-                TEC_TRACE("counter={}", msg.counter);
-                if( msg.counter <= 10 ) {
-                    // Continue processing by sending CMD_CALL_PROCESS again.
+                TEC_ENTER("HANDLER <int>");
+                int counter = std::any_cast<int>(msg);
+                TEC_TRACE("=== counter={}", counter);
+                if( counter <= 10 ) {
+                    // Continue processing...
                     std::this_thread::sleep_for(worker.params().process_delay);
-                    worker.send({{CMD_CALL_PROCESS}, msg.counter + 1});
+                    worker.send({counter + 1});
                 }
                 else {
                     // Quit message loop and terminate the Worker.
-                    worker.send(tec::nullmsg<TestMessage>());
+                    worker.send(tec::nullmsg());
                 }
             });
     }
@@ -98,7 +77,7 @@ protected:
         std::this_thread::sleep_for(params().init_delay);
         if( params().init_result ) {
             // Initiate processing, starting with 1.
-            send({{CMD_CALL_PROCESS}, 1});
+            send({1});
         }
         return params().init_result;
     }
@@ -109,6 +88,12 @@ protected:
 };
 
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                            TEST
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 tec::Status test_daemon() {
     // Emulate delays and errors.
     TestParams params{
@@ -116,12 +101,11 @@ tec::Status test_daemon() {
         .init_result   = {}, // Set to {1, "on_init() failed"} to emulate on_init() error.
         .process_delay = tec::Seconds{1},
         .exit_delay    = tec::Seconds{2},
-        .exit_result   =  {2, "on_exit() failed"}, // Set to {2, "on_exit() failed"} to emulate on_exit() error.
-
+        .exit_result   = {}, // Set to {2, "on_exit() failed"} to emulate on_exit() error.
     };
 
-    // Build a daemon using the derived MyWorker.
-    auto daemon{tec::Daemon::Builder<MyWorker>{}(params)};
+    // Build a daemon using the derived TestWorker class.
+    auto daemon{tec::Daemon::Builder<TestWorker>{}(params)};
 
     // Start the daemon and check for an initialization error.
     auto status = daemon->run();

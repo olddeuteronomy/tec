@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-08 22:57:43 by magnolia>
+// Time-stamp: <Last changed 2025-04-18 00:25:30 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,10 +24,10 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   \file tec_grpc_client.hpp
- *   \brief gRPC client implementation.
+ *   @file tec_grpc_client.hpp
+ *   @brief gRPC client implementation.
  *
- *  Defines the gRPC client.
+ *  Declares a gRPC client.
  *
 */
 
@@ -93,7 +93,7 @@ public:
 
 protected:
 
-    // Custom parameters - must be inherited from ClientParams.
+    //! Custom parameters - must be inherited from ClientParams.
     Params params_;
 
     // gRPC-specific stuff.

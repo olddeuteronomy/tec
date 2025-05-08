@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-09 17:08:08 by magnolia>
+// Time-stamp: <Last changed 2025-05-08 15:43:14 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -38,17 +38,9 @@ SOFTWARE.
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Test ServerMessage.
-struct TestMessage: public tec::WorkerMessage {};
-
 // Test ServerParams.
 struct TestParams: public tec::ServerParams {};
 
-// Declare ServerWorker traits.
-using TestServerTraits = tec::worker_traits<
-    TestParams,
-    TestMessage
-    >;
 
 // Implement the test Server.
 class TestServer: public tec::Server {
@@ -78,14 +70,14 @@ public:
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // Define the Test Server Worker.
-using TestServerWorker = tec::ServerWorker<TestServerTraits, TestServer>;
+using TestServerWorker = tec::ServerWorker<TestParams, TestServer>;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                        Test proc
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-// #define DAEMON
+#define DAEMON 1
 
 tec::Status test_server() {
     TestParams params;

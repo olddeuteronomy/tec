@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-10 03:05:46 by magnolia>
+// Time-stamp: <Last changed 2025-05-08 15:37:17 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -46,12 +46,10 @@ namespace tec {
  * @details    Starts and shutdowns the Server.
  *
  */
-template <typename Traits, typename TServer>
-class ServerWorker: public Worker<Traits> {
+template <typename TParams, typename TServer>
+class ServerWorker: public Worker<TParams> {
 public:
-    typedef Traits traits ;
-    typedef typename traits::Params Params;
-    typedef typename traits::Message Message;
+    using Params = TParams;
 
 private:
     std::unique_ptr<TServer> server_;
@@ -68,7 +66,7 @@ public:
 
     //! Initialize the Worker with a Server.
     ServerWorker(const Params& params, std::unique_ptr<TServer> server)
-        : Worker<Traits>(params)
+        : Worker<Params>(params)
         // Now ServerWorker owns the server!
         , server_{std::move(server)}
         // Start the server thread then wait for `sig_run_server_thread` signalled.
@@ -93,7 +91,7 @@ public:
 
 protected:
 
-    //! Resume the server and try to start the server.
+    //! Resume the server thread and try to start the server.
     Status on_init() override {
         TEC_ENTER("ServerWorker::on_init");
 
@@ -151,7 +149,7 @@ protected:
 public:
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      *
-     *                       Server Worker Builders
+     *                       ServerWorker Builders
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -191,12 +189,12 @@ public:
      */
     template <typename WorkerDerived, typename ServerDerived>
     struct WorkerBuilder {
-        std::unique_ptr<Worker<typename WorkerDerived::traits>>
+        std::unique_ptr<Worker<typename WorkerDerived::Params>>
         operator()(typename WorkerDerived::Params const& params)
         {
             // Check for a Derived class is derived from the tec::Worker class.
             static_assert(
-                std::is_base_of<Worker<typename WorkerDerived::traits>, WorkerDerived>::value,
+                std::is_base_of<Worker<typename WorkerDerived::Params>, WorkerDerived>::value,
                 "not derived from tec::Worker class");
             // Check for a ServerDerived class is derived from the tec::Server class.
             static_assert(

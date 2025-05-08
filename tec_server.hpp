@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-08 21:36:07 by magnolia>
+// Time-stamp: <Last changed 2025-05-08 15:09:54 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -95,8 +95,7 @@ public:
     /**
      * @brief      Shutdown the server.
      *
-     * @param      sig_stopped Signalled after server has been stopped, possible with error.
-     * @return     Status Error::Kind::Timeout, or any other error, or Ok.
+     * @param      sig_stopped Signalled after server has been stopped.
      *
      * @sa Signal
      */

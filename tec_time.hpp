@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-12 01:17:11 by magnolia>
+// Time-stamp: <Last changed 2025-04-18 12:45:40 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -56,13 +56,13 @@ namespace tec {
  * @note https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/timestamp.proto
  */
 struct Timestamp {
-    // Represents seconds of UTC (or local) time since Unix epoch
-    // 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
-    // 9999-12-31T23:59:59Z inclusive.
-    int64_t seconds;
+    //! Represents seconds of UTC (or local) time since Unix epoch
+    //! 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to
+    //! 9999-12-31T23:59:59Z inclusive.
+    std::int64_t seconds;
     //! Must be from 0 to 999,999,999 inclusive.
-    int32_t nanos;
-    //! Unix struct `tm`.
+    std::int32_t nanos;
+    //! Unix struct `tm`. Should we have another one for Windows?
     ::tm date_time;
 
     enum class TMZONE {
@@ -83,7 +83,7 @@ struct Timestamp {
             if( buf != NULL ) {
                 ::timeval tv{};
                 ::gettimeofday(&tv, NULL);
-                return {tv.tv_sec, (int32_t)tv.tv_usec * 1000, date_time};
+                return {tv.tv_sec, (std::int32_t)tv.tv_usec * 1000, date_time};
             }
         }
         return {0, 0, {}};
@@ -108,3 +108,14 @@ struct Timestamp {
 }; // ::Timestamp
 
 } // ::tec
+
+
+// #include <stdio.h>
+//
+// int main(void)
+// {
+//     auto dt_utc{tec::Timestamp::now().date_time};
+//     auto dt_local{tec::Timestamp::now(tec::Timestamp::TMZONE::LOCAL).date_time};
+//     printf("UTC:   %s", asctime(&dt_utc));
+//     printf("Local: %s", asctime(&dt_local));
+// }

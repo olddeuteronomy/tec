@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 15:15:30 by magnolia>
+// Time-stamp: <Last changed 2025-05-09 01:48:37 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -47,7 +47,6 @@ SOFTWARE.
 #include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
 #include "tec/tec_semaphore.hpp"
-#include "tec/tec_worker.hpp"
 #include "tec/tec_server_worker.hpp"
 #include "tec/grpc/tec_grpc_server.hpp"
 
@@ -61,7 +60,7 @@ using helloworld::HelloRequest;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                             Service
+*                             gRPC Service
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -109,12 +108,7 @@ public:
 };
 
 // Instantiate gRPC Server Worker.
-using MyMessage = tec::WorkerMessage;
-using MyWorkerTraits = tec::worker_traits<
-    MyServerParams,
-    MyMessage
-    >;
-using MyServerWorker = tec::ServerWorker<MyWorkerTraits, MyServer>;
+using MyServerWorker = tec::ServerWorker<MyServerParams, MyServer>;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

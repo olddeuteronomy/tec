@@ -39,7 +39,7 @@ endif
 
 # Compilation parameters
 TARGET = $(TEST)$(TARGET_SUFFIX)
-CPPFLAGS = -std=c++17 -Wall -pthread -O2 -g
+CPPFLAGS = -std=c++17 -Wall -pthread -O0 -g
 INCLUDES = -I../../..
 OUTDIR = out
 

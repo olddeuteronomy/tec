@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-05-08 14:51:14 by magnolia>
+// Time-stamp: <Last changed 2025-05-08 21:54:31 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,42 +23,50 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
-/**
- *   @file tec_message.hpp
- *   @brief Defines a universal Message object.
- *
-*/
-
-#pragma once
-
-#include <any>
-
 #include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_worker.hpp"
 
 
-namespace tec {
+//========================================================================
+//                             TEST
+//========================================================================
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                            Message
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+int main() {
+    // Define Worker's parameters.
+    struct Params {
+        int start;
+    } params{1};
 
-//! Define a Message object. It can hold literally ANY object
-//! to be processed by a Worker.
-using Message = std::any;
+    // Declare the worker.
+    using MyWorker = tec::Worker<Params>;
 
-///@{ Message helpers.
+    // Create the worker.
+    auto wrk{MyWorker::Builder<MyWorker>{}(params)};
 
-//! The null Message quits the Worker's message loop.
-inline Message nullmsg() { return Message{}; }
+    // Register a handler for the `int' message.
+    wrk->register_handler<int>(
+        [](auto worker, auto msg) {
+            TEC_ENTER("HANDLER [int]");
+            int counter = std::any_cast<int>(msg);
+            TEC_TRACE("counter={}", counter);
+            if( counter <= 10 ) {
+                // Emulate processing...
+                std::this_thread::sleep_for(tec::Seconds{1});
+                // Continue counting.
+                worker.send({counter + 1});
+            }
+            else {
+                // Quit message loop and terminate the worker.
+                worker.send(tec::nullmsg());
+            }
+       });
 
-//! Check for the null Message.
-inline bool is_null(const Message& msg) { return !msg.has_value(); }
+    // Start the worker.
+    wrk->run();
+    // Initiate counting.
+    wrk->send({params.start});
+    // Wait for Worker is terminated.
+    wrk->sig_terminated().wait();
 
-//! For debugging.
-inline auto name(const Message& msg) { return msg.type().name(); }
-
-///@}
-
-} // ::tec
+    return 0;
+}

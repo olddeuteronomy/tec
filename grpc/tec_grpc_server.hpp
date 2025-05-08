@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-08 23:02:24 by magnolia>
+// Time-stamp: <Last changed 2025-05-09 01:45:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -198,7 +198,7 @@ public:
             auto errmsg = format("gRPC Server cannot start on \"{}\"", params_.addr_uri);
             TEC_TRACE("!!! Error: {}.", errmsg);
             status = {errmsg, Error::Kind::RpcErr};
-            // Signal that the server started, set error result.
+            // Signal that the server started, but with an error.
             sig_started.set();
             return;
         }
