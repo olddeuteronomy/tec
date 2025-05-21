@@ -1,13 +1,12 @@
 ###############################################################################
-# To force rebuild with `clang++' (default):
-#    make [-k] -B TEST=worker|server
-# To force rebuild with `g++':
-#    make [-k] -B GCC=1 TEST=worker|server
+#
+# To force rebuild with `g++' (default):
+#    make -k -B -j4
+#
+# To force rebuild with `clang++':
+#    make -k -B -j4 CLANG=1
+#
 ###############################################################################
-
-ifndef TEST
-$(error TEST is not defined! Use make -k -B TEST=testname)
-endif
 
 # OS
 ifeq ($(OS),Windows_NT)
@@ -17,16 +16,19 @@ else
 	detected_OS := $(uname -o)
 endif
 
+# Default dependencies
+all_headers := $(wildcard ../../*.hpp)
+
 # Compilers
-# gcc is optional
-ifdef GCC
-	CC = g++
-	TARGET_SUFFIX = _gcc$(EXE_SUFFIX)
-else
-# clang is default
-	CLANG = 1
-	CC = clang++
+ifdef CLANG
+# clang++ is optional
+	CXX = clang++
 	TARGET_SUFFIX = _clang$(EXE_SUFFIX)
+else
+# gcc++ is default
+	GCC = 1
+	CXX = g++
+	TARGET_SUFFIX = _gcc$(EXE_SUFFIX)
 endif
 
 
@@ -38,21 +40,21 @@ else
 endif
 
 # Compilation parameters
-TARGET = $(TEST)$(TARGET_SUFFIX)
-CPPFLAGS = -std=c++17 -Wall -pthread -O0 -g
-INCLUDES = -I../../..
-OUTDIR = out
+# TARGET := $(TEST)$(TARGET_SUFFIX)
+CPPFLAGS := -std=c++17 -Wall -pthread -O0 -g
+INCLUDES := -I../../..
+OUTDIR := out
 
 # Enable tracing in release build.
 # Add -v is for verbose output (to list all include paths etc)
-DEFS = -D_TEC_TRACE_ON
+DEFS := -D_TEC_TRACE_ON
 
 # Just for fun - colorize compiler output
 ifdef GCC
-	EXTRAS = -fdiagnostics-color=always
+	EXTRAS := -fdiagnostics-color=always
 else
 ifdef CLANG
-	EXTRAS = -fcolor-diagnostics
+	EXTRAS := -fcolor-diagnostics
 endif
 endif
 
@@ -64,8 +66,17 @@ $(info $(shell ${MKDIR_P} $(OUTDIR)))
 endif
 
 
-# Compile the target
-$(OUTDIR)/$(TARGET): test_$(TEST).cpp
-	$(CC) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) test_$(TEST).cpp -o $(OUTDIR)/$(TARGET)
+# Build the targets
+all: $(OUTDIR)/worker$(TARGET_SUFFIX) \
+	$(OUTDIR)/server$(TARGET_SUFFIX) \
+	$(OUTDIR)/worker_simple$(TARGET_SUFFIX)
 
-all: $(OUTDIR)/$(TARGET)
+$(OUTDIR)/worker$(TARGET_SUFFIX): test_worker.cpp
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $@
+
+$(OUTDIR)/server$(TARGET_SUFFIX): test_server.cpp
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $@
+
+$(OUTDIR)/worker_simple$(TARGET_SUFFIX): test_worker_simple.cpp
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $@
+
