@@ -115,7 +115,12 @@ public:
 
 #include <unistd.h>
 #include <pwd.h>
+
+#if defined(__TEC_APPLE__)
+#include <sys/syslimits.h>
+#else
 #include <linux/limits.h>
+#endif
 
 
 //! Returns a computer name or empty string on failure.

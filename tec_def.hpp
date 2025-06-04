@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-07 17:52:35 by magnolia>
+// Time-stamp: <Last changed 2025-06-03 15:32:15 by mac>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -40,6 +40,11 @@ SOFTWARE.
 #endif
 
 /// OS specific defines
+
+// Check for Apple
+#if defined(__APPLE__)
+  #define __TEC_APPLE__ __APPLE__
+#endif
 
 // Check for MS Windows
 #if defined(_MSC_VER) && (defined(_WIN32) || defined(_WIN64))
