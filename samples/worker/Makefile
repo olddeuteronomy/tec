@@ -1,5 +1,5 @@
 ###############################################################################
-#
+# Time-stamp: <Last changed 2025-05-22 01:35:06 by magnolia>
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
 #
@@ -40,7 +40,6 @@ else
 endif
 
 # Compilation parameters
-# TARGET := $(TEST)$(TARGET_SUFFIX)
 CPPFLAGS := -std=c++17 -Wall -pthread -O0 -g
 INCLUDES := -I../../..
 OUTDIR := out
@@ -67,7 +66,8 @@ endif
 
 
 # Build the targets
-all: $(OUTDIR)/worker$(TARGET_SUFFIX) \
+all: \
+	$(OUTDIR)/worker$(TARGET_SUFFIX) \
 	$(OUTDIR)/server$(TARGET_SUFFIX) \
 	$(OUTDIR)/worker_simple$(TARGET_SUFFIX)
 
@@ -79,4 +79,3 @@ $(OUTDIR)/server$(TARGET_SUFFIX): test_server.cpp
 
 $(OUTDIR)/worker_simple$(TARGET_SUFFIX): test_worker_simple.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $@
-
