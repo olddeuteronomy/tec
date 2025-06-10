@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-05-21 15:05:17 by magnolia>
+// Time-stamp: <Last changed 2025-06-11 00:33:38 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,6 +34,7 @@ SOFTWARE.
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_status.hpp"
 #include "tec/tec_signal.hpp"
+#include "tec/tec_message.hpp"
 
 
 namespace tec {
@@ -73,6 +74,9 @@ public:
      * @return     Status
      */
     virtual Status terminate() = 0;
+
+    //! Send a control message.
+    virtual bool send(const Message&) = 0;
 
     //! Signals after the Daemon has been started.
     virtual const Signal& sig_running() const = 0;

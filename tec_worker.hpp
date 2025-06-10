@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-05-09 01:30:59 by magnolia>
+// Time-stamp: <Last changed 2025-06-11 01:41:55 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,8 +32,11 @@ SOFTWARE.
 #pragma once
 
 #include <atomic>
+#include <cmath>
+#include <memory>
 #include <typeindex>
 #include <unordered_map>
+#include <functional>
 #include <thread>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
@@ -56,10 +59,10 @@ namespace tec {
 /**
  * @brief      A Worker class implements message processing.
  *
- * @details Extends the Daemon class with the `send()` method that is used to
+ * @details Implements the Daemon's `send()` method that is used to
  * manage the Worker's thread.
  * Also,
- * 1) Defines message handlers;
+ * 1) Defines message callbacks;
  * 2) Implements default callbacks `on_init()` and `on_exit()`;
  * 3) Defines an internal thread procedure that implements message polling;
  * 4) Implements required Signals (see Daemon).
@@ -72,21 +75,30 @@ class Worker : public Daemon
 public:
     using Params = TParams;
     using id_t = std::thread::id;
-
-    //! Message handler.
-    typedef void (*Handler)(Worker<Params>&, const Message&);
-
-protected:
-
     using Lock = std::lock_guard<std::mutex>;
 
+    //! Callback.
+    using CallbackFunc = std::function<void(Worker<Params>*, const Message&)>;
+
+protected:
     // Worker parameters.
     Params params_;
 
 private:
 
-    // Message handlers.
-    std::unordered_map<std::type_index, Handler> slots_;
+    struct Slot {
+        Worker<Params>* worker;
+        CallbackFunc callback;
+
+        Slot(Worker<Params>* w, CallbackFunc cb)
+            : worker{w}
+            , callback{cb}
+            {}
+        ~Slot() = default;
+    };
+
+    // Callbacks table.
+    std::unordered_map<std::type_index, std::unique_ptr<Slot>> slots_;
 
     // Signals.
     Signal sig_running_;
@@ -160,7 +172,7 @@ public:
      *  @param  msg Message.
      *  @return bool
      */
-    bool send(const Message& msg) {
+    bool send(const Message& msg) override {
         TEC_ENTER("Worker::send");
         if( thread_.joinable() ) {
             mq_.enqueue(msg);
@@ -174,17 +186,46 @@ public:
     }
 
     /**
-     * @brief Register a message handler for the given type.
-     * @param handler A handler of the corresponding message.
+     * @brief Register a callback for the given message type.
+     * @param worker A Worker derived object.
+     * @param callback A handler of the corresponding message.
      */
-    template<typename T>
-    void register_handler(Handler handler) {
+    template<typename Derived, typename T>
+    void register_callback(Derived* worker, void (Derived::*callback)(const Message& msg)) {
+        TEC_ENTER("Worker::register_callback");
+        // Ensure Derived is actually derived from Worker<Params>.
+        static_assert(std::is_base_of_v<Worker<Params>, Derived>,
+                      "Derived must inherit from tec::Worker");
         std::type_index ndx = std::type_index(typeid(T));
+
         // Remove existing handler.
         if( auto slot = slots_.find(ndx); slot != slots_.end() ) {
             slots_.erase(ndx);
         }
-        slots_[ndx] = {handler};
+
+        // Sets the slot.
+        slots_[ndx] = std::make_unique<Slot>(
+            worker,
+            [callback](Worker<Params>* worker, const Message& msg) {
+                // Safely downcast to Derived.
+                auto derived = dynamic_cast<Derived*>(worker);
+                (derived->*callback)(msg); }
+            );
+        TEC_TRACE("Callback {} registered.", typeid(T).name());
+    }
+
+protected:
+
+    /**
+     * @brief      Calls the corresponding message handler.
+     * @param      msg Message to dispatch.
+     * @sa register_callback()
+     */
+    virtual void dispatch(const Message& msg) {
+        auto ndx = std::type_index(msg.type());
+        if( auto slot = slots_.find(ndx); slot != slots_.end() ) {
+            slot->second->callback(slot->second->worker, msg);
+        }
     }
 
 private:
@@ -260,7 +301,7 @@ private:
 protected:
 
     /**
-     *  @brief A callback that is being invoked on Worker initialization.
+     *  @brief A default callback that is being invoked on Worker initialization.
      *
      *  @note If `on_init()` returns Status other than `Error::Kind::Ok`,
      *  the Worker stops message processing and quits the Worker thread
@@ -272,7 +313,7 @@ protected:
     virtual Status on_init() { return {}; }
 
     /**
-     *  @brief A callback that is being invoked on exiting from the Worker's thread.
+     *  @brief A default callback that is being invoked on exiting from the Worker's thread.
      *
      *  @note This callback **will not be called** if the `on_init()`
      *  callback returned Result other than `Error::Kind::Ok`.
@@ -281,19 +322,6 @@ protected:
      *  @return Status `Error::Kind::Ok` by default.
      */
     virtual Status on_exit() { return {}; }
-
-
-    /**
-     * @brief      Dispatches a message by calling the corresponding message handler.
-     * @param      msg Message to dispatch.
-     * @sa register_handler()
-     */
-    virtual void dispatch(const Message& msg) {
-        auto ndx = std::type_index(msg.type());
-        if( auto slot = slots_.find(ndx); slot != slots_.end() ) {
-            slot->second(std::ref(*this), msg);
-        }
-    }
 
 public:
 
@@ -385,7 +413,7 @@ public:
         std::unique_ptr<Worker<typename Derived::Params>>
         operator()(typename Derived::Params const& params) {
             static_assert(std::is_base_of<Worker<typename Derived::Params>, Derived>::value,
-                "not derived from tec::Worker class");
+                "Not derived from tec::Worker class");
             return std::make_unique<Derived>(params);
         }
     };

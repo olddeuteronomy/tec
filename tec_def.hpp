@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-06-07 00:58:45 by magnolia>
+// Time-stamp: <Last changed 2025-06-07 01:12:48 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -66,7 +66,7 @@ SOFTWARE.
   // This pragma has been removed to make the code cleaner:
   // #pragma clang diagnostic ignored "-Wmicrosoft-template-shadow"
   #define __TEC_CLANG__         1
-  #define __TEC_COMPILER_NAME__ "clang++"
+  #define __TEC_COMPILER_NAME__ __VERSION__
 
   #define __TEC_COMPILER_VER_MAJOR__      __clang_major__
   #define __TEC_COMPILER_VER_MINOR__      __clang_minor__
@@ -78,7 +78,7 @@ SOFTWARE.
 #elif defined(__GNUC__)
 // Check gcc
   #define __TEC_GNUC__          __GNUC__
-  #define __TEC_COMPILER_NAME__ "g++"
+  #define __TEC_COMPILER_NAME__ "g++" " " __VERSION__
 
   #define __TEC_COMPILER_VER_MAJOR__      __GNUC__
   #define __TEC_COMPILER_VER_MINOR__      __GNUC_MINOR__

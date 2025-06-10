@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-05-09 01:37:19 by magnolia>
+// Time-stamp: <Last changed 2025-06-11 02:27:40 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,19 +23,16 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
+#include <string>
+#include <thread>
+
 #include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_message.hpp"
 #include "tec/tec_status.hpp"
 #include "tec/tec_trace.hpp"
 #include "tec/tec_utils.hpp"
 #include "tec/tec_worker.hpp"
-#include <thread>
 
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                           TestWorker
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // Test parameters.
 struct TestParams
@@ -47,28 +44,60 @@ struct TestParams
   tec::Status  exit_result; // To emulate on_exit() failure
 };
 
+// Test compound message.
+struct Position {
+    int x;
+    int y;
+};
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                           TestWorker
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 class TestWorker: public tec::Worker<TestParams> {
 public:
     TestWorker(const TestParams& params)
         : tec::Worker<TestParams>{params}
     {
-        // Register handler for CMD_CALL_PROCESS.
-        register_handler<int>(
-            [](auto worker, auto msg){
-                TEC_ENTER("HANDLER <int>");
-                int counter = std::any_cast<int>(msg);
-                TEC_TRACE("=== counter={}", counter);
-                if( counter <= 10 ) {
-                    // Continue processing...
-                    std::this_thread::sleep_for(worker.params().process_delay);
-                    worker.send({counter + 1});
-                }
-                else {
-                    // Quit message loop and terminate the Worker.
-                    worker.send(tec::nullmsg());
-                }
-            });
+        register_callback<TestWorker, int>(this, &TestWorker::process_int);
+        register_callback<TestWorker, std::string>(this, &TestWorker::process_string);
+        register_callback<TestWorker, const char*>(this, &TestWorker::process_const_char);
+        register_callback<TestWorker, Position>(this, &TestWorker::process_position);
+    }
+
+    virtual void process_int(const tec::Message& msg) {
+        TEC_ENTER("HANDLER <int>");
+        int counter = std::any_cast<int>(msg);
+        TEC_TRACE(">>> counter={}", counter);
+        if( counter <= 10 ) {
+            // Continue processing...
+            std::this_thread::sleep_for(params().process_delay);
+            send({counter + 1});
+        }
+        else {
+            // Quit message loop and terminate the Worker.
+            send(tec::nullmsg());
+        }
+    }
+
+    virtual void process_string(const tec::Message& msg) {
+        TEC_ENTER("HANDLER <string>");
+        auto str = std::any_cast<std::string>(msg);
+        TEC_TRACE(">>> \"{}\"", str);
+    }
+
+    virtual void process_const_char(const tec::Message& msg) {
+        TEC_ENTER("HANDLER <const char*>");
+        auto str = std::any_cast<const char*>(msg);
+        TEC_TRACE(">>> \"{}\"", str);
+    }
+
+    virtual void process_position(const tec::Message& msg) {
+        TEC_ENTER("HANDLER <Position>");
+        auto pos = std::any_cast<Position>(msg);
+        TEC_TRACE(">>> x={} y={}", pos.x, pos.y);
     }
 
 protected:
@@ -85,6 +114,7 @@ protected:
     tec::Status on_exit() override {
         return params().exit_result;
     }
+
 };
 
 
@@ -112,6 +142,11 @@ tec::Status test_daemon() {
     if( !status ) {
         return status;
     }
+
+    // Send different messages.
+    daemon->send({std::string("This is a string!")});
+    daemon->send({"This is a const char*!"});
+    daemon->send(Position{234, 71});
 
     // Wait for daemon is finished.
     daemon->sig_terminated().wait();

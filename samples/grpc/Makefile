@@ -48,12 +48,12 @@ EXTRA_FLAGS += -fcolor-diagnostics
 endif
 endif
 
-ifdef GCC
-CXX = g++
-SUFFIX = _gcc
-else
+ifdef CLANG
 CXX = clang++
 SUFFIX = _clang
+else
+CXX = g++
+SUFFIX = _gcc
 endif
 
 # Create output directory if needed
