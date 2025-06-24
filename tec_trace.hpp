@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-05-08 15:12:30 by magnolia>
+// Time-stamp: <Last changed 2025-06-25 02:50:23 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -47,7 +47,7 @@ namespace tec {
 
 namespace details {
 
-//! Global trace synchronizer.
+// //! Global trace synchronizer.
 struct trace_mutex {
     static std::mutex& mtx() {
         static std::mutex __mtx_trace;
@@ -72,12 +72,12 @@ struct trace_mutex {
  */
 template <typename Duration=MilliSec>
 class Tracer {
-    using Lock = std::lock_guard<std::mutex>;
-
+private:
     std::string name_;
     std::ostream* out_;
 
 public:
+    using Lock = std::lock_guard<std::mutex>;
 
     Tracer(const char* name, std::ostream* out)
         : name_{name}
@@ -102,7 +102,7 @@ public:
     void trace(const T& arg) {
         Lock lk(details::trace_mutex::mtx());
         auto tp = now<Duration>().count();
-        *out_ << "[" << tp << "] " << name_ << ": ";
+        *out_ << "[" << tp << "]     " << name_ << ": ";
         println<>(out_, arg);
     }
 
@@ -111,7 +111,7 @@ public:
     void trace(const char* fmt, const T& value, Targs&&... Args) {
         Lock lk(details::trace_mutex::mtx());
         auto tp = now<Duration>().count();
-        *out_ << "[" << tp << "] " << name_ << ": ";
+        *out_ << "[" << tp << "]     " << name_ << ": ";
         println<>(out_, fmt, value, Args...);
     }
 
@@ -141,7 +141,7 @@ Prints `name` (usually a function name) to the console.
 
 /**
 @def TEC_TRACE(format_string, args...)
-Prints formatted tracing prefixed with the '*' to the console.
+Prints formatted log to the console.
 */
 #define TEC_TRACE(...)  tracer__.trace(__VA_ARGS__)
 
