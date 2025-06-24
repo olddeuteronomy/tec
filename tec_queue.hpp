@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-31 15:36:04 by magnolia>
+// Time-stamp: <Last changed 2025-06-24 15:40:04 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,6 +32,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstddef>
 #include <queue>
 #include <mutex>
 #include <condition_variable>
@@ -88,6 +89,10 @@ public:
         return val;
     }
 
+    std::size_t size() const {
+        std::unique_lock<std::mutex> lock(m_);
+        return q_.size();
+    }
 }; // ::SafeQueue
 
 

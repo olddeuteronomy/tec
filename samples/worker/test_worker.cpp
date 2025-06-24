@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-06-11 02:27:40 by magnolia>
+// Time-stamp: <Last changed 2025-06-24 22:10:53 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -37,11 +37,12 @@ SOFTWARE.
 // Test parameters.
 struct TestParams
 {
-  tec::Seconds init_delay;
-  tec::Status  init_result; // To emulate on_init() failure
-  tec::Seconds process_delay;
-  tec::Seconds exit_delay;
-  tec::Status  exit_result; // To emulate on_exit() failure
+    tec::Seconds init_delay;
+    tec::Status  init_result; // To emulate on_init() failure
+    tec::Seconds process_delay;
+    tec::Seconds exit_delay;
+    tec::Status  exit_result; // To emulate on_exit() failure
+    int max_count;
 };
 
 // Test compound message.
@@ -67,11 +68,12 @@ public:
         register_callback<TestWorker, Position>(this, &TestWorker::process_position);
     }
 
+protected:
     virtual void process_int(const tec::Message& msg) {
         TEC_ENTER("HANDLER <int>");
         int counter = std::any_cast<int>(msg);
         TEC_TRACE(">>> counter={}", counter);
-        if( counter <= 10 ) {
+        if( counter <= params().max_count ) {
             // Continue processing...
             std::this_thread::sleep_for(params().process_delay);
             send({counter + 1});
@@ -132,6 +134,7 @@ tec::Status test_daemon() {
         .process_delay = tec::Seconds{1},
         .exit_delay    = tec::Seconds{2},
         .exit_result   = {}, // Set to {2, "on_exit() failed"} to emulate on_exit() error.
+        .max_count = 10,
     };
 
     // Build a daemon using the derived TestWorker class.

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-06-11 01:41:55 by magnolia>
+// Time-stamp: <Last changed 2025-06-24 22:28:40 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -85,12 +85,12 @@ protected:
     Params params_;
 
 private:
-
+    // Callbacks table entry.
     struct Slot {
         Worker<Params>* worker;
         CallbackFunc callback;
 
-        Slot(Worker<Params>* w, CallbackFunc cb)
+        explicit Slot(Worker<Params>* w, CallbackFunc cb)
             : worker{w}
             , callback{cb}
             {}
@@ -113,8 +113,8 @@ private:
 
     // The worker thread is resumed and running.
     std::atomic_bool flag_running_;
-    // Message polling is active.
-    std::atomic_bool flag_polling_;
+    // To prevent sending quit (null) message twice on `terminate`.
+    std::atomic_bool flag_quit_;
     // run()/terminate() sync.
     std::mutex mtx_thread_proc_;
 
@@ -127,7 +127,7 @@ public:
     /**
      *  @brief Constructs a Worker thread in the suspended state.
      *
-     *  Use `run()` to start the Worker thread.
+     *  Use `run()` to resume the Worker thread.
      *
      *  @sa Worker::run()
      */
@@ -135,7 +135,7 @@ public:
         : Daemon()
         , params_{params}
         , flag_running_{false}
-        , flag_polling_{false}
+        , flag_quit_{false}
         , thread_{details<Params>::thread_proc, std::ref(*this)}
     {}
 
@@ -155,13 +155,13 @@ public:
     constexpr const Params& params() const { return params_; }
 
     //! Signals that Worker thread has started.
-    const Signal& sig_running() const override final { return sig_running_; }
+    const Signal& sig_running() const override { return sig_running_; }
 
     //! Signals that Worker thread has inited (possible, with error).
-    const Signal& sig_inited() const override final { return sig_inited_; }
+    const Signal& sig_inited() const override { return sig_inited_; }
 
     //! Signals that Worker thread has terminated.
-    const Signal& sig_terminated() const override final { return sig_terminated_; }
+    const Signal& sig_terminated() const override { return sig_terminated_; }
 
     /**
      *  @brief  Sends a Message to the Worker thread.
@@ -180,7 +180,7 @@ public:
             return true;
         }
         else {
-             // No message loop.
+             // No worker thread.
             return false;
         }
     }
@@ -255,7 +255,6 @@ private:
             wt.thread_id_ = std::this_thread::get_id();
             TEC_TRACE("thread {} created.", wt.id());
             wt.sig_running_.wait();
-            wt.flag_running_ = true;
             TEC_TRACE("`sig_running' received.");
 
             // Initialize the Worker and set a status.
@@ -271,19 +270,18 @@ private:
                 // Start message polling if inited successfully.
                 TEC_TRACE("entering message loop.");
                 bool stop = false;
-                wt.flag_polling_ = true;
                 do {
                     auto msg = wt.mq_.dequeue();
                     TEC_TRACE("received Message [{}].", name(msg));
                     if( is_null(msg) ) {
                         stop = true;
+                        wt.flag_quit_ = true;
                     }
                     else {
                         wt.dispatch(msg);
                     }
                 } while( !stop );
-                wt.flag_polling_ = false;
-                TEC_TRACE("leaving message loop.");
+                TEC_TRACE("leaving message loop, {} message(s) left in queue...", wt.mq_.size());
             }
 
             // Finalize the Worker ONLY IF it has been inited successfully.
@@ -294,14 +292,14 @@ private:
                 TEC_TRACE("on_exit() returned {}.", wt.status_);
             }
 
-            // `sig_terminated' signals on exit, see OnExit struct defined above.
+            // `sig_terminated' signals on exit, see the OnExit struct defined above.
         }
     };
 
 protected:
 
     /**
-     *  @brief A default callback that is being invoked on Worker initialization.
+     *  @brief A default callback that is being invoked on Worker's thread initialization.
      *
      *  @note If `on_init()` returns Status other than `Error::Kind::Ok`,
      *  the Worker stops message processing and quits the Worker thread
@@ -334,7 +332,7 @@ public:
      *  @note Derived from Daemon.
      *  @return Status
      */
-    Status run() override final {
+    Status run() override {
         Lock lk{mtx_thread_proc_};
         TEC_ENTER("Worker::run");
 
@@ -350,6 +348,7 @@ public:
         }
 
         // Resume the thread.
+        flag_running_ = true;
         sig_running_.set();
         TEC_TRACE("`sig_running' signalled.");
 
@@ -364,15 +363,16 @@ public:
     /**
      *  @brief Terminates the Worker thread.
      *
-     *  Sends nullmsg message to the message queue
+     *  Sends `nullmsg` message to the message queue
      *  to stop the message polling if inited successfully, then waits for
      *  `sig_terminated` signalled to terminate the Worker thread.
      *
      *  @note Derived from Daemon.
+     *  @note Should NOT be called from the Worker thread.
      *  @sa nullmsg()
      *  @return Status
      */
-    Status terminate() override final {
+    Status terminate() override {
         Lock lk{mtx_thread_proc_};
         TEC_ENTER("Worker::terminate");
 
@@ -386,13 +386,13 @@ public:
             return status_;
         }
 
-        // Send null Message on normal exiting.
-        if( status_ && flag_polling_) {
+        // Send the null Message on normal exiting.
+        if( status_ && !flag_quit_) {
             send(nullmsg());
             TEC_TRACE("QUIT sent.");
         }
 
-        // Waits for the thread to finish its execution
+        // Wait for the thread to finish its execution.
         TEC_TRACE("waiting for thread {} to finish ...", id());
         thread_.join();
         TEC_TRACE("thread {} finished OK.", id());
