@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-06-24 22:10:53 by magnolia>
+// Time-stamp: <Last changed 2025-06-27 15:32:02 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -57,9 +57,9 @@ struct Position {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-class TestWorker: public tec::Worker<TestParams> {
+class TestWorker final: public tec::Worker<TestParams> {
 public:
-    TestWorker(const TestParams& params)
+    explicit TestWorker(const TestParams& params)
         : tec::Worker<TestParams>{params}
     {
         register_callback<TestWorker, int>(this, &TestWorker::process_int);
@@ -71,7 +71,7 @@ public:
 protected:
     virtual void process_int(const tec::Message& msg) {
         TEC_ENTER("HANDLER <int>");
-        int counter = std::any_cast<int>(msg);
+        const int counter = std::any_cast<int>(msg);
         TEC_TRACE(">>> counter={}", counter);
         if( counter <= params().max_count ) {
             // Continue processing...
@@ -171,7 +171,7 @@ int main() {
                  __FILE__, __DATE__, __TIME__, __TEC_COMPILER_NAME__);
 
     // Run the daemon.
-    auto status = test_daemon();
+    const auto status = test_daemon();
 
     tec::println("\nExited with {}", status);
     tec::print("Press <Enter> to quit ...");
