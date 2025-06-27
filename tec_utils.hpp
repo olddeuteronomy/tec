@@ -108,10 +108,10 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-* System utilities (Windows versions are in tec/mswin/tec_win_utils.hpp)
+* System utilities (Windows version is in tec/mswin/tec_win_utils.hpp)
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#if !defined(__TEC_WINDOWS__)
+#if !(defined(__TEC_WINDOWS__) || defined(__TEC_MINGW__))
 
 #include <unistd.h>
 #include <pwd.h>
@@ -145,12 +145,12 @@ inline std::string getusername() {
         return "";
 }
 
-#endif // !__TEC_WINDOWS__
+#endif // !(__TEC_WINDOWS__ || __TEC_MINGW)
 
 } // ::tec
 
 
-#if defined(__TEC_WINDOWS__)
+#if defined(__TEC_WINDOWS__) || defined(__TEC_MINGW__)
 // MS Windows stuff goes here. NOT YET!
 #include "tec/mswin/tec_win_utils.hpp"
 #endif // __TEC_WINDOWS

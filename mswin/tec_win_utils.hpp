@@ -32,23 +32,25 @@ SOFTWARE.
 
 #pragma once
 
-#include "tec/tec_def.hpp"
+#include "tec/tec_def.hpp" // IWYU pragma: keep
 
-#if !defined (__TEC_WINDOWS__)
+#if !(defined (__TEC_WINDOWS__) || defined(__TEC_MINGW__))
 #error This file can be used on MS Windows only!
 #else
 // Windows stuff goes here
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <windows.h>
 #include <tchar.h>
 #include <lmcons.h>
+
+#include <string>
 
 
 namespace tec {
 
 
-inline String getusername()
+inline std::string  getusername()
 {
     TCHAR name[UNLEN + 1];
     DWORD size = UNLEN + 1;
@@ -60,7 +62,7 @@ inline String getusername()
 }
 
 
-inline String getcomputername()
+inline std::string getcomputername()
 {
     TCHAR name[MAX_COMPUTERNAME_LENGTH + 1];
     DWORD size = MAX_COMPUTERNAME_LENGTH + 1;
@@ -73,4 +75,4 @@ inline String getcomputername()
 
 } // ::tec
 
-#endif // __TEC_WINDOWS__
+#endif // __TEC_WINDOWS__ || __TEC_MINGW__

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-06-07 01:12:48 by magnolia>
+// Time-stamp: <Last changed 2025-06-28 00:53:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -61,6 +61,11 @@ SOFTWARE.
   #define __TEC_WINDOWS__ _MSC_VER
 #endif
 
+// Check for MINGW on Linux
+#if defined(__MSVCRT__) && (defined(__MINGW32__) || defined(__MINGW64__))
+  #define __TEC_MINGW__ 1
+#endif
+
 #if defined(__clang__)
 // Check clang
   // This pragma has been removed to make the code cleaner:
@@ -74,6 +79,17 @@ SOFTWARE.
   #define __TEC_INT__  __INT_WIDTH__
   #define __TEC_LONG__ __LONG_WIDTH__
   #define __TEC_PTR__  __INTPTR_WIDTH__
+
+#elif defined(__TEC_MINGW__)
+// Check MINGW
+  #define __TEC_COMPILER_NAME__ __VERSION__
+
+  #define __TEC_COMPILER_VER_MAJOR__      __GNUC__
+  #define __TEC_COMPILER_VER_MINOR__      __GNUC_MINOR__
+  #define __TEC_COMPILER_VER_PATCHLEVEL__ __GNUC_PATCHLEVEL__
+  #define __TEC_INT__  __SIZEOF_INT__<<3
+  #define __TEC_LONG__ __SIZEOF_LONG__<<3
+  #define __TEC_PTR__  __SIZEOF_POINTER__<<3
 
 #elif defined(__GNUC__)
 // Check gcc

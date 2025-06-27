@@ -1,10 +1,14 @@
 ###############################################################################
-# Time-stamp: <Last changed 2025-06-11 01:02:51 by magnolia>
+# Time-stamp: <Last changed 2025-06-28 01:40:31 by magnolia>
+#
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
 #
 # To force rebuild with `clang++':
 #    make -k -B -j4 CLANG=1
+#
+# To force rebuild with `mingw++':
+#    make -k -B -j4 MINGW=1
 #
 ###############################################################################
 
@@ -25,10 +29,16 @@ ifdef CLANG
 	CXX = clang++
 	TARGET_SUFFIX = _clang$(EXE_SUFFIX)
 else
+ifdef MINGW
+# mingw++ compiler is optional
+	CXX = x86_64-w64-mingw32-g++
+	TARGET_SUFFIX = _win$(EXE_SUFFIX)
+else
 # gcc++ is default
 	GCC = 1
 	CXX = g++
 	TARGET_SUFFIX = _gcc$(EXE_SUFFIX)
+endif
 endif
 
 
