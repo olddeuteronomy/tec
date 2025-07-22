@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-06-27 15:32:02 by magnolia>
+// Time-stamp: <Last changed 2025-07-22 13:40:33 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -139,6 +139,11 @@ tec::Status test_daemon() {
 
     // Build a daemon using the derived TestWorker class.
     auto daemon{tec::Daemon::Builder<TestWorker>{}(params)};
+
+    // Crash test 2025-07-22
+    auto daemon2{tec::Daemon::Builder<TestWorker>{}(params)};
+    // daemon2->run();
+    // daemon2->terminate();
 
     // Start the daemon and check for an initialization error.
     auto status = daemon->run();

@@ -1,6 +1,13 @@
 # Directories
 out/
 
+# Xmake cache
+.xmake/
+build/
+
+# MacOS Cache
+.DS_Store
+
 # Comment to include doc/ directory
 doc/
 

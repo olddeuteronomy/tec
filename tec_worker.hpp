@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-06-24 22:28:40 by magnolia>
+// Time-stamp: <Last changed 2025-07-22 13:44:28 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -111,10 +111,11 @@ private:
     // Status of execution.
     Status status_;
 
-    // The worker thread is resumed and running.
+    // The worker thread is resumed by `run()`.
     std::atomic_bool flag_running_;
-    // To prevent sending quit (null) message twice on `terminate`.
-    std::atomic_bool flag_quit_;
+    // Indicates the message loop is exited to prevent sending
+    // the quit (null) message twice on `terminate()`.
+    std::atomic_bool flag_exited_;
     // run()/terminate() sync.
     std::mutex mtx_thread_proc_;
 
@@ -135,7 +136,7 @@ public:
         : Daemon()
         , params_{params}
         , flag_running_{false}
-        , flag_quit_{false}
+        , flag_exited_{false}
         , thread_{details<Params>::thread_proc, std::ref(*this)}
     {}
 
@@ -257,6 +258,12 @@ private:
             wt.sig_running_.wait();
             TEC_TRACE("`sig_running' received.");
 
+            // Exit the Worker thread immediately.
+            if( wt.flag_exited_ ) {
+                // `sig_terminated' signalled on exit.
+                return;
+            }
+
             // Initialize the Worker and set a status.
             TEC_TRACE("on_init() called ...");
             wt.status_ = wt.on_init();
@@ -275,7 +282,7 @@ private:
                     TEC_TRACE("received Message [{}].", name(msg));
                     if( is_null(msg) ) {
                         stop = true;
-                        wt.flag_quit_ = true;
+                        wt.flag_exited_ = true;
                     }
                     else {
                         wt.dispatch(msg);
@@ -376,18 +383,19 @@ public:
         Lock lk{mtx_thread_proc_};
         TEC_ENTER("Worker::terminate");
 
-        if( !flag_running_ ) {
-            TEC_TRACE("WARNING: Worker thread already terminated!");
-            return status_;
-        }
-
         if( !thread_.joinable() ) {
             TEC_TRACE("WARNING: no thread exists!");
             return status_;
         }
 
+        if( !flag_running_ ) {
+            TEC_TRACE("Exiting the suspended thread...");
+            flag_exited_ = true;
+            sig_running_.set();
+        }
+
         // Send the null Message on normal exiting.
-        if( status_ && !flag_quit_) {
+        if( status_ && !flag_exited_) {
             send(nullmsg());
             TEC_TRACE("QUIT sent.");
         }
@@ -397,7 +405,6 @@ public:
         thread_.join();
         TEC_TRACE("thread {} finished OK.", id());
 
-        flag_running_ = false;
         return status_;
     }
 
