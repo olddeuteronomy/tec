@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-07-22 13:44:28 by magnolia>
+// Time-stamp: <Last changed 2025-08-02 12:23:20 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,6 +34,7 @@ SOFTWARE.
 #include <atomic>
 #include <cmath>
 #include <memory>
+#include <mutex>
 #include <typeindex>
 #include <unordered_map>
 #include <functional>
@@ -99,6 +100,7 @@ private:
 
     // Callbacks table.
     std::unordered_map<std::type_index, std::unique_ptr<Slot>> slots_;
+    std::mutex mtx_slots_;
 
     // Signals.
     Signal sig_running_;
@@ -193,6 +195,7 @@ public:
      */
     template<typename Derived, typename T>
     void register_callback(Derived* worker, void (Derived::*callback)(const Message& msg)) {
+        Lock lk{mtx_slots_};
         TEC_ENTER("Worker::register_callback");
         // Ensure Derived is actually derived from Worker<Params>.
         static_assert(std::is_base_of_v<Worker<Params>, Derived>,
