@@ -19,6 +19,7 @@
 #include <grpcpp/server_context.h>
 #include <grpcpp/impl/service_type.h>
 #include <grpcpp/support/sync_stream.h>
+#include <grpcpp/ports_def.inc>
 namespace helloworld {
 
 static const char* Greeter_method_names[] = {
@@ -83,4 +84,5 @@ Greeter::Service::~Service() {
 
 
 }  // namespace helloworld
+#include <grpcpp/ports_undef.inc>
 

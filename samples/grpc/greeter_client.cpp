@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-02-15 01:48:43 by magnolia>
+// Time-stamp: <Last changed 2025-08-22 00:05:55 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -42,8 +42,9 @@ SOFTWARE.
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
 
-#include "tec/grpc/tec_grpc_client.hpp"
+#include "tec/grpc/tec_grpc.hpp"
 #include "tec/tec_print.hpp"
+#include "tec/grpc/tec_grpc_client.hpp"
 
 
 using helloworld::HelloReply;
@@ -78,7 +79,7 @@ public:
         : BaseClient(params, {&grpc::CreateCustomChannel}, credentials)
     {}
 
-    //
+    // Send a request to the server.
     std::string SayHello(const std::string& user) {
         // Data we are sending to the server.
         HelloRequest request;
@@ -91,10 +92,14 @@ public:
         // the server and/or tweak certain gRPC behavior.
         grpc::ClientContext context;
 
-        // The actual RPC. No error processing here.
-        grpc::Status status = stub_->SayHello(&context, request, &reply);
+        // The actual RPC.
+        std::string postfix;
+        auto status = stub_->SayHello(&context, request, &reply);
+        if (status.ok()) {
+            postfix = tec::format(" #{}", tec::get_server_metadata(context, "req_num"));
+        }
 
-        return reply.message();
+        return reply.message() + postfix;
     }
 };
 

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-06-11 02:29:44 by magnolia>
+// Time-stamp: <Last changed 2025-08-22 00:03:16 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -38,11 +38,12 @@ SOFTWARE.
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/health_check_service_interface.h>
+#include <string>
 
-// #include <google/protobuf/runtime_version.h> // To disable weird clangd-18 error
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
 
+#include "tec/grpc/tec_grpc.hpp"
 #include "tec/tec_def.hpp"
 #include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
@@ -62,19 +63,23 @@ using helloworld::HelloRequest;
 *                             gRPC Service
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+static int count{0};
 
 // Implement gRPC service - logic and data behind the server's behavior.
-class MyService final : public Greeter::Service
-{
-    Status SayHello(ServerContext* context, const HelloRequest* request, HelloReply* reply) override
-    {
-        tec::println("\nREQUEST: <- \"{}\"", request->name());
-        reply->set_message("Hello " + request->name() + "!");
+class MyService final : public Greeter::Service {
 
-        tec::println("REPLY:   -> \"{}\"", reply->message());
+    Status SayHello(ServerContext *context, const HelloRequest *request, HelloReply *reply) override {
+        count += 1;
+        tec::println("\nREQUEST #{}: <- \"{}\"", count, request->name());
+        // Set reply.
+        reply->set_message("Hello " + request->name() + "!");
+        // Set metadata.
+        tec::add_server_medadata(context, "req_num", std::to_string(count));
+        tec::println("REPLY #{}:   -> \"{}\"", count, reply->message());
         return Status::OK;
     }
-};
+
+}; // ::MyService
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

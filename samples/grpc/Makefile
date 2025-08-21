@@ -19,10 +19,10 @@
 #
 
 ###############################################################################
-# To force rebuild with `clang++' (default):
+# To force rebuild with `g++' (default):
 #    make [-k] -B
-# To force rebuild with `g++':
-#    make [-k] -B GCC=1
+# To force rebuild with `clang++':
+#    make [-k] -B CLANG=1
 ###############################################################################
 
 # OS
@@ -78,7 +78,7 @@ SYSTEM ?= $(HOST_SYSTEM)
 CPPFLAGS += `pkg-config --cflags protobuf grpc`
 CXXFLAGS += -std=c++17 $(EXTRA_FLAGS) $(TEC_CXXFLAGS)
 
-# System-dependant libraries
+# System-dependent libraries
 ifeq ($(SYSTEM),Darwin)
 LDFLAGS += -L/usr/local/lib `pkg-config --libs --static protobuf grpc++`\
            -pthread\

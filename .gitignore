@@ -5,6 +5,10 @@ out/
 .xmake/
 build/
 
+# Protobuf
+*.pb.cc
+*.pb.h
+
 # MacOS Cache
 .DS_Store
 
