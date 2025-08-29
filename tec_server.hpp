@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-05-21 15:06:02 by magnolia>
+// Time-stamp: <Last changed 2025-08-24 02:20:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,7 +25,7 @@ SOFTWARE.
 
 /**
  *   @file tec_server.hpp
- *   @brief Defines an abstract Server.
+ *   @brief Declares a Server interface.
  *
 */
 
@@ -42,7 +42,7 @@ namespace tec {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                       Gereric Server Parameters
+*                       Generic Server Parameters
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -64,7 +64,7 @@ struct ServerParams {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                    Abstract Server Interface
+*                        Server Interface
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -79,7 +79,7 @@ public:
     /**
      * @brief      Start the server.
      *
-     * @param      sig_started Signalled after server has been started, possible with error.
+     * @param      sig_started Signalled after server gets started, possible with error.
      * @param      status Error::Kind::Timeout, or any other error, or Ok.
      *
      * @note In gRPC, if started successfully, `start()` doesn't
@@ -95,7 +95,7 @@ public:
     /**
      * @brief      Shutdown the server.
      *
-     * @param      sig_stopped Signalled after server has been stopped.
+     * @param      sig_stopped Signalled after the server gets stopped.
      *
      * @sa Signal
      */

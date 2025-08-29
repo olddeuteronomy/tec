@@ -12,7 +12,7 @@ build/
 # MacOS Cache
 .DS_Store
 
-# Comment to include doc/ directory
+# Comment this line to include doc/ directory
 doc/
 
 # Prerequisites

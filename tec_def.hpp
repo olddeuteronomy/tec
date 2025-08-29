@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-06-28 00:53:46 by magnolia>
+// Time-stamp: <Last changed 2025-08-26 22:18:31 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -61,7 +61,7 @@ SOFTWARE.
   #define __TEC_WINDOWS__ _MSC_VER
 #endif
 
-// Check for MINGW on Linux
+// Check for MINGW
 #if defined(__MSVCRT__) && (defined(__MINGW32__) || defined(__MINGW64__))
   #define __TEC_MINGW__ 1
 #endif
@@ -104,12 +104,13 @@ SOFTWARE.
   #define __TEC_PTR__  __SIZEOF_POINTER__<<3
 
 #elif defined(__TEC_WINDOWS__)
-// Windows-specific
+// Windows specific
   #define __TEC_MSC__           _MSC_VER
   #define __TEC_COMPILER_NAME__ "cl"
 
   #define __TEC_COMPILER_VER_MAJOR__      _MSC_VER
-  #define __TEC_COMPILER_VER_MINOR__      0 // TODO
+  // TODO
+  #define __TEC_COMPILER_VER_MINOR__      0
   #define __TEC_COMPILER_VER_PATCHLEVEL__ _MSC_BUILD
 
   #if defined(_WIN64)

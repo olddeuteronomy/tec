@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-08-02 12:23:20 by magnolia>
+// Time-stamp: <Last changed 2025-08-26 14:01:19 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -192,6 +192,9 @@ public:
      * @brief Register a callback for the given message type.
      * @param worker A Worker derived object.
      * @param callback A handler of the corresponding message.
+     * @note Do not call this method if the Worker is already running.
+     * @sa run()
+     * @sa dispatch()
      */
     template<typename Derived, typename T>
     void register_callback(Derived* worker, void (Derived::*callback)(const Message& msg)) {

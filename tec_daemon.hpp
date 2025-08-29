@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-06-11 00:33:38 by magnolia>
+// Time-stamp: <Last changed 2025-08-24 01:34:01 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,7 +25,7 @@ SOFTWARE.
 
 /**
  *   @file  tec_daemon.hpp
- *   @brief Declares an asbstract Daemon class.
+ *   @brief Declares a Daemon interface.
  *
 */
 
@@ -41,18 +41,18 @@ namespace tec {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                     Abstract Daemon
+*                       Daemon Interface
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /**
- * @brief      An abstract Daemon class.
+ * @brief      A Daemon interface.
  *
  * @details A daemon, by definition, is a process or thread that
  * runs continuously as a background process and wakes up to handle
  * periodic service requests.
  *
- * The abstract Daemon defines the minimum set of methods that should
+ * The Daemon interface defines the minimum set of methods that should
  * be implemented, such as `run()`, `terminate()`, as well as required
  * signals.
  */
@@ -64,13 +64,13 @@ public:
     virtual ~Daemon() = default;
 
     /**
-     * @brief      Starts the Daemon.
+     * @brief      Start the Daemon.
      * @return     Status
      */
     virtual Status run() = 0;
 
     /**
-     * @brief      Terminates the Daemon.
+     * @brief      Terminate the Daemon.
      * @return     Status
      */
     virtual Status terminate() = 0;
@@ -78,13 +78,13 @@ public:
     //! Send a control message.
     virtual bool send(const Message&) = 0;
 
-    //! Signals after the Daemon has been started.
+    //! Signals the Daemon gets started.
     virtual const Signal& sig_running() const = 0;
 
-    //! Signals after the Daemon has been initialized (possible, with error).
+    //! Signals the Daemon gets initialized (possible, with error).
     virtual const Signal& sig_inited() const = 0;
 
-    //! Signals after the Daemon has been terminated.
+    //! Signals the Daemon gets terminated.
     virtual const Signal& sig_terminated() const = 0;
 
 public:
@@ -98,7 +98,7 @@ public:
      */
     template <typename Derived>
     struct Builder {
-        std::unique_ptr<Daemon> operator()(typename Derived::Params& params) {
+        std::unique_ptr<Daemon> operator()(typename Derived::Params const& params) {
             static_assert(std::is_base_of<Daemon, Derived>::value,
                 "not derived from tec::Daemon class");
             return std::make_unique<Derived>(params);

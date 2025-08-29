@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-05-08 15:37:17 by magnolia>
+// Time-stamp: <Last changed 2025-08-24 01:12:07 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -69,7 +69,7 @@ public:
         : Worker<Params>(params)
         // Now ServerWorker owns the server!
         , server_{std::move(server)}
-        // Start the server thread then wait for `sig_run_server_thread` signalled.
+        // Wait for `sig_run_server_thread` signalled then start the server.
         , server_thread_{new std::thread([&]{
             sig_run_server_thread_.wait();
             server_->start(sig_started_, status_started_); })}
@@ -98,7 +98,7 @@ protected:
         // Resume the server thread.
         sig_run_server_thread_.set();
 
-        // Wait for the server has been started.
+        // Wait for the server gets started.
         if( !sig_started_.wait_for(this->params().start_timeout) ) {
             // Timeout!
             TEC_TRACE("!!! Error: server start timeout -- server detached");
@@ -106,7 +106,7 @@ protected:
             return {"Server start timeout", Error::Kind::TimeoutErr};
         }
         if( !status_started_ ) {
-            // Something wrong happened, release the server thread.
+            // Something wrong happened--release the server thread.
             server_thread_->join();
             return status_started_;
         }

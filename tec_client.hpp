@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-08 18:52:56 by magnolia>
+// Time-stamp: <Last changed 2025-08-26 21:56:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,7 +25,7 @@ SOFTWARE.
 
 /**
  *   @file tec_client.hpp
- *   @brief Declares an abstract Client class.
+ *   @brief Declares a Client interface.
  *
 */
 
@@ -41,7 +41,7 @@ namespace tec {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                   Abstract Client Interface
+*                        Client Interface
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -59,7 +59,7 @@ struct ClientParams {
 };
 
 
-//! Abstract Client class.
+//! The Client interface.
 class Client {
 public:
     Client() = default;
