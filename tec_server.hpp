@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-08-24 02:20:24 by magnolia>
+// Time-stamp: <Last changed 2025-09-17 14:39:00 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,12 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
 /**
- *   @file tec_server.hpp
- *   @brief Declares a Server interface.
- *
-*/
+ * @file tec_server.hpp
+ * @brief Defines server parameters and an interface for server implementations in the tec namespace.
+ * @author The Emacs Cat
+ * @date 2025-09-17
+ */
 
 #pragma once
 
@@ -39,69 +39,98 @@ SOFTWARE.
 
 namespace tec {
 
+/// @name Server Parameters
+/// @brief Configuration parameters for server instances.
+/// @details Defines default timeouts and configuration options for server operations.
+/// @{
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                       Generic Server Parameters
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
+/**
+ * @struct ServerParams
+ * @brief Configuration parameters for server instances.
+ * @details Specifies timeouts for server startup and shutdown operations, with default values.
+ */
 struct ServerParams {
-    ///{@ Default timeouts.
+    /**
+     * @brief Default timeout for server startup.
+     * @details Set to 5 seconds.
+     */
     static constexpr const MilliSec kStartTimeout{Seconds{5}};
+
+    /**
+     * @brief Default timeout for server shutdown.
+     * @details Set to 10 seconds.
+     */
     static constexpr const MilliSec kShutdownTimeout{Seconds{10}};
-    //}@
 
-    MilliSec start_timeout;    //!< Start timeout in milliseconds.
-    MilliSec shutdown_timeout; //!< Shutdown timeout in milliseconds.
+    MilliSec start_timeout;    ///< Timeout for server startup in milliseconds.
+    MilliSec shutdown_timeout; ///< Timeout for server shutdown in milliseconds.
 
+    /**
+     * @brief Constructs server parameters with default timeouts.
+     * @details Initializes start_timeout to kStartTimeout (5 seconds) and
+     * shutdown_timeout to kShutdownTimeout (10 seconds).
+     */
     ServerParams()
         : start_timeout{kStartTimeout}
         , shutdown_timeout{kShutdownTimeout}
     {}
 };
 
+/// @}
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                        Server Interface
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
+/**
+ * @class Server
+ * @brief Abstract interface for a server implementation.
+ * @details Defines the minimum set of methods for a server, including starting and
+ * shutting down operations, with associated signals for state transitions. Derived
+ * classes must implement these methods to provide specific server functionality.
+ */
 class Server {
 public:
+    /**
+     * @brief Default constructor.
+     * @details Initializes a Server base class. Derived classes should provide
+     * specific initialization logic.
+     */
     Server() = default;
+
+    /**
+     * @brief Deleted copy constructor to prevent copying.
+     */
     Server(const Server&) = delete;
+
+    /**
+     * @brief Deleted move constructor to prevent moving.
+     */
     Server(Server&&) = delete;
 
+    /**
+     * @brief Virtual destructor for safe polymorphic deletion.
+     * @details Ensures proper cleanup of derived classes.
+     */
     virtual ~Server() = default;
 
     /**
-     * @brief      Start the server.
-     *
-     * @param      sig_started Signalled after server gets started, possible with error.
-     * @param      status Error::Kind::Timeout, or any other error, or Ok.
-     *
-     * @note In gRPC, if started successfully, `start()` doesn't
-     * return until `shutdown()` called from another thread. In this
-     * case, as well as in the case of timeout, `start()` **shouldn't**
-     * modify the `status` argument.
-     *
-     * @sa Signal
-     * @sa Status
+     * @brief Starts the server.
+     * @details Initiates the server’s operation and signals completion via sig_started.
+     * If successful, the server may run indefinitely (e.g., in gRPC) until shutdown()
+     * is called from another thread. In case of timeout or error, the status argument
+     * is updated with the appropriate error code (e.g., Error::Kind::Timeout).
+     * @param sig_started Signal set when the server has started (possibly with an error).
+     * @param status Updated with the result of the operation (e.g., Error::Kind::Ok or Error::Kind::Timeout).
+     * @note In some implementations (e.g., gRPC), this method may not return until shutdown() is called.
+     * @see Signal
+     * @see Status
      */
     virtual void start(Signal& sig_started, Status& status) = 0;
 
     /**
-     * @brief      Shutdown the server.
-     *
-     * @param      sig_stopped Signalled after the server gets stopped.
-     *
-     * @sa Signal
+     * @brief Shuts down the server.
+     * @details Stops the server’s operation and signals completion via sig_stopped.
+     * @param sig_stopped Signal set when the server has stopped.
+     * @see Signal
      */
     virtual void shutdown(Signal& sig_stopped) = 0;
+}; // class Server
 
-}; // ::Server
-
-
-} // ::tec
+} // namespace tec

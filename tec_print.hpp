@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-03-25 00:15:11 by magnolia>
+// Time-stamp: <Last changed 2025-09-17 14:09:22 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,11 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
 /**
- *   @file tec_print.hpp
- *   @brief Simple formatted print (before C++20).
-*/
+ * @file tec_print.hpp
+ * @brief Provides variadic print and format utilities for the tec namespace.
+ * Implemented for compatibility with pre-C++20 compilers.
+ * @author The Emacs Cat
+ * @date 2025-09-17
+ */
 
 #pragma once
 
@@ -40,32 +42,42 @@ SOFTWARE.
 
 namespace tec {
 
+/// @name Print and Format Functions
+/// @brief Utility functions for formatted output and string creation.
+/// @details These functions provide flexible printing to output streams and string
+/// formatting with support for variadic arguments and placeholder-based formatting
+/// using "{}" syntax.
+/// @{
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                  Simple print() with variadic arguments
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-//! Outputs a single `arg` to the stream.
+/**
+ * @brief Outputs a single argument to the specified stream.
+ * @details Writes the provided argument to the given output stream without any formatting.
+ * @tparam T The type of the argument to output.
+ * @param out Pointer to the output stream (e.g., std::cout or std::ostringstream).
+ * @param arg The argument to output.
+ */
 template <typename T>
 void print(std::ostream* out, const T& arg) {
     *out << arg;
 }
 
 /**
- * @brief      Outputs variadic arguments to the stream.
- * @param      out *std::stream* An output stream.
- * @param      fmt *std::string* A format string.
- * @param      value *T* The first argument to output.
- * @param      Arg *Targs* Extra arguments.
+ * @brief Outputs variadic arguments to the specified stream with formatting.
+ * @details Processes a format string with "{}" placeholders, replacing each placeholder
+ * with the corresponding argument. Recursively handles multiple arguments.
+ * @tparam T The type of the first argument.
+ * @tparam Targs The types of additional arguments.
+ * @param out Pointer to the output stream (e.g., std::cout or std::ostringstream).
+ * @param fmt The format string containing "{}" placeholders.
+ * @param value The first argument to output.
+ * @param Args The remaining arguments to output.
  */
 template <typename T, typename... Targs>
 void print(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) {
-    for( ; *fmt != '\0'; fmt++ ) {
-        if( *fmt == '{' &&  *(fmt + 1) == '}' ) {
+    for (; *fmt != '\0'; fmt++) {
+        if (*fmt == '{' && *(fmt + 1) == '}') {
             *out << value;
-            if( *(fmt + 1) != '\0' ) ++fmt;
+            if (*(fmt + 1) != '\0') ++fmt;
             print<>(out, fmt + 1, Args...); // recursive call
             return;
         }
@@ -73,48 +85,94 @@ void print(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) 
     }
 }
 
-//! Outputs a single argument to the stream, ending with a newline.
+/**
+ * @brief Outputs a single argument to the specified stream with a newline.
+ * @details Writes the provided argument to the given output stream and appends a newline.
+ * @tparam T The type of the argument to output.
+ * @param out Pointer to the output stream (e.g., std::cout or std::ostringstream).
+ * @param arg The argument to output.
+ */
 template <typename T>
 void println(std::ostream* out, const T& arg) {
     *out << arg << std::endl;
 }
 
-//! Outputs variadic arguments to the stream, ending with a new line.
+/**
+ * @brief Outputs variadic arguments to the specified stream with formatting and a newline.
+ * @details Processes a format string with "{}" placeholders, replacing each placeholder
+ * with the corresponding argument, and appends a newline at the end.
+ * @tparam T The type of the first argument.
+ * @tparam Targs The types of additional arguments.
+ * @param out Pointer to the output stream (e.g., std::cout or std::ostringstream).
+ * @param fmt The format string containing "{}" placeholders.
+ * @param value The first argument to output.
+ * @param Args The remaining arguments to output.
+ */
 template <typename T, typename... Targs>
 void println(std::ostream* out, const char* fmt, const T& value, Targs&&... Args) {
     print<>(out, fmt, value, Args...);
     *out << std::endl;
 }
 
-//! Prints a single argument to the standard output stream
-//! (std::cout).
+/**
+ * @brief Outputs a single argument to std::cout.
+ * @details Writes the provided argument to the standard output stream without formatting.
+ * @tparam T The type of the argument to output.
+ * @param arg The argument to output.
+ */
 template <typename T>
 void print(const T& arg) {
-    std::cout << arg;
+    print<>(&std::cout, arg);
 }
 
-//! Prints variadic arguments to the standard output stream
-//! (std::cout).
+/**
+ * @brief Outputs variadic arguments to std::cout with formatting.
+ * @details Processes a format string with "{}" placeholders, replacing each placeholder
+ * with the corresponding argument, outputting to the standard output stream.
+ * @tparam T The type of the first argument.
+ * @tparam Targs The types of additional arguments.
+ * @param fmt The format string containing "{}" placeholders.
+ * @param value The first argument to output.
+ * @param Args The remaining arguments to output.
+ */
 template <typename T, typename... Targs>
 void print(const char* fmt, const T& value, Targs&&... Args) {
     print<>(&std::cout, fmt, value, Args...);
 }
 
-//! Prints a single argument to the standard output stream
-//! (std::cout), ending with a newline.
+/**
+ * @brief Outputs a single argument to std::cout with a newline.
+ * @details Writes the provided argument to the standard output stream and appends a newline.
+ * @tparam T The type of the argument to output.
+ * @param arg The argument to output.
+ */
 template <typename T>
 void println(const T& arg) {
     println<>(&std::cout, arg);
 }
 
-//! Prints variadic arguments to the standard output stream
-//! (std::cout), ending with a newline.
+/**
+ * @brief Outputs variadic arguments to std::cout with formatting and a newline.
+ * @details Processes a format string with "{}" placeholders, replacing each placeholder
+ * with the corresponding argument, outputting to the standard output stream, and appending a newline.
+ * @tparam T The type of the first argument.
+ * @tparam Targs The types of additional arguments.
+ * @param fmt The format string containing "{}" placeholders.
+ * @param value The first argument to output.
+ * @param Args The remaining arguments to output.
+ */
 template <typename T, typename... Targs>
 void println(const char* fmt, const T& value, Targs&&... Args) {
     println<>(&std::cout, fmt, value, Args...);
 }
 
-//! Stores representation of the single argument in a new string.
+/**
+ * @brief Formats a single argument into a string.
+ * @details Converts the provided argument to its string representation using an output stream.
+ * @tparam T The type of the argument to format.
+ * @param arg The argument to format.
+ * @return std::string The string representation of the argument.
+ */
 template <typename T>
 std::string format(const T& arg) {
     std::ostringstream buf;
@@ -122,7 +180,17 @@ std::string format(const T& arg) {
     return buf.str();
 }
 
-//! Stores representation of the arguments in a new string.
+/**
+ * @brief Formats variadic arguments into a string.
+ * @details Processes a format string with "{}" placeholders, replacing each placeholder
+ * with the corresponding argument, and returns the resulting string.
+ * @tparam T The type of the first argument.
+ * @tparam Targs The types of additional arguments.
+ * @param fmt The format string containing "{}" placeholders.
+ * @param value The first argument to format.
+ * @param Args The remaining arguments to format.
+ * @return std::string The formatted string.
+ */
 template <typename T, typename... Targs>
 std::string format(const char* fmt, const T& value, Targs&&... Args) {
     std::ostringstream buf;
@@ -130,5 +198,6 @@ std::string format(const char* fmt, const T& value, Targs&&... Args) {
     return buf.str();
 }
 
+/// @}
 
-} // ::tec
+} // namespace tec

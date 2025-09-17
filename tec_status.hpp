@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-01 16:04:25 by magnolia>
+// Time-stamp: <Last changed 2025-09-17 14:51:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,13 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
 /**
- *   @file tec_status.hpp
- *   @brief A generalized status of execution.
-*/
-
-
+ * @file tec_status.hpp
+ * @brief Defines error handling types and utilities for the tec namespace.
+ * @author The Emacs Cat
+ * @date 2025-09-17
+ */
 
 #pragma once
 
@@ -43,79 +42,114 @@ SOFTWARE.
 
 namespace tec {
 
-
+/**
+ * @struct Error
+ * @brief Defines error types and codes for error handling in the tec library.
+ * @details Provides an enumeration of error kinds and a templated structure for error codes.
+ */
 struct Error {
-    //! Error classes.
-    enum class Kind: int {
-        Ok  //!< Success
-        , Err        //!< Generic error
-        , IOErr      //!< IO failure
-        , RuntimeErr //!< Runtime error
-        , NetErr     //!< Network error
-        , RpcErr     //!< RPC error
-        , TimeoutErr //!< Timeout error
-        , Invalid    //!< Invalid data or state
-        , System     //!< System error
+    /**
+     * @enum Kind
+     * @brief Enumerates possible error categories.
+     * @details Defines a set of error kinds used to categorize errors in the tec library.
+     */
+    enum class Kind : int {
+        Ok,          //!< Indicates successful execution.
+        Err,         //!< Generic error.
+        IOErr,       //!< Input/output operation failure.
+        RuntimeErr,  //!< Runtime error during execution.
+        NetErr,      //!< Network-related error.
+        RpcErr,      //!< Remote procedure call error.
+        TimeoutErr,  //!< Timeout during an operation.
+        Invalid,     //!< Invalid data or state.
+        System       //!< System-level error.
     };
 
-    //! Generic error codes.
+    /**
+     * @struct Code
+     * @brief Defines error codes with a default unspecified value.
+     * @details A templated structure to hold error codes of type TCode, with a
+     * constant for an unspecified error code.
+     * @tparam TCode The type used for error codes (e.g., int).
+     */
     template <typename TCode = int>
     struct Code {
-        constexpr static const TCode Unspecified{-1}; //!< Unspecified error code.
+        constexpr static const TCode Unspecified{-1}; //!< Default unspecified error code.
     };
 };
 
-//! Returns Error::Kind as a string.
-inline constexpr const char* kind_as_string(Error::Kind k)  {
+/**
+ * @brief Converts an Error::Kind value to its string representation.
+ * @details Returns a human-readable string for the given error kind. Returns
+ * "Unspecified" for unknown kinds.
+ * @param k The Error::Kind to convert.
+ * @return const char* The string representation of the error kind.
+ */
+inline constexpr const char* kind_as_string(Error::Kind k) {
     switch (k) {
-    case Error::Kind::Ok: { return "Success"; }
-    case Error::Kind::Err: { return "Generic"; }
-    case Error::Kind::IOErr: { return "IO"; }
-    case Error::Kind::RuntimeErr: { return "Runtime"; }
-    case Error::Kind::NetErr: { return "Network"; }
-    case Error::Kind::RpcErr: { return "Rpc"; }
-    case Error::Kind::TimeoutErr: { return "Timeout"; }
-    case Error::Kind::Invalid: { return "Invalid"; }
-    case Error::Kind::System: { return "System"; }
-    default: { return "Unspecified"; }
+    case Error::Kind::Ok: return "Success";
+    case Error::Kind::Err: return "Generic";
+    case Error::Kind::IOErr: return "IO";
+    case Error::Kind::RuntimeErr: return "Runtime";
+    case Error::Kind::NetErr: return "Network";
+    case Error::Kind::RpcErr: return "Rpc";
+    case Error::Kind::TimeoutErr: return "Timeout";
+    case Error::Kind::Invalid: return "Invalid";
+    case Error::Kind::System: return "System";
+    default: return "Unspecified";
     }
 }
 
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                       Status of execution
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 /**
  * @class TStatus
- * @brief Declares a generalized status of execution.
+ * @brief Represents the status of an execution with error details.
+ * @details A templated class that encapsulates an error kind, an optional error code,
+ * and an optional description to represent the outcome of an operation.
+ * @tparam TCode The type used for error codes (e.g., int).
+ * @tparam TDesc The type used for error descriptions (e.g., std::string).
  */
 template <typename TCode, typename TDesc>
 struct TStatus {
+    Error::Kind kind;          //!< The error category.
+    std::optional<TCode> code; //!< Optional error code.
+    std::optional<TDesc> desc; //!< Optional error description.
 
-    Error::Kind kind;          //!< Error class.
-    std::optional<TCode> code; //!< Error code (optional).
-    std::optional<TDesc> desc; //!< Error description (optional).
-
-    //! Is everything OK?
+    /**
+     * @brief Checks if the status indicates success.
+     * @details Returns true if the error kind is Error::Kind::Ok, false otherwise.
+     * @return bool True if the status is successful, false otherwise.
+     */
     constexpr bool ok() const { return kind == Error::Kind::Ok; }
-    //! Operator: Is everything OK?
+
+    /**
+     * @brief Conversion operator to check if the status is successful.
+     * @details Implicitly converts the status to a boolean, equivalent to calling ok().
+     * @return bool True if the status is successful, false otherwise.
+     */
     constexpr operator bool() const { return ok(); }
 
-    //! Output Status to a stream.
-    friend std::ostream& operator << (std::ostream& out, const TStatus& status) {
+    /**
+     * @brief Outputs the status to an output stream.
+     * @details Formats the status as a string, including the error kind, and optionally
+     * the error code and description if the status is not Ok.
+     * @param out The output stream to write to.
+     * @param status The TStatus object to output.
+     * @return std::ostream& The modified output stream.
+     */
+    friend std::ostream& operator<<(std::ostream& out, const TStatus& status) {
         out << "[" << kind_as_string(status.kind) << "]";
-        if( !status.ok() ) {
-            out
-            << " Code=" << status.code.value_or(Error::Code<TCode>::Unspecified)
-            << " Desc=\"" << (status.desc.has_value() ? status.desc.value() : "") << "\"";
+        if (!status.ok()) {
+            out << " Code=" << status.code.value_or(Error::Code<TCode>::Unspecified)
+                << " Desc=\"" << (status.desc.has_value() ? status.desc.value() : "") << "\"";
         }
         return out;
     }
 
-    //! Return Status as a string.
+    /**
+     * @brief Converts the status to a string representation.
+     * @details Uses the stream output operator to create a string representation of the status.
+     * @return std::string The string representation of the status.
+     */
     std::string as_string() {
         std::ostringstream buf;
         buf << *this;
@@ -123,7 +157,8 @@ struct TStatus {
     }
 
     /**
-     * @brief      Constructs a successful TStatus (class is Error::Kind::Ok).
+     * @brief Constructs a successful status.
+     * @details Initializes the status with Error::Kind::Ok and no code or description.
      * @snippet snp_status.cpp OK
      */
     TStatus()
@@ -131,8 +166,9 @@ struct TStatus {
     {}
 
     /**
-     * @brief      Constructs an error TStatus with unspecified error code.
-     * @param      _kind *Error::Kind* class.
+     * @brief Constructs an error status with an unspecified code.
+     * @details Initializes the status with the specified error kind and an unspecified error code.
+     * @param _kind The error kind (from Error::Kind).
      * @snippet snp_status.cpp Unspecified
      */
     TStatus(Error::Kind _kind)
@@ -141,9 +177,11 @@ struct TStatus {
     {}
 
     /**
-     * @brief      Constructs an unspecified error TStatus with description.
-     * @param      _desc *TDesc* Error description.
-     * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
+     * @brief Constructs an error status with a description.
+     * @details Initializes the status with a generic error kind (or specified kind),
+     * an unspecified error code, and the provided description.
+     * @param _desc The error description.
+     * @param _kind The error kind (defaults to Error::Kind::Err).
      * @snippet snp_status.cpp Description
      */
     TStatus(const TDesc& _desc, Error::Kind _kind = Error::Kind::Err)
@@ -153,9 +191,11 @@ struct TStatus {
     {}
 
     /**
-     * @brief      Constructs an error TStatus w/o description.
-     * @param      _code *TCode* Error code.
-     * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
+     * @brief Constructs an error status with a code.
+     * @details Initializes the status with a generic error kind (or specified kind)
+     * and the provided error code, with no description.
+     * @param _code The error code.
+     * @param _kind The error kind (defaults to Error::Kind::Err).
      * @snippet snp_status.cpp Errcode
      */
     TStatus(const TCode& _code, Error::Kind _kind = Error::Kind::Err)
@@ -164,10 +204,11 @@ struct TStatus {
     {}
 
     /**
-     * @brief      Constructs an error TStatus with description.
-     * @param      _code *TCode* Error code.
-     * @param      _desc *TDesc* Error description.
-     * @param      _kind *Error::Kind* Error class (default Error::Kind::Err, a generic error).
+     * @brief Constructs an error status with code and description.
+     * @details Initializes the status with the specified error kind, code, and description.
+     * @param _code The error code.
+     * @param _desc The error description.
+     * @param _kind The error kind (defaults to Error::Kind::Err).
      * @snippet snp_status.cpp CD
      */
     TStatus(const TCode& _code, const TDesc& _desc, Error::Kind _kind = Error::Kind::Err)
@@ -175,14 +216,12 @@ struct TStatus {
         , code{_code}
         , desc{_desc}
     {}
-
-}; // ::TStatus
-
+}; // struct TStatus
 
 /**
- * @brief Specializes the default TStatus<int, std::string>.
+ * @brief Type alias for a default TStatus with int code and std::string description.
+ * @details Specializes TStatus for common use with integer error codes and string descriptions.
  */
-typedef TStatus<int, std::string> Status;
+using Status = TStatus<int, std::string>;
 
-
-} // ::tec
+} // namespace tec

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-08-24 01:34:01 by magnolia>
+// Time-stamp: <Last changed 2025-09-17 14:02:23 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,12 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
 /**
- *   @file  tec_daemon.hpp
- *   @brief Declares a Daemon interface.
- *
-*/
+ * @file Daemon.hpp
+ * @brief Defines a daemon interface for background processes in the tec namespace.
+ * @author The Emacs Cat
+ * @date 2025-09-17
+ */
 
 #pragma once
 
@@ -39,72 +39,111 @@ SOFTWARE.
 
 namespace tec {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                       Daemon Interface
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
 /**
- * @brief      A Daemon interface.
- *
- * @details A daemon, by definition, is a process or thread that
- * runs continuously as a background process and wakes up to handle
- * periodic service requests.
- *
- * The Daemon interface defines the minimum set of methods that should
- * be implemented, such as `run()`, `terminate()`, as well as required
- * signals.
+ * @class Daemon
+ * @brief Abstract interface for a daemon that runs as a background process.
+ * @details A daemon is a process or thread that runs continuously in the background
+ * and handles periodic service requests. This interface defines the minimum set of
+ * methods and signals that a derived class must implement, including starting,
+ * terminating, sending messages, and signaling state changes.
  */
 class Daemon {
 public:
+    /**
+     * @brief Default constructor.
+     * @details Initializes a Daemon base class. Derived classes should provide
+     * specific initialization logic.
+     */
     Daemon() = default;
+
+    /**
+     * @brief Deleted copy constructor to prevent copying.
+     */
     Daemon(const Daemon&) = delete;
+
+    /**
+     * @brief Deleted move constructor to prevent moving.
+     */
     Daemon(Daemon&&) = delete;
+
+    /**
+     * @brief Virtual destructor for safe polymorphic deletion.
+     * @details Ensures proper cleanup of derived classes.
+     */
     virtual ~Daemon() = default;
 
     /**
-     * @brief      Start the Daemon.
-     * @return     Status
+     * @brief Starts the daemon's operation.
+     * @details Initiates the daemon's background process or thread. Must be implemented
+     * by derived classes.
+     * @return Status The result of the start operation.
      */
     virtual Status run() = 0;
 
     /**
-     * @brief      Terminate the Daemon.
-     * @return     Status
+     * @brief Terminates the daemon's operation.
+     * @details Stops the daemon's background process or thread. Must be implemented
+     * by derived classes.
+     * @return Status The result of the termination operation.
      */
     virtual Status terminate() = 0;
 
-    //! Send a control message.
-    virtual bool send(const Message&) = 0;
+    /**
+     * @brief Sends a control message to the daemon.
+     * @details Allows external components to send a message to the daemon for processing.
+     * Must be implemented by derived classes.
+     * @param message The message to send.
+     * @return bool True if the message was successfully sent, false otherwise.
+     */
+    virtual bool send(const Message& message) = 0;
 
-    //! Signals the Daemon gets started.
+    /**
+     * @brief Retrieves the signal indicating the daemon is running.
+     * @details Returns a reference to the signal that indicates the daemon has started
+     * and is operational. Must be implemented by derived classes.
+     * @return const Signal& The running signal.
+     */
     virtual const Signal& sig_running() const = 0;
 
-    //! Signals the Daemon gets initialized (possible, with error).
+    /**
+     * @brief Retrieves the signal indicating the daemon is initialized.
+     * @details Returns a reference to the signal that indicates the daemon has completed
+     * initialization, possibly with an error. Must be implemented by derived classes.
+     * @return const Signal& The initialization signal.
+     */
     virtual const Signal& sig_inited() const = 0;
 
-    //! Signals the Daemon gets terminated.
+    /**
+     * @brief Retrieves the signal indicating the daemon is terminated.
+     * @details Returns a reference to the signal that indicates the daemon has stopped.
+     * Must be implemented by derived classes.
+     * @return const Signal& The termination signal.
+     */
     virtual const Signal& sig_terminated() const = 0;
 
 public:
     /**
-     * @brief      Creates the Daemon using a derived class.
-     * @details Used to hide the detailed implementation of
-     * a Daemon-derived class.
-     *
-     * @param      params Derived::Params
-     * @return     std::unique_ptr<Daemon>
+     * @struct Builder
+     * @brief Factory for creating daemon instances.
+     * @details Provides a templated builder to create instances of derived daemon classes,
+     * hiding implementation details and ensuring type safety through static assertions.
+     * @tparam Derived The derived daemon class type.
      */
     template <typename Derived>
     struct Builder {
+        /**
+         * @brief Creates a unique pointer to a derived daemon instance.
+         * @details Constructs a new instance of the specified Derived class using the
+         * provided parameters. Ensures Derived is a subclass of Daemon.
+         * @param params The parameters for constructing the Derived daemon.
+         * @return std::unique_ptr<Daemon> A unique pointer to the created daemon instance.
+         */
         std::unique_ptr<Daemon> operator()(typename Derived::Params const& params) {
             static_assert(std::is_base_of<Daemon, Derived>::value,
-                "not derived from tec::Daemon class");
+                          "Derived type must inherit from tec::Daemon");
             return std::make_unique<Derived>(params);
         }
     };
 };
 
-
-} // ::tec
+} // namespace tec

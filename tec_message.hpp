@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-05-08 14:51:14 by magnolia>
+// Time-stamp: <Last changed 2025-09-17 13:53:53 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,43 +22,58 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
 /**
- *   @file tec_message.hpp
- *   @brief Defines a universal Message object.
- *
-*/
+ * @file tec_message.hpp
+ * @brief Defines a flexible message type and helper functions for the tec namespace.
+ * @author The Emacs Cat
+ * @date 2025-09-17
+ */
 
 #pragma once
 
 #include <any>
-
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 
 
 namespace tec {
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                            Message
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-//! Define a Message object. It can hold literally ANY object
-//! to be processed by a Worker.
+/**
+ * @brief Type alias for a message that can hold any object.
+ * @details Uses std::any to store arbitrary data types, intended for use in message
+ * passing systems, such as processing by a Worker in the tec library. The null message
+ * (empty std::any) is used to signal the Worker to exit its message loop.
+ */
 using Message = std::any;
 
-///@{ Message helpers.
+/// @name Message Helper Functions
+/// @brief Utility functions for working with Message objects.
+/// @{
 
-//! The null Message quits the Worker's message loop.
+/**
+ * @brief Creates a null message.
+ * @details Returns an empty Message (std::any with no value) used to signal a Worker
+ * to exit its message loop.
+ * @return Message A null message.
+ */
 inline Message nullmsg() { return Message{}; }
 
-//! Check for the null Message.
+/**
+ * @brief Checks if a message is null.
+ * @details Determines whether the provided Message is empty (has no value).
+ * @param msg The Message to check.
+ * @return bool True if the message is null, false otherwise.
+ */
 inline bool is_null(const Message& msg) { return !msg.has_value(); }
 
-//! For debugging.
+/**
+ * @brief Retrieves the type name of a message's content for registering the corresponding message handler.
+ * @details Returns the type name of the object stored in the Message.
+ * @param msg The Message whose type name is to be retrieved.
+ * @return const char* The name of the type stored in the Message.
+ * @sa Worker::register_handler().
+ */
 inline auto name(const Message& msg) { return msg.type().name(); }
 
-///@}
+/// @}
 
-} // ::tec
+} // namespace tec

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-08-26 21:56:46 by magnolia>
+// Time-stamp: <Last changed 2025-09-17 13:58:25 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,12 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
 /**
- *   @file tec_client.hpp
- *   @brief Declares a Client interface.
- *
-*/
+ * @file tec_client.hpp
+ * @brief Defines client parameters and an interface for client implementations in the tec namespace.
+ * @author The Emacs Cat
+ * @date 2025-09-17
+ */
 
 #pragma once
 
@@ -38,42 +38,83 @@ SOFTWARE.
 
 namespace tec {
 
+/// @name Client Parameters
+/// @brief Configuration parameters for client instances.
+/// @details Defines default settings for client connection timeouts.
+/// @{
 
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                        Client Interface
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
-//! Generic Clients parameters.
+/**
+ * @struct ClientParams
+ * @brief Configuration parameters for client instances.
+ * @details Specifies the connection timeout for client operations, with a default value.
+ */
 struct ClientParams {
-    //! Default client connection timeout (5 sec).
+    /**
+     * @brief Default timeout for client connection.
+     * @details Set to 5 seconds.
+     */
     static constexpr const MilliSec kConnectTimeout{Seconds{5}};
 
-    //! Connection timeout.
-    MilliSec connect_timeout;
+    MilliSec connect_timeout; ///< Timeout for client connection in milliseconds.
 
+    /**
+     * @brief Constructs client parameters with default timeout.
+     * @details Initializes connect_timeout to kConnectTimeout (5 seconds).
+     */
     ClientParams()
-        : connect_timeout(kConnectTimeout)
+        : connect_timeout{kConnectTimeout}
     {}
 };
 
+/// @}
 
-//! The Client interface.
+/**
+ * @class Client
+ * @brief Abstract interface for a client implementation.
+ * @details Defines the minimum set of methods for a client, including connecting to a server
+ * and closing the connection. Derived classes must implement these methods to provide
+ * specific client functionality.
+ */
 class Client {
 public:
+    /**
+     * @brief Default constructor.
+     * @details Initializes a Client base class. Derived classes should provide
+     * specific initialization logic.
+     */
     Client() = default;
+
+    /**
+     * @brief Deleted copy constructor to prevent copying.
+     */
     Client(const Client&) = delete;
+
+    /**
+     * @brief Deleted move constructor to prevent moving.
+     */
     Client(Client&&) = delete;
 
+    /**
+     * @brief Virtual destructor for safe polymorphic deletion.
+     * @details Ensures proper cleanup of derived classes.
+     */
     virtual ~Client() = default;
 
-    //! Connect to the server.
+    /**
+     * @brief Connects to the server.
+     * @details Initiates a connection to the server, respecting the timeout specified
+     * in the client's parameters. Must be implemented by derived classes.
+     * @return Status The result of the connection attempt (e.g., Error::Kind::Ok or an error).
+     * @see Status
+     */
     virtual Status connect() = 0;
 
-    //! Close connection.
+    /**
+     * @brief Closes the connection to the server.
+     * @details Terminates the client's connection to the server. Must be implemented
+     * by derived classes.
+     */
     virtual void close() = 0;
-};
+}; // class Client
 
-
-} // :tec
+} // namespace tec

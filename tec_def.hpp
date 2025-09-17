@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-08-26 22:18:31 by magnolia>
+// Time-stamp: <Last changed 2025-09-17 13:40:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,12 +23,12 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 /**
- *   @file tec_def.hpp
- *   @brief __TEC internal macros.
- *
- *  Defines various compiler- and OS-depended macros.
- *
-*/
+ * @file tec_def.hpp
+ * @brief Common definitions and utilities for the tec namespace.
+ * @author The Emacs Cat
+ * @date 2025-09-17
+ */
+
 
 #pragma once
 

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-08-24 01:12:07 by magnolia>
+// Time-stamp: <Last changed 2025-09-17 14:43:31 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,12 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
 /**
- *   @file tec_server_worker.hpp
- *   @brief Implements the ServerWorker class.
- *
-*/
+ * @file tec_server_worker.hpp
+ * @brief Defines a worker class that manages a server instance in the tec namespace.
+ * @author The Emacs Cat
+ * @date 2025-09-17
+ */
 
 #pragma once
 
@@ -41,72 +41,95 @@ SOFTWARE.
 namespace tec {
 
 /**
- * @brief      The Worker that owns a Server.
- *
- * @details    Starts and shutdowns the Server.
- *
+ * @class ServerWorker
+ * @brief A worker that owns and manages a server instance.
+ * @details Extends the Worker class to start and shut down a server instance,
+ * handling server lifecycle within a dedicated thread. It uses signals and status
+ * objects to manage server startup and shutdown with timeout support.
+ * @tparam TParams The type of parameters, typically derived from ServerParams.
+ * @tparam TServer The server type, derived from Server.
+ * @see Worker
+ * @see Server
  */
 template <typename TParams, typename TServer>
-class ServerWorker: public Worker<TParams> {
+class ServerWorker : public Worker<TParams> {
 public:
-    using Params = TParams;
+    using Params = TParams; ///< Type alias for worker parameters.
 
 private:
-    std::unique_ptr<TServer> server_;
-
-    std::unique_ptr<std::thread> server_thread_;
-    Signal sig_run_server_thread_;
-
-    Signal sig_started_;
-    Signal sig_stopped_;
-    Status status_started_;
-    Status status_stopped_;
+    std::unique_ptr<TServer> server_; ///< The server instance owned by the worker.
+    std::unique_ptr<std::thread> server_thread_; ///< Thread for running the server.
+    Signal sig_run_server_thread_; ///< Signal to start the server thread.
+    Signal sig_started_; ///< Signal indicating the server has started.
+    Signal sig_stopped_; ///< Signal indicating the server has stopped.
+    Status status_started_; ///< Status of the server startup operation.
+    Status status_stopped_; ///< Status of the server shutdown operation.
 
 public:
-
-    //! Initialize the Worker with a Server.
+    /**
+     * @brief Constructs a ServerWorker with parameters and a server instance.
+     * @details Initializes the Worker base class with parameters, takes ownership of
+     * the server instance, and creates a server thread that waits for a signal to start.
+     * Ensures TServer is derived from Server via static assertion.
+     * @param params The configuration parameters for the worker.
+     * @param server A unique pointer to the server instance.
+     */
     ServerWorker(const Params& params, std::unique_ptr<TServer> server)
         : Worker<Params>(params)
-        // Now ServerWorker owns the server!
         , server_{std::move(server)}
-        // Wait for `sig_run_server_thread` signalled then start the server.
-        , server_thread_{new std::thread([&]{
+        , server_thread_{new std::thread([&] {
             sig_run_server_thread_.wait();
-            server_->start(sig_started_, status_started_); })}
+            server_->start(sig_started_, status_started_);
+        })}
     {
-        // Check for a TServer class is derived from the tec::Server class.
         static_assert(
             std::is_base_of<Server, TServer>::value,
-            "not derived from tec::Server class");
+            "TServer must derive from tec::Server");
     }
 
+    /**
+     * @brief Deleted copy constructor to prevent copying.
+     */
     ServerWorker(const ServerWorker&) = delete;
+
+    /**
+     * @brief Deleted move constructor to prevent moving.
+     */
     ServerWorker(ServerWorker&&) = delete;
 
+    /**
+     * @brief Destructor that ensures proper server thread cleanup.
+     * @details Joins the server thread if it is joinable to ensure clean shutdown.
+     */
     virtual ~ServerWorker() {
-        if( server_thread_->joinable() ) {
+        if (server_thread_->joinable()) {
             server_thread_->join();
         }
     }
 
 protected:
-
-    //! Resume the server thread and try to start the server.
+    /**
+     * @brief Initializes the worker by starting the server thread.
+     * @details Signals the server thread to start and waits for the server to signal
+     * completion or timeout. Logs events using tracing if enabled.
+     * @return Status Error::Kind::Ok if successful, otherwise an error status (e.g., TimeoutErr).
+     * @see Worker::on_init()
+     */
     Status on_init() override {
         TEC_ENTER("ServerWorker::on_init");
 
         // Resume the server thread.
         sig_run_server_thread_.set();
 
-        // Wait for the server gets started.
-        if( !sig_started_.wait_for(this->params().start_timeout) ) {
+        // Wait for the server to start.
+        if (!sig_started_.wait_for(this->params().start_timeout)) {
             // Timeout!
             TEC_TRACE("!!! Error: server start timeout -- server detached");
             server_thread_->detach();
             return {"Server start timeout", Error::Kind::TimeoutErr};
         }
-        if( !status_started_ ) {
-            // Something wrong happened--release the server thread.
+        if (!status_started_) {
+            // Something went wrong; join the server thread.
             server_thread_->join();
             return status_started_;
         }
@@ -115,30 +138,33 @@ protected:
         return {};
     }
 
-
-    // Shutdown the server on exiting from the Worker thread.
+    /**
+     * @brief Shuts down the server during worker exit.
+     * @details Initiates server shutdown in a separate thread and waits for completion
+     * or timeout. Logs events using tracing if enabled.
+     * @return Status Error::Kind::Ok if successful, otherwise an error status (e.g., TimeoutErr).
+     * @see Worker::on_exit()
+     */
     Status on_exit() override {
         TEC_ENTER("ServerWorker::on_exit");
 
-        if( !server_thread_->joinable() ) {
+        if (!server_thread_->joinable()) {
             // Already finished or not started.
             return {};
         }
 
-        // Start the new thread that shutdowns the server attached.
-        std::thread shutdown_thread([&]{
+        // Start a thread to shut down the server.
+        std::thread shutdown_thread([&] {
             server_->shutdown(sig_stopped_);
         });
 
-        // Wait for the server is down.
-        if( !sig_stopped_.wait_for(this->params().shutdown_timeout) ) {
+        // Wait for the server to shut down.
+        if (!sig_stopped_.wait_for(this->params().shutdown_timeout)) {
             // Timeout! Detach the server thread.
             server_thread_->detach();
-            // Report timeout.
             TEC_TRACE("!!! Error: Server shutdown timeout.");
             status_stopped_ = {"Server shutdown timeout", Error::Kind::TimeoutErr};
-        }
-        else {
+        } else {
             server_thread_->join();
         }
 
@@ -147,68 +173,77 @@ protected:
     }
 
 public:
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     *
-     *                       ServerWorker Builders
-     *
-     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    /// @name ServerWorker Builders
+    /// @brief Factory structs for creating ServerWorker instances.
+    /// @details Provide builders to create ServerWorker instances as either Daemon or Worker pointers,
+    /// ensuring type safety through static assertions.
+    /// @{
 
     /**
-     * @brief      Daemon builder.
-     * @details    Creates a new ServerWorker and returns it as a Daemon.
-     * @param      params ServerWorker parameters.
-     * @return     std::unique_ptr<Daemon>
+     * @struct DaemonBuilder
+     * @brief Factory for creating ServerWorker as a Daemon.
+     * @details Creates a ServerWorker instance with a derived worker and server,
+     * returning it as a Daemon pointer.
+     * @tparam WorkerDerived The derived ServerWorker class type.
+     * @tparam ServerDerived The derived Server class type.
      */
     template <typename WorkerDerived, typename ServerDerived>
     struct DaemonBuilder {
+        /**
+         * @brief Creates a unique pointer to a ServerWorker as a Daemon.
+         * @details Constructs a WorkerDerived instance with a ServerDerived instance,
+         * ensuring type constraints via static assertions.
+         * @param params The parameters for constructing the worker and server.
+         * @return std::unique_ptr<Daemon> A unique pointer to the created worker.
+         */
         std::unique_ptr<Daemon>
-        operator()(typename WorkerDerived::Params const& params)
-        {
-            // Check for a Derived class is derived from the tec::Daemon class.
+        operator()(typename WorkerDerived::Params const& params) {
             static_assert(
                 std::is_base_of<Daemon, WorkerDerived>::value,
-                "not derived from tec::Worker class");
-            // Check for a ServerDerived class is derived from the tec::Server class.
+                "WorkerDerived must derive from tec::Daemon");
             static_assert(
                 std::is_base_of<Server, ServerDerived>::value,
-                "not derived from tec::Server class");
-            // Check for a Params class is derived from the tec::ServerParameters class.
+                "ServerDerived must derive from tec::Server");
             static_assert(
                 std::is_base_of<ServerParams, typename WorkerDerived::Params>::value,
-                "not derived from tec::ServerParams class");
+                "Params must derive from tec::ServerParams");
             return std::make_unique<WorkerDerived>(params, std::make_unique<ServerDerived>(params));
         }
     };
 
-
     /**
-     * @brief      Worker builder.
-     * @details    Creates a new ServerWorker and returns it as a Worker.
-     * @param      params ServerWorker parameters.
-     * @return     std::unique_ptr<Worker>
+     * @struct WorkerBuilder
+     * @brief Factory for creating ServerWorker as a Worker.
+     * @details Creates a ServerWorker instance with a derived worker and server,
+     * returning it as a Worker pointer.
+     * @tparam WorkerDerived The derived ServerWorker class type.
+     * @tparam ServerDerived The derived Server class type.
      */
     template <typename WorkerDerived, typename ServerDerived>
     struct WorkerBuilder {
+        /**
+         * @brief Creates a unique pointer to a ServerWorker as a Worker.
+         * @details Constructs a WorkerDerived instance with a ServerDerived instance,
+         * ensuring type constraints via static assertions.
+         * @param params The parameters for constructing the worker and server.
+         * @return std::unique_ptr<Worker<typename WorkerDerived::Params>> A unique pointer to the created worker.
+         */
         std::unique_ptr<Worker<typename WorkerDerived::Params>>
-        operator()(typename WorkerDerived::Params const& params)
-        {
-            // Check for a Derived class is derived from the tec::Worker class.
+        operator()(typename WorkerDerived::Params const& params) {
             static_assert(
                 std::is_base_of<Worker<typename WorkerDerived::Params>, WorkerDerived>::value,
-                "not derived from tec::Worker class");
-            // Check for a ServerDerived class is derived from the tec::Server class.
+                "WorkerDerived must derive from tec::Worker");
             static_assert(
                 std::is_base_of<Server, ServerDerived>::value,
-                "not derived from tec::Server class");
-            // Check for a Params class is derived from the tec::ServerParameters class.
+                "ServerDerived must derive from tec::Server");
             static_assert(
                 std::is_base_of<ServerParams, typename WorkerDerived::Params>::value,
-                "not derived from tec::ServerParams class");
+                "Params must derive from tec::ServerParams");
             return std::make_unique<WorkerDerived>(params, std::make_unique<ServerDerived>(params));
         }
     };
 
-}; // ::ServerWorker
+    /// @}
+}; // class ServerWorker
 
-
-} // ::tec
+} // namespace tec
