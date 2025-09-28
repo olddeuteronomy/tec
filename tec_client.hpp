@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-17 13:58:25 by magnolia>
+// Time-stamp: <Last changed 2025-09-26 22:41:13 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,6 +34,7 @@ SOFTWARE.
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_status.hpp"
 #include "tec/tec_utils.hpp"
+#include "tec/tec_message.hpp"
 
 
 namespace tec {
@@ -115,6 +116,7 @@ public:
      * by derived classes.
      */
     virtual void close() = 0;
+
 }; // class Client
 
 } // namespace tec

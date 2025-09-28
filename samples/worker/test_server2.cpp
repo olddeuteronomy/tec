@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-28 02:52:48 by magnolia>
+// Time-stamp: <Last changed 2025-09-28 02:49:27 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,14 +23,27 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
+#include <any>
+#include <cstdio>
 #include <iostream>
+#include <memory>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_message.hpp"
 #include "tec/tec_print.hpp"
-#include "tec/tec_server.hpp"
-#include "tec/tec_server_worker.hpp"
 #include "tec/tec_status.hpp"
+#include "tec/tec_server.hpp"
+#include "tec/tec_server_worker_ex.hpp"
+#include "tec/tec_trace.hpp"
+
+
+struct ChrRequest {
+    int ch;
+};
+
+struct ChrReply {
+    int ch;
+};
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -39,15 +52,19 @@ SOFTWARE.
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Test ServerParams.
-struct TestParams: public tec::ServerParams {};
+// Server parameters.
+struct TestServerParams: public tec::ServerParams {};
 
 
-// Implement the test Server.
-class TestServer: public tec::Server {
+// Implement the Server.
+class TestServer final: public tec::Server {
+private:
+    TestServerParams params_;
+
 public:
-    TestServer(const TestParams& params)
+    TestServer(const TestServerParams& params)
         : tec::Server()
+        , params_{params}
     {}
 
     void start(tec::Signal& sig_started, tec::Status& status) override {
@@ -62,8 +79,22 @@ public:
         sig_stopped.set();
     }
 
-    tec::Status process_request(tec::Request&, tec::Reply&) override {
-        return {tec::Error::Kind::NotImplemented};
+    tec::Status process_request(tec::Request& _request, tec::Reply& _reply) override {
+        TEC_ENTER("TestServer::process_request");
+        // Check type compatibility.
+        if( _request.type() != typeid(const ChrRequest*) ||
+            _reply.type() != typeid(ChrReply*) ) {
+            TEC_TRACE("Type mismatch!");
+            return {tec::Error::Kind::Unsupported};
+        }
+
+        TEC_TRACE("_request: {}", _request.type().name());
+        TEC_TRACE("_reply:   {}", _reply.type().name());
+
+        auto request = std::any_cast<const ChrRequest*>(_request);
+        auto reply = std::any_cast<ChrReply*>(_reply);
+        reply->ch = request->ch;
+        return {};
     }
 };
 
@@ -74,28 +105,25 @@ public:
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Define the Test Server Worker.
-using TestServerWorker = tec::ServerWorker<TestParams, TestServer>;
+class TestWorker final: public tec::ServerWorkerEx<TestServerParams, TestServer> {
+public:
+    TestWorker(const TestServerParams& params)
+        : tec::ServerWorkerEx<TestServerParams, TestServer>(params, std::make_unique<TestServer>(params))
+    {}
+};
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                        Test proc
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-#define DAEMON 1
 
 tec::Status test_server() {
-    TestParams params;
+    TEC_ENTER("test_server");
+    TestServerParams params;
 
-#if defined(DAEMON)
-    // Build a daemon.
-    auto svr{TestServerWorker::DaemonBuilder<TestServerWorker, TestServer>{}(params)};
-    tec::println("*** Using Daemon.");
-#else
-    // Build a worker.
-    auto svr{TestServerWorker::WorkerBuilder<TestServerWorker, TestServer>{}(params)};
-    tec::println("*** Using Worker.");
-#endif
+    // Build a server worker.
+    auto svr = std::make_unique<TestWorker>(params);
 
     // Run it and check for initialization result.
     auto status = svr->run();
@@ -104,8 +132,32 @@ tec::Status test_server() {
         return status;
     }
 
-    std::cout << "Press <Return> to shutdown the server" << std::endl;
-    std::getchar();
+    std::cout << "Press <ESC> to shutdown the server" << std::endl;
+    for( int ch; (ch = std::getchar()) != EOF ; )
+    {
+        if( ch == 27 ) { // 'ESC' (escape) in ASCII
+            break;
+        }
+        if( ch == 10 ) { // newline
+            continue;
+        }
+
+        ChrRequest req{ch};
+        ChrReply rep{0};
+
+        TEC_TRACE("req: {}", typeid(&req).name());
+        TEC_TRACE("rep: {}", typeid(&rep).name());
+
+        auto status = svr->request<>(&req, &rep);
+        if( status ) {
+            tec::println("'{}' -> '{}'", static_cast<char>(req.ch), static_cast<char>(rep.ch));
+        }
+        else {
+            tec::println("Error: {}", status);
+        }
+    }
+
+    // std::getchar();
 
     // If we want to get the server shutdown status.
     return svr->terminate();

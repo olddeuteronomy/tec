@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-17 14:39:00 by magnolia>
+// Time-stamp: <Last changed 2025-09-28 02:45:22 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -35,6 +35,7 @@ SOFTWARE.
 #include "tec/tec_status.hpp"
 #include "tec/tec_utils.hpp"
 #include "tec/tec_signal.hpp"
+#include "tec/tec_message.hpp"
 
 
 namespace tec {
@@ -131,6 +132,9 @@ public:
      * @see Signal
      */
     virtual void shutdown(Signal& sig_stopped) = 0;
+
+    virtual Status process_request(Request& request, Reply& reply) = 0;
+
 }; // class Server
 
 } // namespace tec

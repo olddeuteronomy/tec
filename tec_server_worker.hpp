@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-17 14:43:31 by magnolia>
+// Time-stamp: <Last changed 2025-09-27 23:23:19 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -56,8 +56,10 @@ class ServerWorker : public Worker<TParams> {
 public:
     using Params = TParams; ///< Type alias for worker parameters.
 
-private:
+protected:
     std::unique_ptr<TServer> server_; ///< The server instance owned by the worker.
+
+private:
     std::unique_ptr<std::thread> server_thread_; ///< Thread for running the server.
     Signal sig_run_server_thread_; ///< Signal to start the server thread.
     Signal sig_started_; ///< Signal indicating the server has started.
@@ -84,7 +86,7 @@ public:
     {
         static_assert(
             std::is_base_of<Server, TServer>::value,
-            "TServer must derive from tec::Server");
+            "ServerWorker::TServer must derive from tec::Server");
     }
 
     /**

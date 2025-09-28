@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-05-09 01:45:18 by magnolia>
+// Time-stamp: <Last changed 2025-09-28 02:55:17 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -155,6 +155,11 @@ public:
     }
 
     virtual ~GrpcServer() = default;
+
+    Status process_request(Request&, Reply&) override {
+        return {tec::Error::Kind::NotImplemented};
+    }
+
 
     /**
      *  @brief Starts the RPC server.

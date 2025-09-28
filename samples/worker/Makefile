@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2025-06-28 01:40:31 by magnolia>
+# Time-stamp: <Last changed 2025-09-26 12:45:42 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -78,10 +78,15 @@ endif
 # Build the targets
 all: \
 	$(OUTDIR)/worker$(TARGET_SUFFIX) \
-	$(OUTDIR)/server$(TARGET_SUFFIX)
+	$(OUTDIR)/server$(TARGET_SUFFIX) \
+	$(OUTDIR)/server2$(TARGET_SUFFIX)
 
 $(OUTDIR)/worker$(TARGET_SUFFIX): test_worker.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $@
 
 $(OUTDIR)/server$(TARGET_SUFFIX): test_server.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $@
+
+$(OUTDIR)/server2$(TARGET_SUFFIX): test_server2.cpp
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $@
+

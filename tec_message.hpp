@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-17 13:53:53 by magnolia>
+// Time-stamp: <Last changed 2025-09-28 02:30:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,6 +32,7 @@ SOFTWARE.
 #pragma once
 
 #include <any>
+#include <typeindex>
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 
 
@@ -44,6 +45,9 @@ namespace tec {
  * (empty std::any) is used to signal the Worker to exit its message loop.
  */
 using Message = std::any;
+
+using Request = std::any;
+using Reply = std::any;
 
 /// @name Message Helper Functions
 /// @brief Utility functions for working with Message objects.
