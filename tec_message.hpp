@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-28 02:30:24 by magnolia>
+// Time-stamp: <Last changed 2025-09-28 13:26:34 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -46,7 +46,16 @@ namespace tec {
  */
 using Message = std::any;
 
+/**
+ * @brief Type alias for a request object that can hold any object.
+ * @see Daemon::request()
+ */
 using Request = std::any;
+
+/**
+ * @brief Type alias for a reply object that can hold any object.
+ * @see Daemon::request()
+ */
 using Reply = std::any;
 
 /// @name Message Helper Functions

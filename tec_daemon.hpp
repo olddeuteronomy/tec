@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-17 14:02:23 by magnolia>
+// Time-stamp: <Last changed 2025-09-28 14:02:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -43,11 +43,19 @@ namespace tec {
  * @class Daemon
  * @brief Abstract interface for a daemon that runs as a background process.
  * @details A daemon is a process or thread that runs continuously in the background
- * and handles periodic service requests. This interface defines the minimum set of
+ * and handles periodic service messages and requests. This interface defines the minimum set of
  * methods and signals that a derived class must implement, including starting,
- * terminating, sending messages, and signaling state changes.
+ * terminating, sending messages, requests, and signaling state changes.
  */
 class Daemon {
+public:
+    struct Payload {
+        Signal* ready;
+        Status* status;
+        Request request;
+        Reply   reply;
+    };
+
 public:
     /**
      * @brief Default constructor.
@@ -98,6 +106,32 @@ public:
     virtual bool send(const Message& message) = 0;
 
     /**
+     * @brief Sends a request and waits for a reply in a daemon process.
+     *
+     * This method sends a request of type TRequest to the daemon and waits for a corresponding reply of type TReply.
+     * It uses a signal to synchronize the operation and returns the status of the request processing.
+     * If the request cannot be sent, a runtime error status is returned.
+     *
+     * @tparam TRequest The type of the request object.
+     * @tparam TReply The type of the reply object.
+     * @param req Pointer to the request object to be sent.
+     * @param rep Pointer to the reply object where the response will be stored.
+     * @return Status The status of the request operation, indicating success or an error.
+     * @see Daemon::Payload
+     */
+    template <typename TRequest, typename TReply>
+    Status request(const TRequest* req, TReply* rep) {
+        Signal ready;
+        Status status;
+        Payload  payload{&ready, &status, {req}, {rep}};
+        if( !send({&payload}) ) {
+            status = {Error::Kind::RuntimeErr};
+        }
+        ready.wait();
+        return status;
+    }
+
+    /**
      * @brief Retrieves the signal indicating the daemon is running.
      * @details Returns a reference to the signal that indicates the daemon has started
      * and is operational. Must be implemented by derived classes.
@@ -144,6 +178,7 @@ public:
             return std::make_unique<Derived>(params);
         }
     };
-};
+
+}; // class Daemon
 
 } // namespace tec

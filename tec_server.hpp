@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-28 02:45:22 by magnolia>
+// Time-stamp: <Last changed 2025-09-28 14:17:11 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -133,6 +133,20 @@ public:
      */
     virtual void shutdown(Signal& sig_stopped) = 0;
 
+    /**
+     * @brief Processes a request and generates a corresponding reply.
+     *
+     * This pure virtual method must be implemented by derived classes to handle
+     * the processing of a given request and populate the provided reply object.
+     * It defines the core request-handling logic for the server.
+     *
+     * @param request The input request object to be processed.
+     * @param reply The output reply object to store the response.
+     * @return Status The status of the request processing, indicating success or an error.
+     * @see Status
+     * @see Request
+     * @see Reply
+     */
     virtual Status process_request(Request& request, Reply& reply) = 0;
 
 }; // class Server

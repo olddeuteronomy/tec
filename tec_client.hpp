@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-26 22:41:13 by magnolia>
+// Time-stamp: <Last changed 2025-09-28 16:08:40 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -116,6 +116,21 @@ public:
      * by derived classes.
      */
     virtual void close() = 0;
+
+    /**
+     * @brief Makes a request to a server and generates a corresponding reply.
+     *
+     * This pure virtual method must be implemented by derived classes to handle
+     * the processing of a given request and populate the provided reply object.
+     * It defines the core request-handling logic for the client.
+     *
+     * @param request The input request object to be processed.
+     * @param reply The output reply object to store the response.
+     * @return Status The status of the request processing, indicating success or an error.
+     * @see Request
+     * @see Reply
+     */
+    virtual Status process_request(Request& request, Reply& reply) = 0;
 
 }; // class Client
 

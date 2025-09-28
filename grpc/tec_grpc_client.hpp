@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-18 00:25:30 by magnolia>
+// Time-stamp: <Last changed 2025-09-28 16:12:21 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -190,7 +190,10 @@ public:
         TEC_TRACE("closed OK.");
     }
 
-};
 
+    Status process_request(Request& request, Reply& reply) {
+        return {Error::Kind::NotImplemented};
+    }
+}; // class GrpcClient
 
 } // ::tec
