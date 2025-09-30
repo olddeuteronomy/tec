@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-28 14:17:11 by magnolia>
+// Time-stamp: <Last changed 2025-09-30 16:52:05 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -123,7 +123,7 @@ public:
      * @see Signal
      * @see Status
      */
-    virtual void start(Signal& sig_started, Status& status) = 0;
+    virtual void start(Signal* sig_started, Status* status) = 0;
 
     /**
      * @brief Shuts down the server.
@@ -131,7 +131,7 @@ public:
      * @param sig_stopped Signal set when the server has stopped.
      * @see Signal
      */
-    virtual void shutdown(Signal& sig_stopped) = 0;
+    virtual void shutdown(Signal* sig_stopped) = 0;
 
     /**
      * @brief Processes a request and generates a corresponding reply.

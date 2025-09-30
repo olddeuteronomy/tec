@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-28 15:09:09 by magnolia>
+// Time-stamp: <Last changed 2025-09-30 17:59:01 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -72,16 +72,16 @@ public:
         , params_{params}
     {}
 
-    void start(tec::Signal& sig_started, tec::Status& status) override {
+    void start(tec::Signal* sig_started, tec::Status* status) override {
         // Emulate error:
         // status = {"cannot start the server"};
         tec::println("Server started with {} ...", status);
-        sig_started.set();
+        sig_started->set();
     }
 
-    void shutdown(tec::Signal& sig_stopped) override {
+    void shutdown(tec::Signal* sig_stopped) override {
         tec::println("Server stopped.");
-        sig_stopped.set();
+        sig_stopped->set();
     }
 
     // Request handler.
@@ -115,13 +115,6 @@ public:
 
 using TestWorker = tec::ServerWorkerEx<TestServerParams, TestServer>;
 
-// class TestWorker final: public tec::ServerWorkerEx<TestServerParams, TestServer> {
-// public:
-//     TestWorker(const TestServerParams& params)
-//         : tec::ServerWorkerEx<TestServerParams, TestServer>(params, std::make_unique<TestServer>(params))
-//     {}
-// };
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                          TEST
@@ -131,7 +124,11 @@ using TestWorker = tec::ServerWorkerEx<TestServerParams, TestServer>;
 tec::Status test_server() {
     TestServerParams params;
 
-    // Build a server worker.
+    // A traditional way to build a server worker.
+    // auto server = std::make_unique<TestServer>(params);
+    // auto svr = std::make_unique<TestWorker>(params, std::move(server));
+
+    // Build a server worker as a daemon.
     auto svr{TestWorker::DaemonBuilder<TestWorker, TestServer>{}(params)};
 
     // Run it and check for the result.
@@ -141,7 +138,7 @@ tec::Status test_server() {
         return status;
     }
 
-    std::cout << "Press <ESC> to shutdown the server" << std::endl;
+    std::cout << "\nPress <ESC> to shutdown the server" << std::endl;
     for( int ch; (ch = std::getchar()) != EOF ; )
     {
         if( ch == 27 ) { // 'ESC' (escape) in ASCII

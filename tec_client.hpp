@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-28 16:08:40 by magnolia>
+// Time-stamp: <Last changed 2025-09-29 02:32:00 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -130,7 +130,24 @@ public:
      * @see Request
      * @see Reply
      */
-    virtual Status process_request(Request& request, Reply& reply) = 0;
+    virtual Status make_request(Request& request, Reply& reply) = 0;
+
+    /**
+     * @brief Makes a request to a server and generates a corresponding reply.
+     *
+     * This method sends a request of type TRequest to the server and waits for a corresponding reply of type TReply.
+     *
+     * @tparam TRequest The type of the request object.
+     * @tparam TReply The type of the reply object.
+     * @param req Pointer to the request object to be sent.
+     * @param rep Pointer to the reply object where the response will be stored.
+     * @return Status The status of the request operation, indicating success or an error.
+     * @see make_request()
+     */
+    template <typename TRequest, typename TReply>
+    Status request(const TRequest* req, TReply* rep) {
+        return make_request({req}, {rep});
+    }
 
 }; // class Client
 

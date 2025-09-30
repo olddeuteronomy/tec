@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-28 14:02:43 by magnolia>
+// Time-stamp: <Last changed 2025-09-29 02:33:35 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -106,6 +106,30 @@ public:
     virtual bool send(const Message& message) = 0;
 
     /**
+     * @brief Retrieves the signal indicating the daemon is running.
+     * @details Returns a reference to the signal that indicates the daemon has started
+     * and is operational. Must be implemented by derived classes.
+     * @return const Signal& The running signal.
+     */
+    virtual const Signal& sig_running() const = 0;
+
+    /**
+     * @brief Retrieves the signal indicating the daemon is initialized.
+     * @details Returns a reference to the signal that indicates the daemon has completed
+     * initialization, possibly with an error. Must be implemented by derived classes.
+     * @return const Signal& The initialization signal.
+     */
+    virtual const Signal& sig_inited() const = 0;
+
+    /**
+     * @brief Retrieves the signal indicating the daemon is terminated.
+     * @details Returns a reference to the signal that indicates the daemon has stopped.
+     * Must be implemented by derived classes.
+     * @return const Signal& The termination signal.
+     */
+    virtual const Signal& sig_terminated() const = 0;
+
+    /**
      * @brief Sends a request and waits for a reply in a daemon process.
      *
      * This method sends a request of type TRequest to the daemon and waits for a corresponding reply of type TReply.
@@ -130,30 +154,6 @@ public:
         ready.wait();
         return status;
     }
-
-    /**
-     * @brief Retrieves the signal indicating the daemon is running.
-     * @details Returns a reference to the signal that indicates the daemon has started
-     * and is operational. Must be implemented by derived classes.
-     * @return const Signal& The running signal.
-     */
-    virtual const Signal& sig_running() const = 0;
-
-    /**
-     * @brief Retrieves the signal indicating the daemon is initialized.
-     * @details Returns a reference to the signal that indicates the daemon has completed
-     * initialization, possibly with an error. Must be implemented by derived classes.
-     * @return const Signal& The initialization signal.
-     */
-    virtual const Signal& sig_inited() const = 0;
-
-    /**
-     * @brief Retrieves the signal indicating the daemon is terminated.
-     * @details Returns a reference to the signal that indicates the daemon has stopped.
-     * Must be implemented by derived classes.
-     * @return const Signal& The termination signal.
-     */
-    virtual const Signal& sig_terminated() const = 0;
 
 public:
     /**

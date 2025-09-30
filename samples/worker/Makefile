@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2025-09-28 15:13:05 by magnolia>
+# Time-stamp: <Last changed 2025-09-30 16:13:41 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -9,6 +9,9 @@
 #
 # To force rebuild with `mingw++':
 #    make -k -B -j4 MINGW=1
+#
+# To build a release (-O2, no debug info)
+#    make -k -B -j4 REL=1
 #
 ###############################################################################
 
@@ -50,7 +53,13 @@ else
 endif
 
 # Compilation parameters
-CPPFLAGS := -std=c++17 -Wall -pthread -O0 -g
+CPPFLAGS := -std=c++17 -Wall -pthread
+ifdef REL
+	CPPFLAGS += -O2
+else
+	CPPFLAGS += -O0 -g
+endif
+
 INCLUDES := -I../../..
 OUTDIR := out
 

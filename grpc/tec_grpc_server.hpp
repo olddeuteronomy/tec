@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-28 02:55:17 by magnolia>
+// Time-stamp: <Last changed 2025-09-30 18:12:01 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -175,7 +175,7 @@ public:
      *  @param status Status
      *  @sa Server
      */
-    void start(Signal& sig_started, Status& status) override {
+    void start(Signal* sig_started, Status* status) override {
         TEC_ENTER("GrpcServer::start");
 
         // Build the server and the service.
@@ -202,16 +202,16 @@ public:
         if( !server_ ) {
             auto errmsg = format("gRPC Server cannot start on \"{}\"", params_.addr_uri);
             TEC_TRACE("!!! Error: {}.", errmsg);
-            status = {errmsg, Error::Kind::RpcErr};
+            *status = {errmsg, Error::Kind::RpcErr};
             // Signal that the server started, but with an error.
-            sig_started.set();
+            sig_started->set();
             return;
         }
 
         TEC_TRACE("server listening on \"{}\".", params_.addr_uri);
 
         // Signal that the gRPC server is started OK.
-        sig_started.set();
+        sig_started->set();
         // Wait until this->shutdown() is called from another thread.
         server_->Wait();
     }
@@ -224,13 +224,13 @@ public:
      *  @param sig_stopped Signal signals on gRPC server is stopped.
      *  @return none
      */
-    void shutdown(Signal& sig_stopped) override {
+    void shutdown(Signal* sig_stopped) override {
         TEC_ENTER("GrpcServer::shutdown");
         if( server_ ) {
             TEC_TRACE("terminating gRPC server ...");
             server_->Shutdown();
         }
-        sig_stopped.set();
+        sig_stopped->set();
     }
 
 }; // GrpcServer

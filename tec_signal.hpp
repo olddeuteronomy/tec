@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-17 14:47:18 by magnolia>
+// Time-stamp: <Last changed 2025-09-30 16:33:34 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -64,6 +64,11 @@ public:
     Signal()
         : flag_(false)
     {}
+
+    Signal(const Signal&) = delete;
+    Signal(Signal&&) = delete;
+
+    virtual ~Signal() = default;
 
     /**
      * @brief Sets the signal to the signaled state and notifies all waiting threads.
