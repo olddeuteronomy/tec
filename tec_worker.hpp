@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-17 14:58:29 by magnolia>
+// Time-stamp: <Last changed 2025-10-09 14:21:48 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -129,7 +129,6 @@ public:
         , params_{params}
         , flag_running_{false}
         , flag_exited_{false}
-        , thread_{details<Params>::thread_proc, std::ref(*this)}
     {}
 
     /**
@@ -364,7 +363,7 @@ protected:
 public:
     /**
      * @brief Starts the worker thread's message polling.
-     * @details Resumes the worker thread, signals sig_running_, and waits for
+     * @details Creates the worker thread, signals sig_running_, and waits for
      * initialization to complete. Returns the initialization status.
      * @return Status The result of the initialization.
      * @see Daemon::run()
@@ -374,13 +373,10 @@ public:
         TEC_ENTER("Worker::run");
 
         if (!thread_.joinable()) {
-            // No thread exists, possible system failure.
-            TEC_TRACE("no active thread.");
-            return {"no active thread", Error::Kind::System};
+              thread_ = std::thread(details<Params>::thread_proc, std::ref(*this));
         }
-
-        if (flag_running_) {
-            TEC_TRACE("WARNING: Worker thread is already running!");
+        else {
+            TEC_TRACE("`Worker::thread_proc' is already running.");
             return {};
         }
 

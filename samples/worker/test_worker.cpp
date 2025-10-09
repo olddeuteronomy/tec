@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-07-22 13:40:33 by magnolia>
+// Time-stamp: <Last changed 2025-10-09 14:59:31 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -159,9 +159,22 @@ tec::Status test_daemon() {
     // Wait for daemon is finished.
     daemon->sig_terminated().wait();
 
-    // This call to `terminate)()` is not required
+    // This call to `terminate()` is not required
     // if we don't want to get the status of daemon termination.
     return daemon->terminate();
+}
+
+
+tec::Status test_run() {
+    struct Params1 {
+        int dummy;
+    } params{0};
+
+    auto daemon{tec::Daemon::Builder<tec::Worker<Params1>>{}(params)};
+    daemon->run();
+    // daemon->terminate();
+    // return daemon->terminate();
+    return {};
 }
 
 
@@ -176,6 +189,7 @@ int main() {
                  __FILE__, __DATE__, __TIME__, __TEC_COMPILER_NAME__);
 
     // Run the daemon.
+    // const auto status = test_run();
     const auto status = test_daemon();
 
     tec::println("\nExited with {}", status);

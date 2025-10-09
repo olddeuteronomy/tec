@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-30 17:59:01 by magnolia>
+// Time-stamp: <Last changed 2025-10-09 15:09:01 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -75,7 +75,7 @@ public:
     void start(tec::Signal* sig_started, tec::Status* status) override {
         // Emulate error:
         // status = {"cannot start the server"};
-        tec::println("Server started with {} ...", status);
+        tec::println("Server started with {} ...", *status);
         sig_started->set();
     }
 
@@ -99,7 +99,7 @@ public:
         auto reply = std::any_cast<ChrReply*>(_reply);
 
         // Just duplicate the request.
-        reply->ch = request->ch;
+        reply->ch = request->ch + 1;
 
         // OK
         return {};

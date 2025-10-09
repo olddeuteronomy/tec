@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-30 18:02:12 by magnolia>
+// Time-stamp: <Last changed 2025-10-09 14:47:37 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -62,7 +62,7 @@ protected:
     std::unique_ptr<TServer> server_; ///< The server instance owned by the worker.
 
 private:
-    std::unique_ptr<std::thread> server_thread_; ///< Thread for running the server.
+    std::thread server_thread_; ///< Thread for running the server.
     Signal sig_started_; ///< Signal indicating the server has started.
     Signal sig_stopped_; ///< Signal indicating the server has stopped.
     Status status_started_; ///< Status of the server startup operation.
@@ -80,7 +80,6 @@ public:
     ServerWorker(const Params& params, std::unique_ptr<TServer> server)
         : Worker<Params>(params)
         , server_{std::move(server)}
-        , server_thread_{nullptr}
     {
         static_assert(
             std::is_base_of<Server, TServer>::value,
@@ -102,8 +101,8 @@ public:
      * @details Joins the server thread if it is joinable to ensure clean shutdown.
      */
     virtual ~ServerWorker() {
-        if (server_thread_ &&  server_thread_->joinable()) {
-            server_thread_->join();
+        if (server_thread_.joinable()) {
+            server_thread_.join();
         }
     }
 
@@ -118,26 +117,26 @@ protected:
     Status on_init() override {
         TEC_ENTER("ServerWorker::on_init");
 
-        if( server_thread_ ) {
+        if( server_thread_.joinable() ) {
             return {"Server is already running", Error::Kind::RuntimeErr};
         }
 
         // Start the server thread.
-        server_thread_ = std::move(std::make_unique<std::thread>([&] {
+        server_thread_ = std::thread([&] {
             server_->start(&sig_started_, &status_started_);
-        }));
+        });
 
         // Wait for the server started.
         if (!sig_started_.wait_for(this->params_.start_timeout)) {
             // Timeout!
             TEC_TRACE("!!! Error: server start timeout -- server detached");
-            server_thread_->detach();
+            server_thread_.detach();
             return {"Server start timeout", Error::Kind::TimeoutErr};
         }
         // Check the status.
         if (!status_started_) {
             // Something went wrong; join the server thread.
-            server_thread_->join();
+            server_thread_.join();
             return status_started_;
         }
 
@@ -155,7 +154,7 @@ protected:
     Status on_exit() override {
         TEC_ENTER("ServerWorker::on_exit");
 
-        if (!server_thread_ || !server_thread_->joinable()) {
+        if ( !server_thread_.joinable()) {
             // Already finished or not started.
             return {};
         }
@@ -168,11 +167,11 @@ protected:
         // Wait for the server to shut down.
         if (!sig_stopped_.wait_for(this->params_.shutdown_timeout)) {
             // Timeout! Detach the server thread.
-            server_thread_->detach();
+            server_thread_.detach();
             TEC_TRACE("!!! Error: Server shutdown timeout -- server thread detached.");
             status_stopped_ = {"Server shutdown timeout", Error::Kind::TimeoutErr};
         } else {
-            server_thread_->join();
+            server_thread_.join();
         }
 
         shutdown_thread.join();
