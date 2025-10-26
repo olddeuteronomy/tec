@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-30 18:14:37 by magnolia>
+// Time-stamp: <Last changed 2025-10-26 22:10:47 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -191,7 +191,7 @@ public:
     }
 
 
-    Status make_request(Request& request, Reply& reply) override {
+    Status make_request(Request request, Reply reply) override {
         return {Error::Kind::NotImplemented};
     }
 }; // class GrpcClient

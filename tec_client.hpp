@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-29 02:32:00 by magnolia>
+// Time-stamp: <Last changed 2025-10-26 22:08:47 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -130,7 +130,7 @@ public:
      * @see Request
      * @see Reply
      */
-    virtual Status make_request(Request& request, Reply& reply) = 0;
+    virtual Status make_request(Request request, Reply reply) = 0;
 
     /**
      * @brief Makes a request to a server and generates a corresponding reply.

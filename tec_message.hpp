@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-28 13:26:34 by magnolia>
+// Time-stamp: <Last changed 2025-10-26 23:00:41 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,7 +32,7 @@ SOFTWARE.
 #pragma once
 
 #include <any>
-#include <typeindex>
+
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 
 

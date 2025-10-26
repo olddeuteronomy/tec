@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-09 14:21:48 by magnolia>
+// Time-stamp: <Last changed 2025-10-12 01:54:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -229,7 +229,7 @@ public:
             slots_.erase(ndx);
         }
 
-        // Sets the slot.
+        // Set the slot.
         slots_[ndx] = std::make_unique<Slot>(
             worker,
             [callback](Worker<Params>* worker, const Message& msg) {
@@ -373,7 +373,7 @@ public:
         TEC_ENTER("Worker::run");
 
         if (!thread_.joinable()) {
-              thread_ = std::thread(details<Params>::thread_proc, std::ref(*this));
+            thread_ = std::thread(details<Params>::thread_proc, std::ref(*this));
         }
         else {
             TEC_TRACE("`Worker::thread_proc' is already running.");
