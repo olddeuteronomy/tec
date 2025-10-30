@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-09 15:09:01 by magnolia>
+// Time-stamp: <Last changed 2025-10-30 10:15:47 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,8 +32,11 @@ SOFTWARE.
 #include "tec/tec_message.hpp"
 #include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
-#include "tec/tec_server.hpp"
-#include "tec/tec_server_worker_ex.hpp"
+#include "tec/tec_actor.hpp"
+#include "tec/tec_actor_worker.hpp"
+
+#include "tec/grpc/tec_grpc.hpp"
+// #include "tec/grpc/tec_grpc_server.hpp"
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,34 +61,37 @@ struct ChrReply {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 // Server parameters.
-struct TestServerParams: public tec::ServerParams {};
+struct ServerParams: public tec::GrpcServerParams {};
 
 
 // Implement the Server.
-class TestServer final: public tec::Server {
+class Server final: public tec::Actor {
 private:
-    TestServerParams params_;
+    ServerParams params_;
 
 public:
-    TestServer(const TestServerParams& params)
-        : tec::Server()
+    Server(const ServerParams& params)
+        : tec::Actor()
         , params_{params}
     {}
 
     void start(tec::Signal* sig_started, tec::Status* status) override {
+        SignalOnExit on_exit{sig_started};
         // Emulate error:
         // status = {"cannot start the server"};
         tec::println("Server started with {} ...", *status);
-        sig_started->set();
+        // tec::println("Timeout {}", params_.start_timeout);
+        // sig_started->set();
     }
 
     void shutdown(tec::Signal* sig_stopped) override {
+        SignalOnExit on_exit{sig_stopped};
         tec::println("Server stopped.");
-        sig_stopped->set();
+        // sig_stopped->set();
     }
 
     // Request handler.
-    tec::Status process_request(tec::Request& _request, tec::Reply& _reply) override {
+    tec::Status process_request(tec::Request _request, tec::Reply _reply) override {
         // Check type compatibility.
         // NOTE: *Request* is const!
         // NOTE: Both _request and _reply contain *pointers* to actual data.
@@ -106,14 +112,14 @@ public:
     }
 };
 
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                    Test Server Worker
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-using TestWorker = tec::ServerWorkerEx<TestServerParams, TestServer>;
+using ServerWorker = tec::ActorWorker<ServerParams, Server>;
+
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
@@ -122,14 +128,15 @@ using TestWorker = tec::ServerWorkerEx<TestServerParams, TestServer>;
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 tec::Status test_server() {
-    TestServerParams params;
+    ServerParams params;
+    auto ct = params.start_timeout;
 
     // A traditional way to build a server worker.
     // auto server = std::make_unique<TestServer>(params);
     // auto svr = std::make_unique<TestWorker>(params, std::move(server));
 
     // Build a server worker as a daemon.
-    auto svr{TestWorker::DaemonBuilder<TestWorker, TestServer>{}(params)};
+    auto svr{ServerWorker::Builder<ServerWorker, Server>{}(params)};
 
     // Run it and check for the result.
     auto status = svr->run();

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-27 00:14:09 by magnolia>
+// Time-stamp: <Last changed 2025-10-30 11:23:41 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -27,7 +27,7 @@ SOFTWARE.
  *   @file client.cpp
  *   @brief A simplest gRPC client.
  *
- *  Create the gRPC client and make some RPC calls to the server.
+ *  Creates the gRPC client and makes some RPC calls to the server.
  *
 */
 
@@ -42,11 +42,12 @@ SOFTWARE.
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
 
-#include "tec/tec_message.hpp"
+#include "tec/tec_daemon.hpp"
 #include "tec/tec_print.hpp"
-#include "tec/tec_client.hpp"
-#include "tec/grpc/tec_grpc_client.hpp"
 #include "tec/tec_status.hpp"
+#include "tec/tec_message.hpp"
+#include "tec/tec_actor_worker.hpp"
+#include "tec/grpc/tec_grpc_client.hpp"
 
 #include "client.hpp"
 
@@ -61,20 +62,35 @@ using ClientTraits = tec::grpc_client_traits<
     >;
 
 // Instantiate a Client.
-using BaseClient = tec::GrpcClient<MyParams, ClientTraits>;
+using BaseClient = tec::GrpcClient<ClientParams, ClientTraits>;
 
 
 // Client implementation.
-class MyClient final: public BaseClient {
+class Client final: public BaseClient {
 public:
-    MyClient(const MyParams& params,
-             const std::shared_ptr<grpc::ChannelCredentials>& credentials
+    Client(const ClientParams& params,
+           const std::shared_ptr<grpc::ChannelCredentials>& credentials
         )
         : BaseClient(params, {&grpc::CreateCustomChannel}, credentials)
     {}
 
-private:
+    tec::Status process_request(tec::Request _request, tec::Reply _reply) override {
+        // Check type compatibility.
+        // NOTE: *Request* is const!
+        // NOTE: Both _request and _reply contain *pointers* to actual data.
 
+        if( _request.type() == typeid(const TestHelloRequest*) &&
+            _reply.type() == typeid(TestHelloReply*) ) {
+            // Get pointers to actual data.
+            auto req = std::any_cast<const TestHelloRequest*>(_request);
+            auto rep = std::any_cast<TestHelloReply*>(_reply);
+            return call(req, rep);
+        }
+
+        return {tec::Error::Kind::Unsupported};
+    }
+
+private:
     tec::Status call(const TestHelloRequest* _request, TestHelloReply* _reply) {
         // Data we are sending to the server.
         helloworld::HelloRequest request;
@@ -101,22 +117,6 @@ private:
         return {};
     }
 
-    tec::Status make_request(tec::Request _request, tec::Reply _reply) override {
-        // Check type compatibility.
-        // NOTE: *Request* is const!
-        // NOTE: Both _request and _reply contain *pointers* to actual data.
-
-        if( _request.type() == typeid(const TestHelloRequest*) &&
-            _reply.type() == typeid(TestHelloReply*) ) {
-            // Get pointers to actual data.
-            auto req = std::any_cast<const TestHelloRequest*>(_request);
-            auto rep = std::any_cast<TestHelloReply*>(_reply);
-            return call(req, rep);
-        }
-
-        return {tec::Error::Kind::Unsupported};
-    }
-
 }; // class MyClient
 
 
@@ -126,6 +126,9 @@ private:
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-std::unique_ptr<tec::Client> build_client(const MyParams& params) {
-    return std::make_unique<MyClient>(params, grpc::InsecureChannelCredentials());
+using ClientWorker = tec::ActorWorker<ClientParams, Client>;
+
+std::unique_ptr<tec::Daemon> build_client(const ClientParams& params) {
+    auto actor{std::make_unique<Client>(params, grpc::InsecureChannelCredentials())};
+    return std::make_unique<ClientWorker>(params, std::move(actor));
 }

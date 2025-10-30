@@ -1,12 +1,12 @@
 
 #include <memory>
 
-#include "tec/tec_client.hpp"
+#include "tec/tec_daemon.hpp"
 #include "tec/grpc/tec_grpc.hpp"
 
 
 // Instantiate gRPC Client parameters.
-struct MyParams: public tec::GrpcClientParams {
+struct ClientParams: public tec::GrpcClientParams {
     // You can add custom parameters here.
 };
 
@@ -21,4 +21,4 @@ struct TestHelloReply {
 };
 
 // Client builder.
-std::unique_ptr<tec::Client> build_client(const MyParams&);
+std::unique_ptr<tec::Daemon> build_client(const ClientParams&);

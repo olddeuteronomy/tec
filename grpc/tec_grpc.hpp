@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-04-08 23:03:37 by magnolia>
+// Time-stamp: <Last changed 2025-10-30 13:38:22 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,8 +34,8 @@ SOFTWARE.
 #pragma once
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_client.hpp"
-#include "tec/tec_server.hpp"
+#include "tec/tec_utils.hpp"
+#include "tec/tec_actor.hpp"
 
 
 namespace tec {
@@ -43,7 +43,7 @@ namespace tec {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                      gRPC common default parameters
+*                    gRPC common default parameters
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -53,7 +53,7 @@ static constexpr const int kGrpcMaxMessageSize = 64;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                     gRPC Server parameters
+*                       gRPC Server parameters
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -68,12 +68,33 @@ struct GrpcReflectionBuilder {
 };
 
 
-//! gRPC Server parameters.
-struct GrpcServerParams: public ServerParams {
-    //! Default server URI. Accepts connections from any IPv4 addresses.
+/**
+ * @struct GrpcServerParams
+ * @brief Configuration parameters for gRPC server instances.
+ * @details Specifies timeouts for server startup and shutdown operations, with default values.
+ */
+struct GrpcServerParams: public ActorParams {
+    /**
+     * @brief Default server URI.
+     * @details Accepts connections from any IPv4 addresses.
+     */
     static constexpr const char kDefaultAddrUri[] = "0.0.0.0:50051";
 
-    std::string addr_uri;
+    /**
+     * @brief Default timeout for gRPC  startup.
+     * @details Set to 5 seconds.
+     */
+    static constexpr const MilliSec kStartTimeout{Seconds{5}};
+
+    /**
+     * @brief Default timeout for gRPC shutdown.
+     * @details Set to 10 seconds.
+     */
+    static constexpr const MilliSec kShutdownTimeout{Seconds{10}};
+
+    std::string addr_uri;      ///!< See kDefaultAddrUri.
+    MilliSec start_timeout;    ///< Timeout for server startup in milliseconds.
+    MilliSec shutdown_timeout; ///< Timeout for server shutdown in milliseconds.
 
     // ServerBuilder parameters
     GrpcHealthCheckBuilder health_check_builder;  //!< e.g. {&grpc::EnableDefaultHealthCheckService}.
@@ -83,7 +104,10 @@ struct GrpcServerParams: public ServerParams {
     int compression_level;                        //!< GRPC_COMPRESS_LEVEL_NONE = 0, GRPC_COMPRESS_LEVEL_LOW, GRPC_COMPRESS_LEVEL_MED, GRPC_COMPRESS_LEVEL_HIGH, GRPC_COMPRESS_LEVEL_COUNT.
 
     GrpcServerParams()
-        : addr_uri{kDefaultAddrUri}
+        : ActorParams()
+        , addr_uri{kDefaultAddrUri}
+        , start_timeout{kStartTimeout}
+        , shutdown_timeout{kShutdownTimeout}
         , health_check_builder{nullptr}
         , reflection_builder{nullptr}
         , max_message_size{kGrpcMaxMessageSize}
@@ -99,18 +123,43 @@ struct GrpcServerParams: public ServerParams {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-struct GrpcClientParams: public ClientParams {
-    //! Default client URI (localhost).
+/**
+ * @struct GrpcClientParams
+ * @brief Configuration parameters for gRPC client instances.
+ * @details Defines default timeouts and configuration options for gRPC client operations.
+ */
+struct GrpcClientParams: public ActorParams {
+    /**
+     * @brief Default client URI.
+     * @details Set to *localhost* (127.0.0.1:50051).
+     */
     static constexpr const char kDefaultAddrUri[] = "127.0.0.1:50051";
 
-    std::string addr_uri;  //!< See kDefaultAddrUri.
+    /**
+     * @brief Default timeout for client connection.
+     * @details Set to 5 seconds.
+     */
+    static constexpr const MilliSec kConnectTimeout{Seconds{5}};
+
+    /**
+     * @brief Default timeout for client closing.
+     * @details Set to 10 seconds.
+     */
+    static constexpr const MilliSec kCloseTimeout{Seconds{10}};
+
+    std::string addr_uri;        ///!< See kDefaultAddrUri.
+    MilliSec connect_timeout;    ///!< Timeout for client connection in milliseconds.
+    MilliSec close_timeout;      ///!< Timeout for client closing in milliseconds.
 
     // Channel arguments
-    int max_message_size;      //!< kGrpcMaxMessageSize
-    int compression_algorithm; //!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
+    int max_message_size;      ///!< See kGrpcMaxMessageSize.
+    int compression_algorithm; ///!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
 
     GrpcClientParams()
-        : addr_uri{kDefaultAddrUri}
+        : ActorParams()
+        , addr_uri{kDefaultAddrUri}
+        , connect_timeout{kConnectTimeout}
+        , close_timeout{kCloseTimeout}
         , max_message_size{kGrpcMaxMessageSize}
         , compression_algorithm{0}
     {}

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-26 22:10:47 by magnolia>
+// Time-stamp: <Last changed 2025-10-30 14:07:33 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -37,7 +37,7 @@ SOFTWARE.
 #include "tec/tec_status.hpp"
 #include "tec/tec_trace.hpp"
 #include "tec/tec_utils.hpp"
-#include "tec/tec_client.hpp"
+#include "tec/tec_actor.hpp"
 #include "tec/grpc/tec_grpc.hpp" // IWYU pragma: keep
 
 
@@ -75,7 +75,7 @@ struct grpc_client_traits {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template <typename TParams, typename Traits>
-class GrpcClient: public Client {
+class GrpcClient: public Actor {
 public:
 
     typedef Traits traits;
@@ -132,13 +132,14 @@ public:
                const ChannelBuilder& channel_builder,
                const std::shared_ptr<Credentials>& credentials
         )
-        : params_{params}
+        : Actor()
+        , params_{params}
         , channel_builder_{channel_builder}
         , credentials_{credentials}
     {
         static_assert(
-            std::is_base_of<ClientParams, Params>::value,
-            "not derived from tec::ClientParams class");
+            std::is_base_of<GrpcClientParams, Params>::value,
+            "not derived from tec::GrpcClientParams class");
     }
 
     virtual ~GrpcClient() = default;
@@ -154,10 +155,11 @@ public:
      *  3) Connects to the server using *addr_uri* and *connect_timeout*
      *  provided in *params*.
      *
-     *  @return Status
+     *  4)
      */
-    Status connect() override {
-        TEC_ENTER("GrpcClient::connect");
+    void start(Signal* sig_started, Status* status) override {
+        TEC_ENTER("GrpcClient::start");
+        Actor::SignalOnExit on_exit(sig_started);
 
         // Set channel arguments.
         set_channel_arguments();
@@ -175,23 +177,24 @@ public:
                     "It took too long (> {} ms) to reach out the server on \"{}\"",
                     MilliSec{params_.connect_timeout}.count(), params_.addr_uri)};
             TEC_TRACE("!!! Error: {}.", msg);
-            return {msg, Error::Kind::RpcErr};
+            *status = {msg, Error::Kind::NetErr};
+            return;
         }
 
         // Create a stub.
         stub_ = Service::NewStub(channel_);
         TEC_TRACE("connected to {} OK.", params_.addr_uri);
-        return {};
     }
 
 
-    void close() override {
-        TEC_ENTER("GrpcClient::close");
+    void shutdown(Signal* sig_stopped) override {
+        TEC_ENTER("GrpcClient::shutdown");
+        Actor::SignalOnExit on_exit{sig_stopped};
         TEC_TRACE("closed OK.");
     }
 
 
-    Status make_request(Request request, Reply reply) override {
+    Status process_request(Request request, Reply reply) override {
         return {Error::Kind::NotImplemented};
     }
 }; // class GrpcClient

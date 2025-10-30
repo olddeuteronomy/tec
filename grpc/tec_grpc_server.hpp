@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-30 18:12:01 by magnolia>
+// Time-stamp: <Last changed 2025-10-30 13:44:41 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -36,7 +36,7 @@ SOFTWARE.
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_utils.hpp" // IWYU pragma: keep
 #include "tec/tec_trace.hpp"
-#include "tec/tec_server.hpp" // IWYU pragma: keep
+#include "tec/tec_actor.hpp" // IWYU pragma: keep
 #include "tec/grpc/tec_grpc.hpp" // IWYU pragma: keep
 
 
@@ -73,7 +73,7 @@ struct grpc_server_traits {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 template <typename TParams, typename Traits>
-class GrpcServer: public Server {
+class GrpcServer: public Actor {
 public:
 
     typedef TParams Params;
@@ -145,18 +145,18 @@ protected:
 public:
 
     GrpcServer(const Params& params, const std::shared_ptr<Credentials>& credentials)
-        : Server()
+        : Actor()
         , params_{params}
         , credentials_{credentials}
     {
         static_assert(
-            std::is_base_of<ServerParams, Params>::value,
-            "not derived from tec::ServerParams class");
+            std::is_base_of<GrpcServerParams, Params>::value,
+            "not derived from tec::GrpcServerParams class");
     }
 
     virtual ~GrpcServer() = default;
 
-    Status process_request(Request&, Reply&) override {
+    Status process_request(Request, Reply) override {
         return {tec::Error::Kind::NotImplemented};
     }
 
@@ -173,10 +173,11 @@ public:
      *
      *  @param sig_started Signal signals on GrpcSever has been started, possible with error.
      *  @param status Status
-     *  @sa Server
+     *  @sa Actor
      */
     void start(Signal* sig_started, Status* status) override {
         TEC_ENTER("GrpcServer::start");
+        Actor::SignalOnExit on_exit(sig_started);
 
         // Build the server and the service.
         Service service;
@@ -202,17 +203,13 @@ public:
         if( !server_ ) {
             auto errmsg = format("gRPC Server cannot start on \"{}\"", params_.addr_uri);
             TEC_TRACE("!!! Error: {}.", errmsg);
-            *status = {errmsg, Error::Kind::RpcErr};
-            // Signal that the server started, but with an error.
-            sig_started->set();
+            *status = {errmsg, Error::Kind::NetErr};
             return;
         }
 
         TEC_TRACE("server listening on \"{}\".", params_.addr_uri);
 
-        // Signal that the gRPC server is started OK.
-        sig_started->set();
-        // Wait until this->shutdown() is called from another thread.
+        // Waits until this->shutdown() is called from another thread.
         server_->Wait();
     }
 
@@ -222,15 +219,14 @@ public:
      *  Closes all connections, shuts the server down.
      *
      *  @param sig_stopped Signal signals on gRPC server is stopped.
-     *  @return none
      */
     void shutdown(Signal* sig_stopped) override {
         TEC_ENTER("GrpcServer::shutdown");
+        Actor::SignalOnExit on_exit(sig_stopped);
         if( server_ ) {
             TEC_TRACE("terminating gRPC server ...");
             server_->Shutdown();
         }
-        sig_stopped->set();
     }
 
 }; // GrpcServer

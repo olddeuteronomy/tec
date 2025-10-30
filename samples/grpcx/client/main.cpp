@@ -20,11 +20,11 @@ int main() {
     std::signal(SIGINT, [](int){quit.store(true);});
 
     // Create a client.
-    MyParams params;
+    ClientParams params;
     auto client{build_client(params)};
 
     // Connect to the server.
-    auto result = client->connect();
+    auto result = client->run();
     if( !result ) {
         tec::println("Abnormally exited with {}.", result);
         return result.code.value_or(tec::Error::Code<>::Unspecified);
@@ -50,7 +50,7 @@ int main() {
     }
 
     // Clean up.
-    client->close();
+    result = client->terminate();
 
     tec::println("Exited with {}.", result);
     return result.code.value_or(tec::Error::Code<>::Unspecified);
