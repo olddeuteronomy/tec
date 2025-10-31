@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-30 13:40:18 by magnolia>
+// Time-stamp: <Last changed 2025-10-31 13:58:07 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -38,14 +38,6 @@ SOFTWARE.
 
 
 namespace tec {
-
-/**
- * @struct ActorParams
- * @brief Base configuration parameters for actor instances.
- */
-struct ActorParams {
-};
-
 
 /**
  * @class Actor
@@ -96,7 +88,7 @@ public:
      * is updated with the appropriate error code (e.g., Error::Kind::Timeout).
      * @param sig_started Signal set when the actor has started (possibly with an error).
      * @param status Updated with the result of the operation (e.g., Error::Kind::Ok or Error::Kind::Timeout).
-     * @note In some implementations (e.g., gRPC), this method may not return until shutdown() is called.
+     * @note In some implementations (e.g., the gRPC server), this method may not return until shutdown() is called.
      * @see Signal
      * @see Status
      */
@@ -105,7 +97,7 @@ public:
     /**
      * @brief Shuts down the actor.
      * @details Stops the actor’s operation and signals completion via sig_stopped.
-     * @param sig_stopped Signal set when the server has stopped.
+     * @param sig_stopped Signal set when the actor has stopped.
      * @see Signal
      */
     virtual void shutdown(Signal* sig_stopped) = 0;

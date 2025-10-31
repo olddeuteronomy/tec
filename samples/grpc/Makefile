@@ -1,3 +1,4 @@
+# Time-stamp: <Last changed 2025-11-01 01:45:41 by magnolia>
 #
 # Copyright 2015 gRPC authors.
 #
@@ -20,9 +21,9 @@
 
 ###############################################################################
 # To force rebuild with `g++' (default):
-#    make [-k] -B
+#    make [-k -j4] -B
 # To force rebuild with `clang++':
-#    make [-k] -B CLANG=1
+#    make [-k -j4] -B CLANG=1
 ###############################################################################
 
 # OS
@@ -39,7 +40,7 @@ else
 EXTRA_FLAGS := -O2
 endif
 
-# Just for fun - colorize compiler output
+# Colorize compiler output
 ifdef GCC
 EXTRA_FLAGS += -fdiagnostics-color=always
 else
@@ -72,7 +73,7 @@ $(info $(shell ${MKDIR_P} $(OUTDIR)))
 endif
 
 
-TEC_CXXFLAGS := -I$(HOME)/lib/grpc/include -I$(HOME)/workspace/devel
+TEC_CXXFLAGS := -I$(HOME)/lib/grpc/include -I../../..
 HOST_SYSTEM = $(shell uname | cut -f 1 -d_)
 SYSTEM ?= $(HOST_SYSTEM)
 CPPFLAGS += `pkg-config --cflags protobuf grpc`
@@ -109,13 +110,12 @@ vpath %.proto $(PROTOS_PATH)
 #                           Build
 ########################################################################
 
-# all: system-check greeter_server greeter_client
-all: greeter_server greeter_client
+all: server client
 
-greeter_server: helloworld.pb.o helloworld.grpc.pb.o greeter_server.o
+server: helloworld.pb.o helloworld.grpc.pb.o server.o test_server.o
 	$(CXX) $^ $(LDFLAGS) -o $(OUTDIR)/$@$(SUFFIX)
 
-greeter_client: helloworld.pb.o helloworld.grpc.pb.o greeter_client.o
+client: helloworld.pb.o helloworld.grpc.pb.o client.o test_client.o
 	$(CXX) $^ $(LDFLAGS) -o $(OUTDIR)/$@$(SUFFIX)
 
 

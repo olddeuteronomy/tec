@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-30 13:44:41 by magnolia>
+// Time-stamp: <Last changed 2025-10-31 16:40:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -177,7 +177,6 @@ public:
      */
     void start(Signal* sig_started, Status* status) override {
         TEC_ENTER("GrpcServer::start");
-        Actor::SignalOnExit on_exit(sig_started);
 
         // Build the server and the service.
         Service service;
@@ -209,6 +208,8 @@ public:
 
         TEC_TRACE("server listening on \"{}\".", params_.addr_uri);
 
+        // Signals the server is started.
+        sig_started->set();
         // Waits until this->shutdown() is called from another thread.
         server_->Wait();
     }

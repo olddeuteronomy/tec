@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2025-09-30 16:13:41 by magnolia>
+# Time-stamp: <Last changed 2025-11-01 01:44:57 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -85,13 +85,21 @@ endif
 
 
 # Build the targets
-all: \
-	$(OUTDIR)/worker$(TARGET_SUFFIX) \
-	$(OUTDIR)/server$(TARGET_SUFFIX)
+all: worker server
 
-$(OUTDIR)/worker$(TARGET_SUFFIX): test_worker.cpp
-	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $@
+worker: test_worker.cpp
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
-$(OUTDIR)/server$(TARGET_SUFFIX): test_server.cpp
-	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $@
+server: test_server.cpp
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
+
+# all: \
+# 	$(OUTDIR)/worker$(TARGET_SUFFIX) \
+# 	$(OUTDIR)/server$(TARGET_SUFFIX)
+
+# $(OUTDIR)/worker$(TARGET_SUFFIX): test_worker.cpp
+# 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $@
+
+# $(OUTDIR)/server$(TARGET_SUFFIX): test_server.cpp
+# 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $@

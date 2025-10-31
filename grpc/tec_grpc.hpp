@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-30 13:38:22 by magnolia>
+// Time-stamp: <Last changed 2025-11-01 01:11:26 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -35,7 +35,6 @@ SOFTWARE.
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_utils.hpp"
-#include "tec/tec_actor.hpp"
 
 
 namespace tec {
@@ -43,12 +42,12 @@ namespace tec {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                    gRPC common default parameters
+*                      gRPC common parameters
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Default maximum message size, in Mb
-static constexpr const int kGrpcMaxMessageSize = 64;
+//! Message size, 4 Mb by dafault.
+static constexpr const int kGrpcMaxMessageSize{4 * 1024 * 1024};
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -73,7 +72,7 @@ struct GrpcReflectionBuilder {
  * @brief Configuration parameters for gRPC server instances.
  * @details Specifies timeouts for server startup and shutdown operations, with default values.
  */
-struct GrpcServerParams: public ActorParams {
+struct GrpcServerParams {
     /**
      * @brief Default server URI.
      * @details Accepts connections from any IPv4 addresses.
@@ -99,13 +98,12 @@ struct GrpcServerParams: public ActorParams {
     // ServerBuilder parameters
     GrpcHealthCheckBuilder health_check_builder;  //!< e.g. {&grpc::EnableDefaultHealthCheckService}.
     GrpcReflectionBuilder reflection_builder;     //!< e.g. {&grpc::reflection::InitProtoReflectionServerBuilderPlugin}.
-    int max_message_size;                         //!< kGrpcMaxMessageSize, set to 0 to use gRPC's default (4096 bytes).
+    int max_message_size;                         //!< kGrpcMaxMessageSize, set to 0 to use gRPC's default (4Mb).
     int compression_algorithm;                    //!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT.
     int compression_level;                        //!< GRPC_COMPRESS_LEVEL_NONE = 0, GRPC_COMPRESS_LEVEL_LOW, GRPC_COMPRESS_LEVEL_MED, GRPC_COMPRESS_LEVEL_HIGH, GRPC_COMPRESS_LEVEL_COUNT.
 
     GrpcServerParams()
-        : ActorParams()
-        , addr_uri{kDefaultAddrUri}
+        : addr_uri{kDefaultAddrUri}
         , start_timeout{kStartTimeout}
         , shutdown_timeout{kShutdownTimeout}
         , health_check_builder{nullptr}
@@ -128,7 +126,7 @@ struct GrpcServerParams: public ActorParams {
  * @brief Configuration parameters for gRPC client instances.
  * @details Defines default timeouts and configuration options for gRPC client operations.
  */
-struct GrpcClientParams: public ActorParams {
+struct GrpcClientParams {
     /**
      * @brief Default client URI.
      * @details Set to *localhost* (127.0.0.1:50051).
@@ -156,8 +154,7 @@ struct GrpcClientParams: public ActorParams {
     int compression_algorithm; ///!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
 
     GrpcClientParams()
-        : ActorParams()
-        , addr_uri{kDefaultAddrUri}
+        : addr_uri{kDefaultAddrUri}
         , connect_timeout{kConnectTimeout}
         , close_timeout{kCloseTimeout}
         , max_message_size{kGrpcMaxMessageSize}

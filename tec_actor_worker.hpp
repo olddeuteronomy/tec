@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-30 14:18:50 by magnolia>
+// Time-stamp: <Last changed 2025-10-31 13:56:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +24,7 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 /**
  * @file tec_actor_worker.hpp
- * @brief Defines a worker class that manages an actor instance in the tec namespace.
+ * @brief Defines a worker class that manages an actor instance.
  * @author The Emacs Cat
  * @date 2025-10-28
  */
@@ -50,26 +50,26 @@ namespace tec {
  * @brief A worker that owns and manages an actor instance.
  * @details Extends the Worker class to start and shut down an actor instance,
  * handling actor lifecycle within a dedicated thread. It uses signals and status
- * objects to manage actor startup and shutdown with timeout support.
+ * objects to maactornage actor startup and shutdown with timeout support.
  * @tparam TParams The type of parameters, typically derived from ActorParams.
- * @tparam TServer The server type, derived from Server.
+ * @tparam TActor The  type, derived from Actor.
  * @see Worker
- * @see Server
+ * @see Actor
  */
 template <typename TParams, typename TActor>
 class ActorWorker : public Worker<TParams> {
 public:
-    using Params = TParams; ///< Type alias for worker parameters.
+    using Params = TParams; ///< Type alias for actor parameters.
 
 protected:
     std::unique_ptr<TActor> actor_; ///< The actor instance owned by the worker.
 
 private:
     std::thread actor_thread_; ///< Thread for running the actor.
-    Signal sig_started_; ///< Signal indicating the actor has started.
-    Signal sig_stopped_; ///< Signal indicating the actor has stopped.
-    Status status_started_; ///< Status of the actor startup operation.
-    Status status_stopped_; ///< Status of the actor shutdown operation.
+    Signal sig_started_;       ///< Signal indicating the actor has started.
+    Signal sig_stopped_;       ///< Signal indicating the actor has stopped.
+    Status status_started_;    ///< Status of the actor startup operation.
+    Status status_stopped_;    ///< Status of the actor shutdown operation.
     std::mutex mtx_request_;
 
 public:
@@ -88,10 +88,6 @@ public:
         static_assert(
             std::is_base_of<Actor, TActor>::value,
             "ActorWorker::TActor must derive from tec::Actor");
-
-        static_assert(
-            std::is_base_of<ActorParams, TParams>::value,
-            "ActorWorker::TParams must derive from tec::ActorParams");
 
         // Registers a special callback to manage requests to the actor synchronously.
         this->template register_callback<ActorWorker<Params, TActor>, Daemon::Payload*>(
@@ -121,8 +117,8 @@ public:
 protected:
 
     /**
-     * @brief Initializes the worker by starting the server thread.
-     * @details Signals the server thread to start and waits for the server to signal
+     * @brief Initializes the worker by starting the actor thread.
+     * @details Signals the actor thread to start and waits for the actor to signal
      * completion or timeout. Logs events using tracing if enabled.
      * @return Status Error::Kind::Ok if successful, otherwise an error status (e.g., TimeoutErr).
      * @see Worker::on_init()
@@ -148,8 +144,8 @@ protected:
 
     /**
      * @brief Shuts down the actor during worker exit.
-     * @details Initiates actor shutdown in a separate thread and waits for completion
-     * or timeout. Logs events using tracing if enabled.
+     * @details Initiates actor shutdown in a separate thread and waits for completion.
+     * Logs events using tracing if enabled.
      * @return Status Error::Kind::Ok if successful, otherwise an error status (e.g., TimeoutErr).
      * @see Worker::on_exit()
      */
@@ -220,9 +216,6 @@ public:
             static_assert(
                 std::is_base_of<Actor, ActorDerived>::value,
                 "ActorDerived must derive from tec::Actor");
-            static_assert(
-                std::is_base_of<ActorParams, typename WorkerDerived::Params>::value,
-                "Params must derive from tec::ActorParams");
 
             return std::make_unique<WorkerDerived>(params, std::move(std::make_unique<ActorDerived>(params)));
         }
