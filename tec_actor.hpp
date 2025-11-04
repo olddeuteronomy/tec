@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-31 13:58:07 by magnolia>
+// Time-stamp: <Last changed 2025-11-05 00:44:55 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +24,21 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 /**
  * @file tec_actor.hpp
- * @brief Defines an interface for actor implementations in the tec namespace.
+ * @brief Core interface for TEC actors with lifecycle management and request processing.
+ *
+ * This header defines the `tec::Actor` abstract base class, which serves as the
+ * foundation for all actor implementations in the TEC framework. Actors encapsulate
+ * asynchronous services with well-defined **start/shutdown** semantics and
+ * **request-reply** message handling.
+ *
+ * Key features:
+ * - **Non-copyable, polymorphic** base class.
+ * - **Signal-based** lifecycle notifications (`start`, `shutdown`).
+ * - **Synchronous request processing** via `process_request`.
+ * - **RAII helper** `SignalOnExit` for automatic signal triggering.
+ *
+ * @note This file is part of the **TEC** framework.
+ * @see tec_signal.hpp, tec_status.hpp, tec_message.hpp
  * @author The Emacs Cat
  * @date 2025-10-28
  */
@@ -41,84 +55,161 @@ namespace tec {
 
 /**
  * @class Actor
- * @brief Abstract interface for an actor implementation.
- * @details Defines the minimum set of methods for an actor, including starting and
- * shutting down operations, with associated signals for state transitions. Derived
- * classes must implement these methods to provide specific actor functionality.
+ * @brief Abstract base class defining the actor lifecycle and request handling interface.
+ *
+ * All concrete actors must inherit from this class and implement:
+ * - `start()` – asynchronous initialization with completion signal.
+ * - `shutdown()` – graceful termination with completion signal.
+ * - `process_request()` – core message handling logic.
+ *
+ * Actors are typically long-lived services (e.g., gRPC servers, workers) that
+ * run in their own thread or event loop until explicitly shut down.
+ *
+ * @note Actors are **non-copyable** and **non-movable** to ensure unique ownership.
  */
 class Actor {
-public:
-    struct SignalOnExit {
-        explicit SignalOnExit(Signal* sig): sig_{sig} {}
-        ~SignalOnExit() { sig_->set(); }
+  public:
+      /**
+       * @struct SignalOnExit
+       * @brief RAII wrapper that sets a signal upon destruction.
+       *
+       * Used to automatically notify completion of `start()` or `shutdown()` operations.
+       *
+       * @code
+       * Signal sig;
+       * actor->start(&sig, &status);
+       * sig.wait(); // blocks until start completes
+       * @endcode
+       */
+      struct SignalOnExit {
+          /**
+           * @brief Constructs the RAII guard and binds it to a signal.
+           * @param sig Pointer to the signal to set on destruction.
+           */
+          explicit SignalOnExit(Signal* sig) : sig_{sig} {}
 
-    private:
-        Signal* sig_;
-    };
+          /**
+           * @brief Destructor – sets the bound signal.
+           *
+           * This is automatically called when exiting the scope in which
+           * `start()` or `shutdown()` was invoked, ensuring timely notification.
+           */
+          ~SignalOnExit() { if (sig_) sig_->set(); }
 
-public:
-    /**
-     * @brief Default constructor.
-     * @details Initializes an Actor base class. Derived classes should provide
-     * specific initialization logic.
-     */
-    Actor() = default;
+          // Deleted to prevent accidental copying/moving
+          SignalOnExit(const SignalOnExit&) = delete;
+          SignalOnExit& operator=(const SignalOnExit&) = delete;
+          SignalOnExit(SignalOnExit&&) = delete;
+          SignalOnExit& operator=(SignalOnExit&&) = delete;
 
-    /**
-     * @brief Deleted copy constructor to prevent copying.
-     */
-    Actor(const Actor&) = delete;
+      private:
+          Signal* sig_; ///< Raw pointer to signal (non-owning).
+      };
 
-    /**
-     * @brief Deleted move constructor to prevent moving.
-     */
-    Actor(Actor&&) = delete;
+  public:
+      /**
+       * @brief Default constructor.
+       *
+       * Initializes base actor state. Derived classes should perform
+       * minimal setup here and defer heavy initialization to `start()`.
+       */
+      Actor() = default;
 
-    /**
-     * @brief Virtual destructor for safe polymorphic deletion.
-     * @details Ensures proper cleanup of derived classes.
-     */
-    virtual ~Actor() = default;
+      /**
+       * @brief Deleted copy constructor.
+       *
+       * Actors represent unique service instances and must not be copied.
+       */
+      Actor(const Actor&) = delete;
 
-    /**
-     * @brief Starts the actor.
-     * @details Initiates the actor’s operation and signals completion via sig_started.
-     * If successful, the actor may run indefinitely (e.g., in gRPC) until shutdown()
-     * is called from another thread. In case of timeout or error, the status argument
-     * is updated with the appropriate error code (e.g., Error::Kind::Timeout).
-     * @param sig_started Signal set when the actor has started (possibly with an error).
-     * @param status Updated with the result of the operation (e.g., Error::Kind::Ok or Error::Kind::Timeout).
-     * @note In some implementations (e.g., the gRPC server), this method may not return until shutdown() is called.
-     * @see Signal
-     * @see Status
-     */
-    virtual void start(Signal* sig_started, Status* status) = 0;
+      /**
+       * @brief Deleted move constructor.
+       *
+       * Prevents accidental transfer of actor ownership.
+       */
+      Actor(Actor&&) = delete;
 
-    /**
-     * @brief Shuts down the actor.
-     * @details Stops the actor’s operation and signals completion via sig_stopped.
-     * @param sig_stopped Signal set when the actor has stopped.
-     * @see Signal
-     */
-    virtual void shutdown(Signal* sig_stopped) = 0;
+      /**
+       * @brief Deleted copy assignment operator.
+       */
+      Actor& operator=(const Actor&) = delete;
 
-    /**
-     * @brief Processes a request and generates a corresponding reply.
-     *
-     * This pure virtual method must be implemented by derived classes to handle
-     * the processing of a given request and populate the provided reply object.
-     * It defines the core request-handling logic for the actor.
-     *
-     * @param request The input request object to be processed.
-     * @param reply The output reply object to store the response.
-     * @return Status The status of the request processing, indicating success or an error.
-     * @see Status
-     * @see Request
-     * @see Reply
-     */
-    virtual Status process_request(Request request, Reply reply) = 0;
+      /**
+       * @brief Deleted move assignment operator.
+       */
+      Actor& operator=(Actor&&) = delete;
 
-}; // class Actor
+      /**
+       * @brief Virtual destructor.
+       *
+       * Ensures proper destruction of derived classes when deleted through
+       * a base pointer. Derived classes should override if cleanup is needed.
+       */
+      virtual ~Actor() = default;
 
+      /**
+       * @brief Starts the actor's operation.
+       *
+       * This method initiates the actor's internal service (e.g., binding ports,
+       * starting threads, entering event loop). It must **not block indefinitely**
+       * unless the actor is designed to run until `shutdown()` is called.
+       *
+       * Completion (success or failure) is signaled via `sig_started`.
+       *
+       * @param sig_started [in,out] Signal set when startup completes.
+       *                     Must remain valid until the signal is triggered.
+       * @param status [out] Filled with result:
+       *                     - `Status::Ok()` on success
+       *                     - `Status::Error(Error::Kind::Timeout)` on timeout
+       *                     - Other errors as defined by implementation
+       *
+       * @note This function may return **before** startup completes.
+       *       Use `sig_started->wait()` to synchronize.
+       * @warning In long-running actors (e.g. gRPC), this call may **not return**
+       *          until `shutdown()` is invoked from another thread.
+       *
+       * @see SignalOnExit, shutdown(), Status
+       */
+      virtual void start(Signal* sig_started, Status* status) = 0;
+
+      /**
+       * @brief Initiates graceful shutdown of the actor.
+       *
+       * Requests the actor to stop processing new requests, complete in-flight work,
+       * and terminate cleanly. Completion is signaled via `sig_stopped`.
+       *
+       * @param sig_stopped [in,out] Signal set when shutdown is fully complete.
+       *                     Must remain valid until triggered.
+       *
+       * @note This is typically called from a separate thread.
+       * @see SignalOnExit, start()
+       */
+      virtual void shutdown(Signal* sig_stopped) = 0;
+
+      /**
+       * @brief Processes a single request and produces a reply.
+       *
+       * This is the **core message handling entry point**. Implementations should:
+       * - Validate the `request`
+       * - Perform necessary work
+       * - Populate `reply` with results
+       * - Return appropriate `Status`
+       *
+       * @param request [in] Input message to process (moved-from if possible).
+       * @param reply [out] Output message populated with response.
+       *
+       * @return Status indicating success or specific error condition.
+       *
+       * @par Example
+       * @code
+       * Status s = actor->process_request(req, reply);
+       * if (!s.ok()) { handle_error(s); }
+       * @endcode
+       *
+       * @see Request, Reply, Status
+       */
+      virtual Status process_request(Request request, Reply reply) = 0;
+
+  }; // class Actor
 
 } // namespace tec

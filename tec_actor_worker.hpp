@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-31 13:56:24 by magnolia>
+// Time-stamp: <Last changed 2025-11-05 01:09:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +24,21 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 /**
  * @file tec_actor_worker.hpp
- * @brief Defines a worker class that manages an actor instance.
+ * @brief Template class combining `Worker` and `Actor` for synchronous request processing in a dedicated thread.
+ *
+ * The `tec::ActorWorker<TParams, TActor>` class is a **composite worker** that:
+ * - Owns a concrete `Actor` instance.
+ * - Runs it in a **dedicated thread**.
+ * - Exposes synchronous **request-reply** processing via `Daemon::Payload`.
+ * - Manages full **lifecycle** (`start` → `shutdown`) with **timeout-aware signals**.
+ *
+ * It bridges the asynchronous `Actor` interface with the synchronous `Worker`/`Daemon` model.
+ *
+ * @tparam TParams Parameter type (must derive from `ActorParams` or similar).
+ * @tparam TActor  Concrete actor type (must derive from `tec::Actor`).
+ *
+ * @note Thread-safe request handling via internal mutex.
+ * @see Worker, Actor, Daemon, Signal, Status
  * @author The Emacs Cat
  * @date 2025-10-28
  */
@@ -47,122 +61,170 @@ namespace tec {
 
 /**
  * @class ActorWorker
- * @brief A worker that owns and manages an actor instance.
- * @details Extends the Worker class to start and shut down an actor instance,
- * handling actor lifecycle within a dedicated thread. It uses signals and status
- * objects to maactornage actor startup and shutdown with timeout support.
- * @tparam TParams The type of parameters, typically derived from ActorParams.
- * @tparam TActor The  type, derived from Actor.
- * @see Worker
- * @see Actor
+ * @brief A `Worker` that owns and runs an `Actor` in a dedicated thread.
+ *
+ * This class integrates the **actor model** (asynchronous lifecycle) with the
+ * **worker model** (synchronous request handling via `Daemon`). It:
+ * - Starts the actor in a background thread during `on_init()`.
+ * - Routes incoming `Daemon::Payload` messages to `actor_->process_request()`.
+ * - Ensures thread-safe, synchronous replies.
+ * - Gracefully shuts down the actor and joins threads during `on_exit()`.
+ *
+ * @tparam TParams Configuration parameters (passed to both worker and actor).
+ * @tparam TActor  Concrete actor type derived from `tec::Actor`.
+ *
+ * @par Threading Model
+ * - One dedicated thread runs the actor (`actor_thread_`).
+ * - Request processing is serialized via `mtx_request_`.
+ * - `on_init()` and `on_exit()` are called from the daemon's control thread.
  */
 template <typename TParams, typename TActor>
 class ActorWorker : public Worker<TParams> {
-public:
-    using Params = TParams; ///< Type alias for actor parameters.
+  public:
+      /// @brief Alias for the parameter type.
+      using Params = TParams;
 
-protected:
-    std::unique_ptr<TActor> actor_; ///< The actor instance owned by the worker.
+  protected:
+      /// @brief Owned actor instance.
+      std::unique_ptr<TActor> actor_;
 
-private:
-    std::thread actor_thread_; ///< Thread for running the actor.
-    Signal sig_started_;       ///< Signal indicating the actor has started.
-    Signal sig_stopped_;       ///< Signal indicating the actor has stopped.
-    Status status_started_;    ///< Status of the actor startup operation.
-    Status status_stopped_;    ///< Status of the actor shutdown operation.
-    std::mutex mtx_request_;
+  private:
+      /// @brief Thread in which the actor runs.
+      std::thread actor_thread_;
+
+      /// @brief Signal set when actor startup completes.
+      Signal sig_started_;
+
+      /// @brief Signal set when actor shutdown completes.
+      Signal sig_stopped_;
+
+      /// @brief Status of the startup operation.
+      Status status_started_;
+
+      /// @brief Status of the shutdown operation.
+      Status status_stopped_;
+
+      /// @brief Mutex protecting synchronous request handling.
+      std::mutex mtx_request_;
 
 public:
     /**
-     * @brief Constructs an ActorWorker with parameters and an actor instance.
-     * @details Initializes the Worker base class with parameters and takes ownership of
-     * the actor instance.
-     * Ensures TActor is derived from Actor via static assertion.
-     * @param params The configuration parameters for the worker.
-     * @param server A unique pointer to the actor instance.
-     */
+       * @brief Constructs an `ActorWorker` with parameters and actor ownership.
+       *
+       * Takes ownership of a fully constructed `TActor` instance.
+       * Registers a callback to handle `Daemon::Payload*` messages synchronously.
+       *
+       * @param params Configuration for the worker and actor.
+       * @param actor  Unique pointer to the concrete actor instance.
+       *
+       * @pre `TActor` must derive from `tec::Actor`.
+       *
+       * @par Example
+       * @code
+       * auto worker = std::make_unique<ActorWorker<Params, GrpcActor>>(
+       *     params, std::move(std::make_unique<GrpcActor>(params)));
+       * @endcode
+       */
     ActorWorker(const Params& params, std::unique_ptr<TActor> actor)
         : Worker<Params>(params)
         , actor_{std::move(actor)}
     {
         static_assert(
-            std::is_base_of<Actor, TActor>::value,
+            std::is_base_of_v<Actor, TActor>,
             "ActorWorker::TActor must derive from tec::Actor");
 
-        // Registers a special callback to manage requests to the actor synchronously.
-        this->template register_callback<ActorWorker<Params, TActor>, Daemon::Payload*>(
-            this, &ActorWorker<TParams, TActor>::on_request);
+        // Register synchronous request handler
+        this->template register_callback<ActorWorker, Daemon::Payload*>(
+            this, &ActorWorker::on_request);
     }
 
     /**
-     * @brief Deleted copy constructor to prevent copying.
+     * @brief Deleted copy constructor.
+     *
+     * `ActorWorker` manages unique resources (thread, actor) and cannot be copied.
      */
     ActorWorker(const ActorWorker&) = delete;
 
     /**
-     * @brief Deleted move constructor to prevent moving.
+     * @brief Deleted move constructor.
+     *
+     * Move semantics are disabled to prevent thread/actor ownership issues.
      */
     ActorWorker(ActorWorker&&) = delete;
 
     /**
-     * @brief Destructor that ensures proper server thread cleanup.
-     * @details Joins the server thread if it is joinable to ensure clean shutdown.
+     * @brief Destructor.
+     *
+     * Ensures the actor thread is joined if still running.
+     * @note `on_exit()` should be called explicitly for graceful shutdown.
      */
-    virtual ~ActorWorker() {
+    ~ActorWorker() override {
         if (actor_thread_.joinable()) {
             actor_thread_.join();
         }
     }
 
 protected:
-
     /**
-     * @brief Initializes the worker by starting the actor thread.
-     * @details Signals the actor thread to start and waits for the actor to signal
-     * completion or timeout. Logs events using tracing if enabled.
-     * @return Status Error::Kind::Ok if successful, otherwise an error status (e.g., TimeoutErr).
-     * @see Worker::on_init()
+     * @brief Initializes the worker by starting the actor in a background thread.
+     *
+     * Spawns `actor_thread_` and calls `actor_->start()`. Waits for `sig_started_`
+     * to be set (with optional timeout in derived classes).
+     *
+     * @return Status
+     *   - `Status::Ok()` on success
+     *   - `Error::Kind::RuntimeErr` if already running
+     *   - Actor-reported error (e.g., timeout, bind failure)
+     *
+     * @par Trace Events
+     * - `TEC_ENTER`, `TEC_TRACE` for startup and completion.
+     *
+     * @see on_exit(), Actor::start()
      */
     Status on_init() override {
         TEC_ENTER("ActorWorker::on_init");
 
-        if( actor_thread_.joinable() ) {
-            return {"Actor is already running", Error::Kind::RuntimeErr};
+        if (actor_thread_.joinable()) {
+            return Status{"Actor is already running", Error::Kind::RuntimeErr};
         }
 
-        // Start the actor thread.
-        actor_thread_ = std::thread([&] {
+        // Launch actor in dedicated thread
+        actor_thread_ = std::thread([this] {
             actor_->start(&sig_started_, &status_started_);
         });
 
-        // Wait for the actor started.
+        // Block until startup completes
         sig_started_.wait();
-        TEC_TRACE("Actor thread {} started with {}.", actor_thread_.get_id(), status_started_);
+        TEC_TRACE("Actor thread {} started with status: {}", actor_thread_.get_id(), status_started_);
 
         return status_started_;
     }
 
     /**
-     * @brief Shuts down the actor during worker exit.
-     * @details Initiates actor shutdown in a separate thread and waits for completion.
-     * Logs events using tracing if enabled.
-     * @return Status Error::Kind::Ok if successful, otherwise an error status (e.g., TimeoutErr).
-     * @see Worker::on_exit()
+     * @brief Shuts down the actor and joins all threads.
+     *
+     * Initiates shutdown in a temporary thread to avoid deadlock if the actor
+     * is blocked in `start()`. Waits for `sig_stopped_` and joins both threads.
+     *
+     * @return Status Always returns `Status::Ok()` (shutdown is best-effort).
+     *
+     * @par Trace Events
+     * - Logs shutdown initiation and completion.
+     *
+     * @see on_init(), Actor::shutdown()
      */
     Status on_exit() override {
         TEC_ENTER("ActorWorker::on_exit");
 
-        if ( !actor_thread_.joinable()) {
-            // Already finished or not started.
-            return {};
+        if (!actor_thread_.joinable()) {
+            return {}; // Already stopped
         }
 
-        // Start a dedicated thread to shut down the actor.
-        std::thread shutdown_thread([&] {
+        // Launch shutdown in a separate thread
+        std::thread shutdown_thread([this] {
             actor_->shutdown(&sig_stopped_);
         });
 
-        // Wait for the actor to shut down.
         TEC_TRACE("Actor thread {} is stopping...", actor_thread_.get_id());
         sig_stopped_.wait();
         TEC_TRACE("Actor thread {} stopped.", actor_thread_.get_id());
@@ -172,57 +234,76 @@ protected:
         return {};
     }
 
-protected:
-
+    /**
+     * @brief Handles incoming `Daemon::Payload` requests synchronously.
+     *
+     * Called by the daemon when a message of type `Daemon::Payload*` arrives.
+     * Forwards the request to the actor and populates the reply.
+     *
+     * @param msg The incoming message (contains `Daemon::Payload*`).
+     *
+     * @par Thread Safety
+     * Protected by `mtx_request_` to ensure only one request is processed at a time.
+     *
+     * @par RAII Signal
+     * Uses `Actor::SignalOnExit` to auto-set `payload->ready` on exit.
+     *
+     * @see Daemon::Payload, Actor::process_request()
+     */
     virtual void on_request(const Message& msg) {
         typename Worker<TParams>::Lock lk{mtx_request_};
         TEC_ENTER("ActorWorker::on_request");
         TEC_TRACE("Payload received: {}", msg.type().name());
+
         auto payload = std::any_cast<Daemon::Payload*>(msg);
         Actor::SignalOnExit on_exit(payload->ready);
-        *(payload->status) = actor_->process_request(payload->request, payload->reply);
+        *(payload->status) = actor_->process_request(
+            std::move(payload->request), std::move(payload->reply));
     }
 
 public:
-
-    /// @name ActorWorker Builders
-    /// @brief Factory structs for creating ActorWorker instances.
-    /// @details Provide builders to create ActorWorker instances as Daemon pointers,
-    /// ensuring type safety through static assertions.
+    /// @name Factory Builders
+    /// @brief Type-safe factory patterns for creating `ActorWorker` instances.
     /// @{
 
     /**
      * @struct Builder
-     * @brief Factory for creating ActorWorker as a Daemon.
-     * @details Creates a ActorWorker instance with a derived worker and actor,
-     * returning it as a Daemon pointer.
-     * @tparam WorkerDerived The derived ActorWorker class type.
-     * @tparam ActorDerived The derived Actor class type.
+     * @brief Factory for constructing `ActorWorker` as a `Daemon` pointer.
+     *
+     * Enables polymorphic creation of derived worker/actor pairs while
+     * preserving type safety via `static_assert`.
+     *
+     * @tparam WorkerDerived Final `ActorWorker` specialization.
+     * @tparam ActorDerived  Final `Actor` implementation.
      */
     template <typename WorkerDerived, typename ActorDerived>
     struct Builder {
         /**
-         * @brief Creates a unique pointer to a ActorWorker as a Daemon.
-         * @details Constructs a WorkerDerived instance with an ActorDerived instance,
-         * ensuring type constraints via static assertions.
-         * @param params The parameters for constructing the worker and actor.
-         * @return std::unique_ptr<Daemon> A unique pointer to the created worker.
+         * @brief Creates a `std::unique_ptr<Daemon>` owning the worker.
+         *
+         * @param params Parameters used to construct both worker and actor.
+         * @return std::unique_ptr<Daemon> Polymorphic pointer to the worker.
+         *
+         * @pre `WorkerDerived` must inherit from `ActorWorker`.
+         * @pre `ActorDerived` must inherit from `Actor`.
          */
         std::unique_ptr<Daemon>
-        operator()(typename WorkerDerived::Params const& params) {
+        operator()(const typename WorkerDerived::Params& params) const {
             static_assert(
-                std::is_base_of<ActorWorker, WorkerDerived>::value,
+                std::is_base_of_v<ActorWorker, WorkerDerived>,
                 "WorkerDerived must derive from tec::ActorWorker");
             static_assert(
-                std::is_base_of<Actor, ActorDerived>::value,
+                std::is_base_of_v<Actor, ActorDerived>,
                 "ActorDerived must derive from tec::Actor");
 
-            return std::make_unique<WorkerDerived>(params, std::move(std::make_unique<ActorDerived>(params)));
+            return std::make_unique<WorkerDerived>(
+                params,
+                std::make_unique<ActorDerived>(params));
         }
     };
-
     /// @}
 
 }; // class ActorWorker
 
 } // namespace tec
+
