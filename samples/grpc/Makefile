@@ -1,4 +1,4 @@
-# Time-stamp: <Last changed 2025-11-01 01:45:41 by magnolia>
+# Time-stamp: <Last changed 2025-11-05 01:56:17 by magnolia>
 #
 # Copyright 2015 gRPC authors.
 #
@@ -78,6 +78,7 @@ HOST_SYSTEM = $(shell uname | cut -f 1 -d_)
 SYSTEM ?= $(HOST_SYSTEM)
 CPPFLAGS += `pkg-config --cflags protobuf grpc`
 CXXFLAGS += -std=c++17 $(EXTRA_FLAGS) $(TEC_CXXFLAGS)
+# -D_TEC_TRACE_ON
 
 # System-dependent libraries
 ifeq ($(SYSTEM),Darwin)

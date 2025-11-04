@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-01 01:11:26 by magnolia>
+// Time-stamp: <Last changed 2025-11-05 01:45:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -46,8 +46,8 @@ namespace tec {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Message size, 4 Mb by dafault.
-static constexpr const int kGrpcMaxMessageSize{4 * 1024 * 1024};
+//! Message size in Mb, 4 Mb by default.
+static constexpr const int kGrpcMaxMessageSize{4};
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
