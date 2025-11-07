@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-29 02:33:35 by magnolia>
+// Time-stamp: <Last changed 2025-11-08 01:00:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -46,6 +46,7 @@ namespace tec {
  * and handles periodic service messages and requests. This interface defines the minimum set of
  * methods and signals that a derived class must implement, including starting,
  * terminating, sending messages, requests, and signaling state changes.
+ * @note Daemons are **non-copyable** and **non-movable** to ensure unique ownership.
  */
 class Daemon {
 public:
@@ -65,20 +66,16 @@ public:
     Daemon() = default;
 
     /**
-     * @brief Deleted copy constructor to prevent copying.
-     */
-    Daemon(const Daemon&) = delete;
-
-    /**
-     * @brief Deleted move constructor to prevent moving.
-     */
-    Daemon(Daemon&&) = delete;
-
-    /**
      * @brief Virtual destructor for safe polymorphic deletion.
      * @details Ensures proper cleanup of derived classes.
      */
     virtual ~Daemon() = default;
+
+    // Deleted to prevent accidental copying/moving.
+    Daemon(const Daemon&) = delete;
+    Daemon& operator=(const Daemon&) = delete;
+    Daemon(Daemon&&) = delete;
+    Daemon& operator=(Daemon&&) = delete;
 
     /**
      * @brief Starts the daemon's operation.

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-05 00:44:55 by magnolia>
+// Time-stamp: <Last changed 2025-11-08 01:12:03 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -95,12 +95,6 @@ class Actor {
            * `start()` or `shutdown()` was invoked, ensuring timely notification.
            */
           ~SignalOnExit() { if (sig_) sig_->set(); }
-
-          // Deleted to prevent accidental copying/moving
-          SignalOnExit(const SignalOnExit&) = delete;
-          SignalOnExit& operator=(const SignalOnExit&) = delete;
-          SignalOnExit(SignalOnExit&&) = delete;
-          SignalOnExit& operator=(SignalOnExit&&) = delete;
 
       private:
           Signal* sig_; ///< Raw pointer to signal (non-owning).

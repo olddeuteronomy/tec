@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-12 01:54:18 by magnolia>
+// Time-stamp: <Last changed 2025-11-08 01:11:33 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -58,6 +58,7 @@ namespace tec {
  * provides default initialization and exit callbacks, and manages thread lifecycle with
  * signals for running, initialization, and termination.
  * @tparam TParams The type of parameters used to configure the worker.
+ * @note Workers are **non-copyable** and **non-movable** to ensure unique ownership.
  * @see Daemon
  */
 template <typename TParams>
@@ -119,27 +120,17 @@ private:
 public:
     /**
      * @brief Constructs a worker in a suspended state.
-     * @details Initializes the worker with the provided parameters and creates a thread
-     * in a suspended state. The thread is resumed by calling run().
+     * @details Initializes the worker with the provided parameters.
+     * The worker thread is created by calling run().
      * @param params The configuration parameters for the worker.
      * @see run()
      */
-    Worker(const Params& params)
+    explicit Worker(const Params& params)
         : Daemon()
         , params_{params}
         , flag_running_{false}
         , flag_exited_{false}
     {}
-
-    /**
-     * @brief Deleted copy constructor to prevent copying.
-     */
-    Worker(const Worker&) = delete;
-
-    /**
-     * @brief Deleted move constructor to prevent moving.
-     */
-    Worker(Worker&&) = delete;
 
     /**
      * @brief Destructor that ensures proper thread termination.
@@ -268,7 +259,7 @@ private:
          * @brief Constructs an OnExit helper with a termination signal.
          * @param sig The termination signal to set on destruction.
          */
-        OnExit(Signal& sig) : sig_{sig} {}
+        explicit OnExit(Signal& sig) : sig_{sig} {}
 
         /**
          * @brief Destructor that sets the termination signal.
@@ -296,7 +287,7 @@ private:
             TEC_ENTER("Worker::thread_proc");
 
             // Signal termination on exit.
-            OnExit on_terminating{wt.sig_terminated_};
+            OnExit on_terminating{std::ref(wt.sig_terminated_)};
 
             // Obtain thread ID and wait for the running signal.
             wt.thread_id_ = std::this_thread::get_id();
