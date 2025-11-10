@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-05 01:09:24 by magnolia>
+// Time-stamp: <Last changed 2025-11-11 00:17:17 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -298,7 +298,7 @@ public:
 
             return std::make_unique<WorkerDerived>(
                 params,
-                std::make_unique<ActorDerived>(params));
+                std::move(std::make_unique<ActorDerived>(params)));
         }
     };
     /// @}

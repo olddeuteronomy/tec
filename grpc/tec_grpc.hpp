@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-05 01:45:43 by magnolia>
+// Time-stamp: <Last changed 2025-11-10 14:48:03 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -27,7 +27,7 @@ SOFTWARE.
  *   @file tec_grpc.hpp
  *   @brief Generic gRPC parameters.
  *
- *  gRPC server/client parameter declarations.
+ *  gRPC server/client parameters declaration.
  *
 */
 
