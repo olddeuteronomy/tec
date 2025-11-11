@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-11 13:38:22 by magnolia>
+// Time-stamp: <Last changed 2025-11-12 02:16:21 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,8 +24,8 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- * @file tec_socket_client.hpp
- * @brief Generic BSD socket client implemented as Actor.
+ * @file tec_socket_server.hpp
+ * @brief Generic BSD socket server implementation.
  * @note For BSD, macOS, Linux. Windows version is not implemented yet.
  * @author The Emacs Cat
  * @date 2025-11-10
@@ -33,15 +33,22 @@ SOFTWARE.
 
 #pragma once
 
+#include "tec/tec_signal.hpp"
+#include <atomic>
+#include <cerrno>
+#include <csignal>
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L   // This line fixes the "storage size of ‘hints’ isn’t known" issue.
 #endif
 
 #include <memory.h>
 
+#include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netdb.h>
+
+#include <string>
+#include <thread>
 
 #include "tec/tec_def.hpp"  // IWYU pragma: keep
 #include "tec/tec_trace.hpp"
@@ -50,36 +57,73 @@ SOFTWARE.
 #include "tec/net/tec_socket.hpp"
 
 
+
 namespace tec {
 
 template <typename TParams>
-class SocketClient: public Actor {
+class SocketServer: public Actor {
 
 public:
     typedef TParams Params;
 
 protected:
     Params params_;
-    int sockfd_;
+    int listenfd_;
+    std::atomic_bool stop_polling_;
+    Signal polling_stopped_;
 
 public:
-    explicit SocketClient(const Params& params)
+    explicit SocketServer(const Params& params)
         : Actor()
         , params_{params}
-        , sockfd_{-1}
+        , listenfd_{-1}
+        , stop_polling_{false}
+        , polling_stopped_{}
     {
         static_assert(
-            std::is_base_of<SocketClientParams, Params>::value,
+            std::is_base_of<SocketServerParams, Params>::value,
             "not derived from tec::SocketClientParams class");
     }
 
 
+    virtual Status set_socket_options(int sockid) {
+        // Avoid "Address already in use" error
+        int yes{1};
+        if( ::setsockopt(sockid, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1 ) {
+            return {"`setsockopt' SO_REUSEADDR failed"};
+        }
+        return {};
+    }
+
+
+    virtual void poll(Signal* sig_started, Status* status) {
+        TEC_ENTER("SocketServer::poll");
+        sig_started->set();
+        while (!stop_polling_) {
+            sockaddr_storage client_addr;
+            socklen_t sin_size = sizeof client_addr;
+            int clientfd = ::accept(listenfd_,
+                                    (sockaddr *)&client_addr,
+                                    &sin_size);
+
+            if (clientfd == -1) {
+                if( errno == EINVAL || errno == EINTR || errno == EBADF ) {
+                    TEC_TRACE("Polling interrupted by signal {}", errno);
+                    continue;
+                }
+                TEC_TRACE("`accept' failed with errno={}", errno);
+                continue;
+            }
+        }
+        polling_stopped_.set();
+    }
+
+
     void start(Signal* sig_started, Status* status) override {
-        TEC_ENTER("SocketClient::start");
-        Actor::SignalOnExit on_exit{sig_started};
+        TEC_ENTER("SocketServer::start");
 
         // Resolve the server address.
-        TEC_TRACE("Resolving server [{}]:{}...", params_.addr, params_.port);
+        TEC_TRACE("Resolving host [{}]:{}...", params_.addr, params_.port);
         addrinfo hints;
         ::memset(&hints, 0, sizeof(hints));
         hints.ai_family = params_.family;
@@ -87,23 +131,24 @@ public:
         hints.ai_protocol = params_.protocol;
 
         // getaddrinfo() returns a list of address structures.
-        // Try each address until we successfully connect().
+        // Try each address until we successfully bind().
         addrinfo* servinfo{NULL};
         int ecode = ::getaddrinfo(params_.addr.c_str(), params_.port.c_str(),
                                   &hints, &servinfo);
         if( ecode != 0 ) {
             std::string emsg{::gai_strerror(ecode)};
-            TEC_TRACE("Server resolving error: {}", emsg);
+            TEC_TRACE("Host resolving error: {}", emsg);
             *status = {ecode, emsg, Error::Kind::NetErr};
+            sig_started->set();
             return;
         }
-        TEC_TRACE("Server resolved OK.");
+        TEC_TRACE("Host resolved OK.");
 
-        // If socket() (or connect()) fails, we close the socket
+        // If socket() (or bind()) fails, we close the socket
         // and try the next address.
         addrinfo* p{NULL};
         int fd{-1};
-        TEC_TRACE("Connecting...");
+        TEC_TRACE("Binding...");
         for( p = servinfo; p != NULL; p = p->ai_next ) {
             fd = ::socket(p->ai_family, p->ai_socktype, p->ai_protocol);
             if( fd == -1 ) {
@@ -111,7 +156,17 @@ public:
                 continue;
             }
 
-            if( ::connect(fd, p->ai_addr, p->ai_addrlen) != -1 ) {
+            // Set options.
+            auto option_status = set_socket_options(fd);
+            if( !option_status ) {
+                close(fd);
+                ::freeaddrinfo(servinfo);
+                *status = option_status;
+                sig_started->set();
+                return;
+            }
+
+            if( ::bind(fd, p->ai_addr, p->ai_addrlen) != -1 ) {
                 // Success.
                 break;
             }
@@ -125,24 +180,51 @@ public:
 
         if( p == NULL ) {
             auto emsg{format(
-                    "Failed to connect to [{}]:{}", params_.addr, params_.port
+                    "Failed to bind to [{}]:{}", params_.addr, params_.port
                     )};
-            *status = {emsg, Error::Kind::NetErr};
             TEC_TRACE(emsg);
+            *status = {emsg, Error::Kind::NetErr};
+            sig_started->set();
             return;
         }
 
         // Success.
-        sockfd_ = fd;
-        TEC_TRACE("Connected OK.");
+        listenfd_ = fd;
+
+        // Start listening
+        if( listen(listenfd_, 16) == -1 ) {
+            auto emsg{format(
+                    "Failed to listen to [{}]:{}", params_.addr, params_.port
+                    )};
+            close(listenfd_);
+            *status = {emsg, Error::Kind::NetErr};
+            sig_started->set();
+            return;
+        }
+        TEC_TRACE("Server listening on [{}]:{}", params_.addr, params_.port);
+
+        // Start polling.
+        poll(sig_started, status);
     }
 
 
     void shutdown(Signal* sig_stopped) override {
-        TEC_ENTER("SocketClient::shutdown");
-        Actor::SignalOnExit on_exit(sig_stopped);
-        ::shutdown(sockfd_, SHUT_RDWR);
-        close(sockfd_);
+        TEC_ENTER("SocketServer::shutdown");
+
+        // Stop polling in a separate thread
+        TEC_TRACE("Stopping server polling...");
+        std::thread polling_thread([this] {
+            stop_polling_ = true;
+            ::shutdown(listenfd_, SHUT_RDWR);
+            close(listenfd_);
+        });
+        polling_thread.join();
+
+        TEC_TRACE("Closing server socket...");
+        polling_stopped_.wait();
+
+        TEC_TRACE("Server stopped");
+        sig_stopped->set();
     }
 
 
@@ -150,6 +232,6 @@ public:
         return {Error::Kind::NotImplemented};
     }
 
-};
+}; // class SocketServer
 
-}
+} // namespace tec

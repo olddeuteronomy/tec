@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-11 00:28:35 by magnolia>
+// Time-stamp: <Last changed 2025-11-11 13:36:39 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,7 +25,7 @@ SOFTWARE.
 
 /**
  * @file tec_socket.hpp
- * @brief Generic BSD socket parameters for both client and server.
+ * @brief Generic BSD socket parameters.
  * @note For BSD, macOS, Linux. Windows version is not implemented yet.
  * @author The Emacs Cat
  * @date 2025-11-10
@@ -49,43 +49,48 @@ SOFTWARE.
 namespace tec {
 
 
-struct SocketClientParams {
-
+struct SocketParams {
+    static constexpr const char kDefaultAddr[] = "127.0.0.1"; ///!< localhost.
+    static constexpr const char kDefaultPort[] = "8080";      ///!< Test port.
     static constexpr const int kDefaultFamily{AF_UNSPEC};     ///!< IPv4 or IPv6.
     static constexpr const int kDefaultSockType{SOCK_STREAM}; ///!< TCP.
-    static constexpr const char kDefaultAddr[] = "127.0.0.1"; ///!< localhost.
-    static constexpr const char kDefaultPort[] = "8080";
+    static constexpr const int kDefaultFlags{AI_PASSIVE};     ///!< Use local IP.
+    static constexpr const int kDefaultProtocol{0};           ///!< Any protocol.
+};
 
+
+struct SocketClientParams {
     std::string addr;
     std::string port;
     int family;
     int socktype;
+    int protocol;
 
     SocketClientParams()
-        : addr{kDefaultAddr}
-        , port{kDefaultPort}
-        , family{kDefaultFamily}
-        , socktype{kDefaultSockType}
+        : addr{SocketParams::kDefaultAddr}
+        , port{SocketParams::kDefaultPort}
+        , family{SocketParams::kDefaultFamily}
+        , socktype{SocketParams::kDefaultSockType}
+        , protocol{SocketParams::kDefaultProtocol}
     {}
 };
 
 
 struct SocketServerParams {
-
-    static constexpr const int kDefaultFlags{AI_PASSIVE}; ///!< Use local IP.
-
     std::string addr;
     std::string port;
     int family;
     int socktype;
     int flags;
+    int protocol;
 
     SocketServerParams()
-        : addr{SocketClientParams::kDefaultAddr}
-        , port{SocketClientParams::kDefaultPort}
-        , family{SocketClientParams::kDefaultFamily}
-        , socktype{SocketClientParams::kDefaultSockType}
-        , flags{kDefaultFlags}
+        : addr{SocketParams::kDefaultAddr}
+        , port{SocketParams::kDefaultPort}
+        , family{SocketParams::kDefaultFamily}
+        , socktype{SocketParams::kDefaultSockType}
+        , flags{SocketParams::kDefaultFlags}
+        , protocol{SocketParams::kDefaultProtocol}
     {}
 };
 
