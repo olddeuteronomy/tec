@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-11 13:38:22 by magnolia>
+// Time-stamp: <Last changed 2025-11-12 15:45:19 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,6 +33,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "tec/tec_message.hpp"
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L   // This line fixes the "storage size of ‘hints’ isn’t known" issue.
 #endif
@@ -150,6 +151,11 @@ public:
         return {Error::Kind::NotImplemented};
     }
 
+
+    virtual Status send_recv(Request req, Reply rep) {
+
+        return {};
+    }
 };
 
 }
