@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-11 01:43:22 by magnolia>
+// Time-stamp: <Last changed 2025-11-15 16:39:03 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,6 +25,7 @@ SOFTWARE.
 
 #include <sys/socket.h>
 
+#include "tec/net/tec_socket.hpp"
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
@@ -49,11 +50,21 @@ tec::Status tcp_client() {
     // Run it and check for the result.
     auto status = cli->run();
     if( !status ) {
-        tec::println("run(): {}", status);
+        tec::println("tcp_client: {}", status);
         return status;
     }
 
-    status = cli->terminate();
+    // Send a message.
+    tec::SocketCharStream req{"Hello world!\n"};
+    tec::SocketCharStream rep;
+
+    status = cli->request<>(&req);
+    if( !status ) {
+        tec::println("tcp_client: {}", status);
+        return status;
+    }
+
+    cli->terminate();
     return status;
 }
 

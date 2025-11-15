@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-12 15:45:19 by magnolia>
+// Time-stamp: <Last changed 2025-11-15 16:47:29 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,6 +34,9 @@ SOFTWARE.
 #pragma once
 
 #include "tec/tec_message.hpp"
+#include <any>
+#include <cerrno>
+#include <cstdio>
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L   // This line fixes the "storage size of ‘hints’ isn’t known" issue.
 #endif
@@ -144,17 +147,58 @@ public:
         Actor::SignalOnExit on_exit(sig_stopped);
         ::shutdown(sockfd_, SHUT_RDWR);
         close(sockfd_);
+        sockfd_ = -1;
     }
 
 
     Status process_request(Request request, Reply reply) override {
-        return {Error::Kind::NotImplemented};
+        TEC_ENTER("SocketClient::process_request");
+        if( request.type() == typeid(const SocketCharStream*) ) {
+            // Process raw character stream.
+            const SocketCharStream* req = std::any_cast<const SocketCharStream*>(request);
+            SocketCharStream* rep = nullptr;
+            if( reply.has_value() ) {
+                rep = std::any_cast<SocketCharStream*>(reply);
+            }
+            return send_recv_char(req, rep);
+        }
+
+        // Process NetData request.
+        return send_recv(request, reply);
+    }
+
+
+    virtual Status send_recv_char(const SocketCharStream* str_req, SocketCharStream* str_rep) {
+        TEC_ENTER("SocketClient::send_recv_char");
+
+        // Send.
+        ssize_t sent = ::send(sockfd_, str_req->str.data(), str_req->str.length(), 0);
+        if( sent == -1 ) {
+            return {errno, "cannot send the request", Error::Kind::NetErr};
+        }
+        TEC_TRACE("Sent {} bytes.", str_req->str.length());
+
+        // Wait for a reply if required.
+        if( str_rep ) {
+            char buf[BUFSIZ];
+            ssize_t received = ::recv(sockfd_, buf, BUFSIZ - 1, 0);
+            if( received == -1 ) {
+                return {errno, "cannot receive a reply", Error::Kind::NetErr};
+            }
+            else if( received == 0 ) {
+                return {"server closed the connection", Error::Kind::NetErr};
+            }
+            TEC_TRACE("Received {} bytes.", received);
+
+            buf[received] = '\0';
+            str_rep->str = buf;
+        }
+        return {};
     }
 
 
     virtual Status send_recv(Request req, Reply rep) {
-
-        return {};
+        return {Error::Kind::NotImplemented};
     }
 };
 

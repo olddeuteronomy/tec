@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-15 01:39:19 by magnolia>
+// Time-stamp: <Last changed 2025-11-15 09:21:52 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -90,6 +90,11 @@ public:
         , size_{0}
     {}
 
+    virtual ~Buffer() = default;
+
+    T* data() const {
+        return buffer_.data();
+    }
 
     /**
      * @brief Returns the block size used for buffer expansion.
@@ -159,7 +164,6 @@ public:
         return 0;
     }
 
-
     /**
      * @brief Writes data into the buffer at the current position.
      *
@@ -192,7 +196,6 @@ public:
         }
         return len;
      }
-
 
     /**
      * @brief Reads data from the buffer starting at the current position.

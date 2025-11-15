@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-08 01:00:18 by magnolia>
+// Time-stamp: <Last changed 2025-11-15 16:18:33 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -145,6 +145,18 @@ public:
         Signal ready;
         Status status;
         Payload  payload{&ready, &status, {req}, {rep}};
+        if( !send({&payload}) ) {
+            status = {Error::Kind::RuntimeErr};
+        }
+        ready.wait();
+        return status;
+    }
+
+    template <typename TRequest>
+    Status request(const TRequest* req) {
+        Signal ready;
+        Status status;
+        Payload  payload{&ready, &status, {req}, {}};
         if( !send({&payload}) ) {
             status = {Error::Kind::RuntimeErr};
         }

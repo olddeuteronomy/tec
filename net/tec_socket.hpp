@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-12 14:36:01 by magnolia>
+// Time-stamp: <Last changed 2025-11-15 09:51:05 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -91,4 +91,9 @@ struct SocketServerParams: public SocketParams  {
     }
 };
 
-}
+
+struct SocketCharStream {
+    std::string str;
+};
+
+} // namespace tec
