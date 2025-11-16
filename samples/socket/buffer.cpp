@@ -4,7 +4,7 @@
 #include "tec/tec_buffer.hpp"
 
 
-void print_buffer(const tec::ByteBuffer& buf) {
+void print_buffer(const tec::Bytes& buf) {
     std::cout
         << "Block=" << buf.block_size() << " "
         << "Capacity=" << buf.capacity() << " "
@@ -15,7 +15,7 @@ void print_buffer(const tec::ByteBuffer& buf) {
 
 
 int main() {
-    tec::ByteBuffer buf(4);
+    tec::Bytes buf(4);
 
     // 1)
     print_buffer(buf);

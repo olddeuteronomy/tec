@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-08 01:11:33 by magnolia>
+// Time-stamp: <Last changed 2025-11-17 00:06:10 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -326,7 +326,7 @@ private:
                 TEC_TRACE("leaving message loop, {} message(s) left in queue...", wt.mq_.size());
             }
 
-            // Finalize if initialized successfully.
+            // Finalize if it was initialized successfully.
             if (wt.status_) {
                 TEC_TRACE("on_exit() called ...");
                 wt.status_ = wt.on_exit();

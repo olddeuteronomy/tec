@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-15 16:47:29 by magnolia>
+// Time-stamp: <Last changed 2025-11-16 12:32:10 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,7 +33,6 @@ SOFTWARE.
 
 #pragma once
 
-#include "tec/tec_message.hpp"
 #include <any>
 #include <cerrno>
 #include <cstdio>
@@ -50,6 +49,7 @@ SOFTWARE.
 #include "tec/tec_def.hpp"  // IWYU pragma: keep
 #include "tec/tec_trace.hpp"
 #include "tec/tec_status.hpp"
+#include "tec/tec_message.hpp"
 #include "tec/tec_actor.hpp"
 #include "tec/net/tec_socket.hpp"
 
@@ -97,7 +97,7 @@ public:
                                   &hints, &servinfo);
         if( ecode != 0 ) {
             std::string emsg{::gai_strerror(ecode)};
-            TEC_TRACE("Server resolving error: {}", emsg);
+            TEC_TRACE("Resolving server error: {}", emsg);
             *status = {ecode, emsg, Error::Kind::NetErr};
             return;
         }
@@ -129,9 +129,9 @@ public:
 
         if( p == NULL ) {
             auto emsg{format(
-                    "Failed to connect to [{}]:{}", params_.addr, params_.port
+                    "failed to connect to [{}]:{}", params_.addr, params_.port
                     )};
-            *status = {emsg, Error::Kind::NetErr};
+            *status = {ECONNREFUSED, emsg, Error::Kind::NetErr};
             TEC_TRACE(emsg);
             return;
         }
@@ -174,7 +174,7 @@ public:
         // Send.
         ssize_t sent = ::send(sockfd_, str_req->str.data(), str_req->str.length(), 0);
         if( sent == -1 ) {
-            return {errno, "cannot send the request", Error::Kind::NetErr};
+            return {EIO, "cannot send the request", Error::Kind::NetErr};
         }
         TEC_TRACE("Sent {} bytes.", str_req->str.length());
 
@@ -183,10 +183,10 @@ public:
             char buf[BUFSIZ];
             ssize_t received = ::recv(sockfd_, buf, BUFSIZ - 1, 0);
             if( received == -1 ) {
-                return {errno, "cannot receive a reply", Error::Kind::NetErr};
+                return {EIO, "cannot receive a reply", Error::Kind::NetErr};
             }
             else if( received == 0 ) {
-                return {"server closed the connection", Error::Kind::NetErr};
+                return {ECONNABORTED, "server closed the connection", Error::Kind::NetErr};
             }
             TEC_TRACE("Received {} bytes.", received);
 
@@ -203,3 +203,4 @@ public:
 };
 
 }
+

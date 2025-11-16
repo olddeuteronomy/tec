@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-15 09:21:52 by magnolia>
+// Time-stamp: <Last changed 2025-11-17 02:18:42 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,6 +32,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstddef>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -72,6 +73,14 @@ private:
 
     /** @brief Logical size of the data written into the buffer (may be less than capacity). */
     size_t size_;
+
+private:
+    /** @brief Calculates required capacity to hold extra `len` elemants starting from `pos`. */
+    size_t calc_required_capacity(long pos, size_t len) {
+       return buffer_.capacity()
+                + blk_size_
+                + ((pos_ + len) / blk_size_) * blk_size_;
+    }
 
 public:
     /**
@@ -164,6 +173,14 @@ public:
         return 0;
     }
 
+    void resize(size_t size) {
+        if( size > size_ ) {
+            size_t new_cap = calc_required_capacity(0, size);
+            buffer_.reserve(new_cap);
+            size_ = size;
+        }
+    }
+
     /**
      * @brief Writes data into the buffer at the current position.
      *
@@ -181,9 +198,7 @@ public:
         }
         if( pos_ + len >= buffer_.capacity() ) {
             // Expand the buffer with extra blocks.
-            size_t new_cap = buffer_.capacity()
-                + blk_size_
-                + ((pos_ + len) / blk_size_) * blk_size_;
+            size_t new_cap = calc_required_capacity(pos_, len);
             if( new_cap > buffer_.max_size() ) {
                 return 0;
             }
@@ -223,6 +238,6 @@ public:
 
 
 /** @brief Convenience alias for a byte-oriented buffer (`uint8_t`). */
-using ByteBuffer = Buffer<uint8_t>;
+using Bytes = Buffer<uint8_t>;
 
 } // namespace tec
