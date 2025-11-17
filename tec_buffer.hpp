@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-17 02:18:42 by magnolia>
+// Time-stamp: <Last changed 2025-11-17 14:09:59 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -69,7 +69,7 @@ private:
     size_t blk_size_;
 
     /** @brief Current read/write position within the buffer (like a file pointer). */
-    long pos_;
+    size_t pos_;
 
     /** @brief Logical size of the data written into the buffer (may be less than capacity). */
     size_t size_;
@@ -99,9 +99,18 @@ public:
         , size_{0}
     {}
 
+    Buffer(const void* src, size_t len, size_t block_size = kDefaultBlockSize)
+        : buffer_(block_size)
+        , blk_size_{block_size}
+        , pos_{0}
+        , size_{0}
+    {
+        write(src, len);
+    }
+
     virtual ~Buffer() = default;
 
-    T* data() const {
+    T* data() {
         return buffer_.data();
     }
 
@@ -162,7 +171,7 @@ public:
      */
     int seek(long offset, int whence) {
         long origin = (whence == SEEK_CUR ? pos_ : (whence == SEEK_END ? size_ : 0));
-        long new_pos = origin + offset;
+        size_t new_pos = origin + offset;
         if( new_pos < 0) {
             return -1;
         }

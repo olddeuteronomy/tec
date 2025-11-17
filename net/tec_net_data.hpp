@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-17 02:20:16 by magnolia>
+// Time-stamp: <Last changed 2025-11-17 23:50:08 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -35,8 +35,11 @@ SOFTWARE.
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <sys/types.h>
 
+#include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_buffer.hpp"
+#include "tec/tec_trace.hpp"
 
 
 namespace tec {
@@ -44,41 +47,65 @@ namespace tec {
 
 class NetData {
 public:
+
     struct Meta {
-        // First 12 bit (<4096) are reserved to hold a primitive element size.
-        static constexpr const uint32_t mINT{(   1 << 12)};
-        static constexpr const uint32_t mFLOAT{( 1 << 13)};
-        static constexpr const uint32_t mSIGNED{(1 << 14)};
-        // Bits 15-23 are reserved.
-        static constexpr const uint32_t mNUMERIC{(1 << 24)};
-        static constexpr const uint32_t mSTRING{( 1 << 25)};
-        static constexpr const uint32_t mBYTES{(  1 << 26)};
-        // Bits 27-31 are reserved.
+        // First 8 bit (0..255) are reserved to hold an element type.
+        static constexpr const uint32_t kScalar{(  1 << 8)};
+        static constexpr const uint32_t kSequence{(1 << 9)};
+        // Bits 10..31 are reserved.
     };
+
     struct Tag {
+        static constexpr const uint32_t kUnknown{0};
 
-        // Tags.
-        static constexpr const uint32_t tUINT32{( 32 | Meta::mNUMERIC | Meta::mINT)};
-        static constexpr const uint32_t tINT32{(  32 | Meta::mNUMERIC | Meta::mINT | Meta::mSIGNED)};
-        static constexpr const uint32_t tUINT64{( 64 | Meta::mNUMERIC | Meta::mINT)};
-        static constexpr const uint32_t tINT64{(  64 | Meta::mNUMERIC | Meta::mINT | Meta::mSIGNED)};
-        static constexpr const uint32_t tFLOAT32{(32 | Meta::mNUMERIC | Meta::mFLOAT | Meta::mSIGNED)};
-        static constexpr const uint32_t tFLOAT64{(64 | Meta::mNUMERIC | Meta::mFLOAT | Meta::mSIGNED)};
+        // Scalars.
+        static constexpr const uint32_t kI32{(1 | Meta::kScalar)};
+        static constexpr const uint32_t kU32{(2 | Meta::kScalar)};
+        static constexpr const uint32_t kI64{(3 | Meta::kScalar)};
+        static constexpr const uint32_t kU64{(4 | Meta::kScalar)};
+        static constexpr const uint32_t kF32{(5 | Meta::kScalar)};
+        static constexpr const uint32_t kF64{(6 | Meta::kScalar)};
+        static constexpr const uint16_t kBool{(7 | Meta::kScalar)};
 
-        static constexpr const uint32_t tSTRING{(1 | Meta::mSTRING)};
-        static constexpr const uint32_t tBYTES{( 1 | Meta::mBYTES)};
-
-        static constexpr const uint32_t tUNKNOWN{0};
+        // Sequences.
+        static constexpr const uint32_t kBytes{(8 | Meta::kScalar | Meta::kSequence)};
+        static constexpr const uint32_t kString{(9 | Meta::kScalar | Meta::kSequence)};
     };
 
 #pragma pack(push, 1)
+    struct Header {
+        static constexpr const uint32_t kMagic{0x041b00};
 
+        uint32_t magic;
+        uint32_t size;
+        uint16_t version;
+        uint16_t reserved16;
+        uint32_t reserved32;
+
+        Header()
+            : magic(kMagic)
+            , size{0}
+            , version{0x0100}
+            , reserved16{0}
+            , reserved32{0}
+        {}
+
+        inline bool is_valid() const {
+            return magic == kMagic;
+        }
+    };
+#pragma pack(pop)
+
+protected:
+    Bytes data_;
+
+#pragma pack(push, 1)
     struct ElemHeader {
         uint32_t tag;
         uint32_t size;
 
         ElemHeader()
-            : tag{Tag::tUNKNOWN}
+            : tag{Tag::kUnknown}
             , size{0}
         {}
 
@@ -87,106 +114,176 @@ public:
             , size{_size}
         {}
     };
-
 #pragma pack(pop)
 
-protected:
-    Bytes data;
-
 public:
+
     NetData() {}
     virtual ~NetData() = default;
 
-    // -------------------- Write fundamental data ---------------------
+    void rewind() {
+        data_.rewind();
+    }
 
-    NetData& operator << (int32_t src) {
-        ElemHeader hdr{Tag::tINT32, sizeof(int32_t)};
-        return write_numeric(&hdr, &src);
+    size_t size() const {
+        // Without Header.
+        return data_.size();
+    }
+
+    size_t capacity() const {
+        return data_.capacity();
+    }
+
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     *                            STORE
+     *
+     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+    NetData& operator << (int _src) {
+        ElemHeader hdr{Tag::kI32, sizeof(int32_t)};
+        int32_t src = _src;
+        return write_scalar(&hdr, &src);
     };
 
-    NetData& operator << (uint32_t src) {
-        ElemHeader hdr{Tag::tUINT32, sizeof(uint32_t)};
-        return write_numeric(&hdr, &src);
+    NetData& operator << (unsigned int _src) {
+        ElemHeader hdr{Tag::kU32, sizeof(uint32_t)};
+        uint32_t src = _src;
+        return write_scalar(&hdr, &src);
     };
 
-    NetData& operator << (int64_t src) {
-        ElemHeader hdr{Tag::tINT64, sizeof(int64_t)};
-        return write_numeric(&hdr, &src);
+    NetData& operator << (long int _src) {
+        ElemHeader hdr{Tag::kI32, sizeof(int32_t)};
+        int32_t src = _src;
+        return write_scalar(&hdr, &src);
     };
 
-    NetData& operator << (uint64_t src) {
-        ElemHeader hdr{Tag::tUINT64, sizeof(uint64_t)};
-        return write_numeric(&hdr, &src);
+    NetData& operator << (unsigned long int _src) {
+        ElemHeader hdr{Tag::kU32, sizeof(uint32_t)};
+        uint32_t src = _src;
+        return write_scalar(&hdr, &src);
     };
 
-    NetData& operator << (float src) {
-        ElemHeader hdr{Tag::tFLOAT32, sizeof(float)};
-        return write_numeric(&hdr, &src);
+    NetData& operator << (long long int _src) {
+        ElemHeader hdr{Tag::kI64, sizeof(int64_t)};
+        int64_t src = _src;
+        return write_scalar(&hdr, &src);
     };
 
-    NetData& operator << (double src) {
-        ElemHeader hdr{Tag::tFLOAT64, sizeof(double)};
-        return write_numeric(&hdr, &src);
+    NetData& operator << (unsigned long long int _src) {
+        ElemHeader hdr{Tag::kI64, sizeof(uint64_t)};
+        uint64_t src = _src;
+        return write_scalar(&hdr, &src);
+    };
+
+    NetData& operator << (float _src) {
+        ElemHeader hdr{Tag::kF32, sizeof(float)};
+        return write_scalar(&hdr, &_src);
+    };
+
+    NetData& operator << (double _src) {
+        ElemHeader hdr{Tag::kF64, sizeof(double)};
+        return write_scalar(&hdr, &_src);
+    };
+
+    NetData& operator << (bool _src) {
+        ElemHeader hdr{Tag::kBool, sizeof(uint16_t)};
+        uint16_t src = (_src ? 1 : 0);
+        return write_scalar(&hdr, &src);
     };
 
     NetData& operator << (const std::string& dst) {
-        ElemHeader hdr{Tag::tSTRING, static_cast<uint32_t>(dst.size())};
-        return *this;
-}
-
-    // ------------------------ Read data ------------------------------
-
-    NetData operator >> (void* dst) {
-        ElemHeader hdr;
-        data.read(&hdr, sizeof(ElemHeader));
-        if( hdr.tag & Meta::mNUMERIC) {
-            return read_numeric(&hdr, dst);
-        }
-        if( hdr.tag & Meta::mSTRING ) {
-            return read_string(&hdr, static_cast<std::string*>(dst));
-        }
-        if( hdr.tag & Meta::mBYTES) {
-            return read_bytes(&hdr, static_cast<Bytes*>(dst));
-        }
-
-        return read_extended(&hdr, dst);
+        ElemHeader hdr{Tag::kString, static_cast<uint32_t>(dst.size())};
+        return write_scalar_sequence(&hdr, dst.data());
     }
 
-    // --------------------------- Helpers -----------------------------
+    NetData& operator << (Bytes& dst) {
+        ElemHeader hdr{Tag::kBytes, static_cast<uint32_t>(dst.size())};
+        return write_scalar_sequence(&hdr, dst.data());
+    }
+
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     *                            LOAD
+     *
+     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+    NetData& operator >> (void* dst) {
+        return read_data(dst);
+    }
 
 protected:
-    virtual NetData& write_numeric(const ElemHeader* hdr, const void* dst) {
-        data.write(hdr, sizeof(ElemHeader));
-        data.write(dst, hdr->size);
+
+    // --------------------------- write_* -----------------------------
+
+    virtual NetData& write_scalar(const ElemHeader* hdr, const void* dst) {
+        data_.write(hdr, sizeof(ElemHeader));
+        data_.write(dst, hdr->size);
         return *this;
     }
 
-    virtual NetData& write_string(const ElemHeader* hdr, const std::string& dst) {
-        data.write(hdr, sizeof(ElemHeader));
-        data.write(dst.data(), hdr->size);
+    virtual NetData& write_scalar_sequence(const ElemHeader* hdr, const void* dst) {
+        return write_scalar(hdr, dst);
+    }
+
+    // --------------------------- read_* -----------------------------
+
+    virtual NetData& read_data(void* dst) {
+        ElemHeader hdr;
+        data_.read(&hdr, sizeof(ElemHeader));
+
+        if( hdr.tag & Meta::kScalar) {
+            if( hdr.tag & Meta::kSequence ) {
+                return read_scalar_sequence(&hdr, dst);
+            }
+            else {
+                return read_scalar(&hdr, dst);
+            }
+        }
+
+        return read_custom(&hdr, dst);
+    }
+
+    virtual NetData& read_scalar(const ElemHeader* hdr, void* dst) {
+        if( hdr->tag == Tag::kBool ) {
+            uint16_t b16{0};
+            data_.read(&b16, sizeof(uint16_t));
+            bool* val = static_cast<bool*>(dst);
+            *val = b16;
+        }
+        else {
+            data_.read(dst, hdr->size);
+        }
         return *this;
     }
 
-    virtual NetData& read_numeric(const ElemHeader* hdr, void* dst) {
-        data.read(dst, hdr->size);
+    virtual NetData& read_scalar_sequence(const ElemHeader* hdr, void* dst) {
+        if( hdr->tag == Tag::kString ) {
+            std::string* str = static_cast<std::string*>(dst);
+            return read_string(hdr, str);
+        }
+        if( hdr->tag == Tag::kBytes ) {
+            Bytes* bytes = static_cast<Bytes*>(dst);
+            return read_bytes(hdr, bytes);
+        }
         return *this;
     }
 
     virtual NetData& read_string(const ElemHeader* hdr, std::string* dst) {
         dst->resize(hdr->size);
-        data.read(dst, hdr->size);
+        data_.read(dst->data(), hdr->size);
         return *this;
     }
 
     virtual NetData& read_bytes(const ElemHeader* hdr, Bytes* dst) {
         dst->resize(hdr->size);
-        data.read(dst, hdr->size);
+        data_.read(dst->data(), hdr->size);
         return *this;
     }
 
-    virtual NetData& read_extended(const ElemHeader* hdr, void* dst) {
+    virtual NetData& read_custom(const ElemHeader* hdr, void* dst) {
         // Just skip unknown element.
-        data.seek(hdr->size, SEEK_SET);
+        data_.seek(hdr->size, SEEK_SET);
         return *this;
     }
 };
