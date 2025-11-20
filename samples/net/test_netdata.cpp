@@ -45,9 +45,9 @@ struct Payload {
             << i32
             << u64
             << str
-            << bs
             << f
             << d
+            << bs
             << b
             ;
     }
@@ -57,9 +57,9 @@ struct Payload {
             >> &i32
             >> &u64
             >> &str
-            >> &bs
             >> &f
             >> &d
+            >> &bs
             >> &b
             ;
     }

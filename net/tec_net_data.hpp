@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-17 23:50:08 by magnolia>
+// Time-stamp: <Last changed 2025-11-20 13:30:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -39,7 +39,6 @@ SOFTWARE.
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_buffer.hpp"
-#include "tec/tec_trace.hpp"
 
 
 namespace tec {
@@ -47,29 +46,35 @@ namespace tec {
 
 class NetData {
 public:
+    using Tag =   uint16_t;
+    using Count = uint16_t;
+    using Size =  uint32_t;
+
+    using BoolSize = uint16_t;
 
     struct Meta {
         // First 8 bit (0..255) are reserved to hold an element type.
-        static constexpr const uint32_t kScalar{(  1 << 8)};
-        static constexpr const uint32_t kSequence{(1 << 9)};
-        // Bits 10..31 are reserved.
+        static constexpr const Tag kScalar{(  1 << 8)};
+        static constexpr const Tag kFloat{(   1 << 9)};
+        static constexpr const Tag kSequence{(1 << 10)};
+        // Bits 11..15 are reserved.
     };
 
-    struct Tag {
-        static constexpr const uint32_t kUnknown{0};
+    struct Tags {
+        static constexpr const Tag kUnknown{0};
 
         // Scalars.
-        static constexpr const uint32_t kI32{(1 | Meta::kScalar)};
-        static constexpr const uint32_t kU32{(2 | Meta::kScalar)};
-        static constexpr const uint32_t kI64{(3 | Meta::kScalar)};
-        static constexpr const uint32_t kU64{(4 | Meta::kScalar)};
-        static constexpr const uint32_t kF32{(5 | Meta::kScalar)};
-        static constexpr const uint32_t kF64{(6 | Meta::kScalar)};
-        static constexpr const uint16_t kBool{(7 | Meta::kScalar)};
+        static constexpr const Tag kI8{(1 | Meta::kScalar)};
+        static constexpr const Tag kI16{(2 | Meta::kScalar)};
+        static constexpr const Tag kI32{(3 | Meta::kScalar)};
+        static constexpr const Tag kI64{(4 | Meta::kScalar)};
+        static constexpr const Tag kF32{(5 | Meta::kScalar | Meta::kFloat)};
+        static constexpr const Tag kF64{(6 | Meta::kScalar | Meta::kFloat)};
+        static constexpr const Tag kBool{(7 | Meta::kScalar)};
 
         // Sequences.
-        static constexpr const uint32_t kBytes{(8 | Meta::kScalar | Meta::kSequence)};
-        static constexpr const uint32_t kString{(9 | Meta::kScalar | Meta::kSequence)};
+        static constexpr const Tag kBytes{(8 | Meta::kScalar | Meta::kSequence)};
+        static constexpr const Tag kString{(9 | Meta::kScalar | Meta::kSequence)};
     };
 
 #pragma pack(push, 1)
@@ -101,20 +106,51 @@ protected:
 
 #pragma pack(push, 1)
     struct ElemHeader {
-        uint32_t tag;
-        uint32_t size;
+        Tag tag;
+        Count count; //!< For iterable objects like vector or list.
+        Size size;   //!< Size of an element in bytes.
 
         ElemHeader()
-            : tag{Tag::kUnknown}
+            : tag{Tags::kUnknown}
+            , count{0}
             , size{0}
         {}
 
-        ElemHeader(uint32_t _tag, uint32_t _size)
+        ElemHeader(Tag _tag, Count _count, Size _size)
             : tag{_tag}
+            , count{_count}
             , size{_size}
         {}
     };
 #pragma pack(pop)
+
+protected:
+
+    ElemHeader get_info(int)
+        { return {Tags::kI32, 1, 4}; }
+    ElemHeader get_info(unsigned int)
+        { return {Tags::kI32, 1, 4}; }
+    ElemHeader get_info(long)
+        { return {Tags::kI32, 1, 4}; }
+    ElemHeader get_info(unsigned long)
+        { return {Tags::kI32, 1, 4}; }
+    ElemHeader get_info(long long)
+        { return {Tags::kI64, 1, 8}; }
+    ElemHeader get_info(unsigned long long)
+        { return {Tags::kI64, 1, 8}; }
+
+    ElemHeader get_info(bool)
+        { return {Tags::kI16, 1, sizeof(BoolSize)}; }
+
+    ElemHeader get_info(float)
+        { return {Tags::kF32, 1, 4}; }
+    ElemHeader get_info(double)
+        { return {Tags::kF64, 1, 8}; }
+
+    ElemHeader get_info(const std::string& s)
+        { return {Tags::kString, 1, static_cast<Size>(s.size())}; }
+    ElemHeader get_info(const Bytes& s)
+        { return {Tags::kBytes, 1, static_cast<Size>(s.size())}; }
 
 public:
 
@@ -134,72 +170,55 @@ public:
         return data_.capacity();
     }
 
+    void* data() {
+        return data_.data();
+    }
+
+    const void* data() const {
+        return data_.data();
+    }
+
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      *
      *                            STORE
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-    NetData& operator << (int _src) {
-        ElemHeader hdr{Tag::kI32, sizeof(int32_t)};
-        int32_t src = _src;
-        return write_scalar(&hdr, &src);
-    };
+public:
 
-    NetData& operator << (unsigned int _src) {
-        ElemHeader hdr{Tag::kU32, sizeof(uint32_t)};
-        uint32_t src = _src;
-        return write_scalar(&hdr, &src);
-    };
-
-    NetData& operator << (long int _src) {
-        ElemHeader hdr{Tag::kI32, sizeof(int32_t)};
-        int32_t src = _src;
-        return write_scalar(&hdr, &src);
-    };
-
-    NetData& operator << (unsigned long int _src) {
-        ElemHeader hdr{Tag::kU32, sizeof(uint32_t)};
-        uint32_t src = _src;
-        return write_scalar(&hdr, &src);
-    };
-
-    NetData& operator << (long long int _src) {
-        ElemHeader hdr{Tag::kI64, sizeof(int64_t)};
-        int64_t src = _src;
-        return write_scalar(&hdr, &src);
-    };
-
-    NetData& operator << (unsigned long long int _src) {
-        ElemHeader hdr{Tag::kI64, sizeof(uint64_t)};
-        uint64_t src = _src;
-        return write_scalar(&hdr, &src);
-    };
-
-    NetData& operator << (float _src) {
-        ElemHeader hdr{Tag::kF32, sizeof(float)};
-        return write_scalar(&hdr, &_src);
-    };
-
-    NetData& operator << (double _src) {
-        ElemHeader hdr{Tag::kF64, sizeof(double)};
-        return write_scalar(&hdr, &_src);
-    };
-
-    NetData& operator << (bool _src) {
-        ElemHeader hdr{Tag::kBool, sizeof(uint16_t)};
-        uint16_t src = (_src ? 1 : 0);
-        return write_scalar(&hdr, &src);
-    };
-
-    NetData& operator << (const std::string& dst) {
-        ElemHeader hdr{Tag::kString, static_cast<uint32_t>(dst.size())};
-        return write_scalar_sequence(&hdr, dst.data());
+    template <typename T>
+    NetData& operator << (T val) {
+        ElemHeader hdr = get_info(val);
+        if( hdr.tag & Meta::kSequence ) {
+            return write_sequence(&hdr, &val);
+        }
+        return write_scalar(&hdr, &val);
     }
 
-    NetData& operator << (Bytes& dst) {
-        ElemHeader hdr{Tag::kBytes, static_cast<uint32_t>(dst.size())};
-        return write_scalar_sequence(&hdr, dst.data());
+    virtual NetData& write_scalar(ElemHeader* hdr, const void* p) {
+        data_.write(hdr, sizeof(ElemHeader));
+        if( hdr->tag == Tags::kBool ) {
+            const bool* val = static_cast<const bool*>(p);
+            BoolSize b = *val ? 1 : 0;
+            data_.write(&b, hdr->size);
+        }
+        else {
+            data_.write(p, hdr->size);
+        }
+        return *this;
+    }
+
+    virtual NetData& write_sequence(ElemHeader* hdr, const void* p) {
+        data_.write(hdr, sizeof(ElemHeader));
+        if( hdr->tag == Tags::kString ) {
+            const std::string* s = static_cast<const std::string*>(p);
+            data_.write(s->data(), hdr->size);
+        }
+        else if( hdr->tag == Tags::kBytes ) {
+            const Bytes* bs = static_cast<const Bytes*>(p);
+            data_.write(bs->data(), hdr->size);
+        }
+        return *this;
     }
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -208,84 +227,54 @@ public:
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+public:
+
     NetData& operator >> (void* dst) {
-        return read_data(dst);
-    }
-
-protected:
-
-    // --------------------------- write_* -----------------------------
-
-    virtual NetData& write_scalar(const ElemHeader* hdr, const void* dst) {
-        data_.write(hdr, sizeof(ElemHeader));
-        data_.write(dst, hdr->size);
+        read(dst);
         return *this;
     }
 
-    virtual NetData& write_scalar_sequence(const ElemHeader* hdr, const void* dst) {
-        return write_scalar(hdr, dst);
-    }
-
-    // --------------------------- read_* -----------------------------
-
-    virtual NetData& read_data(void* dst) {
+    virtual void read(void* dst) {
         ElemHeader hdr;
         data_.read(&hdr, sizeof(ElemHeader));
 
         if( hdr.tag & Meta::kScalar) {
             if( hdr.tag & Meta::kSequence ) {
-                return read_scalar_sequence(&hdr, dst);
+                read_sequence(&hdr, dst);
             }
             else {
-                return read_scalar(&hdr, dst);
+                read_scalar(&hdr, dst);
             }
         }
-
-        return read_custom(&hdr, dst);
     }
 
-    virtual NetData& read_scalar(const ElemHeader* hdr, void* dst) {
-        if( hdr->tag == Tag::kBool ) {
-            uint16_t b16{0};
-            data_.read(&b16, sizeof(uint16_t));
+protected:
+
+    virtual void read_scalar(const ElemHeader* hdr, void* dst) {
+        if( hdr->tag == Tags::kBool ) {
+            BoolSize b{0};
+            data_.read(&b, sizeof(b));
             bool* val = static_cast<bool*>(dst);
-            *val = b16;
+            *val = (b == 0 ? false : true);
         }
         else {
             data_.read(dst, hdr->size);
         }
-        return *this;
     }
 
-    virtual NetData& read_scalar_sequence(const ElemHeader* hdr, void* dst) {
-        if( hdr->tag == Tag::kString ) {
+    virtual void read_sequence(const ElemHeader* hdr, void* dst) {
+        if( hdr->tag == Tags::kString ) {
             std::string* str = static_cast<std::string*>(dst);
-            return read_string(hdr, str);
+            str->resize(hdr->size);
+            data_.read(str->data(), hdr->size);
         }
-        if( hdr->tag == Tag::kBytes ) {
+        else if( hdr->tag == Tags::kBytes ) {
             Bytes* bytes = static_cast<Bytes*>(dst);
-            return read_bytes(hdr, bytes);
+            bytes->resize(hdr->size);
+            data_.read(bytes->data(), hdr->size);
         }
-        return *this;
     }
 
-    virtual NetData& read_string(const ElemHeader* hdr, std::string* dst) {
-        dst->resize(hdr->size);
-        data_.read(dst->data(), hdr->size);
-        return *this;
-    }
-
-    virtual NetData& read_bytes(const ElemHeader* hdr, Bytes* dst) {
-        dst->resize(hdr->size);
-        data_.read(dst->data(), hdr->size);
-        return *this;
-    }
-
-    virtual NetData& read_custom(const ElemHeader* hdr, void* dst) {
-        // Just skip unknown element.
-        data_.seek(hdr->size, SEEK_SET);
-        return *this;
-    }
-};
+}; // class NetData
 
 } // namespace tec

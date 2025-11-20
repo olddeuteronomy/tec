@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-17 14:09:59 by magnolia>
+// Time-stamp: <Last changed 2025-11-19 13:44:19 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -111,6 +111,10 @@ public:
     virtual ~Buffer() = default;
 
     T* data() {
+        return buffer_.data();
+    }
+
+    const T* data() const {
         return buffer_.data();
     }
 
