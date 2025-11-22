@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-20 13:30:18 by magnolia>
+// Time-stamp: <Last changed 2025-11-22 15:16:50 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,13 +32,16 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <list>
 #include <string>
 #include <sys/types.h>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_buffer.hpp"
+#include "tec/tec_trace.hpp"
 
 
 namespace tec {
@@ -47,17 +50,21 @@ namespace tec {
 class NetData {
 public:
     using Tag =   uint16_t;
-    using Count = uint16_t;
     using Size =  uint32_t;
+    using Count = uint16_t;
 
-    using BoolSize = uint16_t;
+    using Bool = uint16_t;
+
+    template <typename T>
+    using List = std::list<T>;
 
     struct Meta {
         // First 8 bit (0..255) are reserved to hold an element type.
         static constexpr const Tag kScalar{(  1 << 8)};
         static constexpr const Tag kFloat{(   1 << 9)};
         static constexpr const Tag kSequence{(1 << 10)};
-        // Bits 11..15 are reserved.
+        static constexpr const Tag kIterable{(1 << 11)};
+        // Bits 12..31 are reserved.
     };
 
     struct Tags {
@@ -70,16 +77,21 @@ public:
         static constexpr const Tag kI64{(4 | Meta::kScalar)};
         static constexpr const Tag kF32{(5 | Meta::kScalar | Meta::kFloat)};
         static constexpr const Tag kF64{(6 | Meta::kScalar | Meta::kFloat)};
-        static constexpr const Tag kBool{(7 | Meta::kScalar)};
+        static constexpr const Tag kF128{(7 | Meta::kScalar | Meta::kFloat)};
+        static constexpr const Tag kBool{(8 | Meta::kScalar)};
 
         // Sequences.
-        static constexpr const Tag kBytes{(8 | Meta::kScalar | Meta::kSequence)};
-        static constexpr const Tag kString{(9 | Meta::kScalar | Meta::kSequence)};
+        static constexpr const Tag kBytes{(32 | Meta::kScalar | Meta::kSequence)};
+        static constexpr const Tag kString{(33 | Meta::kScalar | Meta::kSequence)};
+
+        // Iterable.
+        static constexpr const Tag kList{(64 | Meta::kIterable)};
     };
 
 #pragma pack(push, 1)
     struct Header {
         static constexpr const uint32_t kMagic{0x041b00};
+        static constexpr const uint16_t kDefaultVersion{0x0100};
 
         uint32_t magic;
         uint32_t size;
@@ -90,7 +102,7 @@ public:
         Header()
             : magic(kMagic)
             , size{0}
-            , version{0x0100}
+            , version{kDefaultVersion}
             , reserved16{0}
             , reserved32{0}
         {}
@@ -99,12 +111,7 @@ public:
             return magic == kMagic;
         }
     };
-#pragma pack(pop)
 
-protected:
-    Bytes data_;
-
-#pragma pack(push, 1)
     struct ElemHeader {
         Tag tag;
         Count count; //!< For iterable objects like vector or list.
@@ -124,33 +131,43 @@ protected:
     };
 #pragma pack(pop)
 
-protected:
-
-    ElemHeader get_info(int)
+    ElemHeader get_info(const int&)
         { return {Tags::kI32, 1, 4}; }
-    ElemHeader get_info(unsigned int)
+    ElemHeader get_info(const unsigned int&)
         { return {Tags::kI32, 1, 4}; }
-    ElemHeader get_info(long)
+    ElemHeader get_info(const long&)
         { return {Tags::kI32, 1, 4}; }
-    ElemHeader get_info(unsigned long)
+    ElemHeader get_info(const unsigned long&)
         { return {Tags::kI32, 1, 4}; }
-    ElemHeader get_info(long long)
+    ElemHeader get_info(const long long&)
         { return {Tags::kI64, 1, 8}; }
-    ElemHeader get_info(unsigned long long)
+    ElemHeader get_info(const unsigned long long&)
         { return {Tags::kI64, 1, 8}; }
 
-    ElemHeader get_info(bool)
-        { return {Tags::kI16, 1, sizeof(BoolSize)}; }
+    ElemHeader get_info(const bool&)
+        { return {Tags::kI16, 1, sizeof(Bool)}; }
 
-    ElemHeader get_info(float)
+    ElemHeader get_info(const float&)
         { return {Tags::kF32, 1, 4}; }
-    ElemHeader get_info(double)
+    ElemHeader get_info(const double&)
         { return {Tags::kF64, 1, 8}; }
 
+    template <typename TSequence>
+    ElemHeader get_info(const TSequence& seq, Tag tag)
+        { return {tag, 1, static_cast<Size>(seq.size())}; }
+
     ElemHeader get_info(const std::string& s)
-        { return {Tags::kString, 1, static_cast<Size>(s.size())}; }
+        { return get_info(s, Tags::kString); }
     ElemHeader get_info(const Bytes& s)
-        { return {Tags::kBytes, 1, static_cast<Size>(s.size())}; }
+        { return get_info(s, Tags::kBytes); }
+
+    template <typename TContainer>
+    ElemHeader get_container_info(const TContainer& list) {
+        return {Tags::kList, 1, static_cast<Size>(list.size())};
+    }
+
+protected:
+    Bytes data_;
 
 public:
 
@@ -187,19 +204,41 @@ public:
 public:
 
     template <typename T>
+    NetData& operator << (const List<T>& val) {
+        return write_container(val);
+    }
+
+    template <typename T>
     NetData& operator << (T val) {
         ElemHeader hdr = get_info(val);
         if( hdr.tag & Meta::kSequence ) {
             return write_sequence(&hdr, &val);
         }
-        return write_scalar(&hdr, &val);
+        else if( hdr.tag & Meta::kScalar ) {
+            return write_scalar(&hdr, &val);
+        }
+        // Skip unknown element.
+        data_.seek(hdr.size, SEEK_CUR);
+        return *this;
+    }
+
+protected:
+
+    template <typename TContainer>
+    NetData& write_container(const TContainer& container) {
+        ElemHeader hdr = get_container_info<TContainer>(container);
+        data_.write(&hdr, sizeof(ElemHeader));
+        for( const auto& e: container ) {
+            *this << e;
+        }
+        return *this;
     }
 
     virtual NetData& write_scalar(ElemHeader* hdr, const void* p) {
         data_.write(hdr, sizeof(ElemHeader));
         if( hdr->tag == Tags::kBool ) {
             const bool* val = static_cast<const bool*>(p);
-            BoolSize b = *val ? 1 : 0;
+            Bool b = *val ? 1 : 0;
             data_.write(&b, hdr->size);
         }
         else {
@@ -229,6 +268,12 @@ public:
 
 public:
 
+    template <typename T>
+    NetData& operator >> (List<T>* list) {
+        read_container(list);
+        return *this;
+    }
+
     NetData& operator >> (void* dst) {
         read(dst);
         return *this;
@@ -246,14 +291,30 @@ public:
                 read_scalar(&hdr, dst);
             }
         }
+        else {
+            // Skip inknown element.
+            data_.seek(hdr.size, SEEK_CUR);
+        }
     }
 
 protected:
+    template <typename T>
+    void read_container(List<T>* list) {
+        ElemHeader hdr;
+        data_.read(&hdr, sizeof(ElemHeader));
+        if( hdr.tag == Tags::kList ) {
+            for( size_t n = 0 ; n < hdr.size ; n++ ) {
+                T e;
+                *this >> &e;
+                list->push_back(e);
+            }
+        }
+    }
 
     virtual void read_scalar(const ElemHeader* hdr, void* dst) {
         if( hdr->tag == Tags::kBool ) {
-            BoolSize b{0};
-            data_.read(&b, sizeof(b));
+            Bool b{0};
+            data_.read(&b, sizeof(Bool));
             bool* val = static_cast<bool*>(dst);
             *val = (b == 0 ? false : true);
         }

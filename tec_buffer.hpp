@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-19 13:44:19 by magnolia>
+// Time-stamp: <Last changed 2025-11-22 01:06:53 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,6 +33,7 @@ SOFTWARE.
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>

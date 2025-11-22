@@ -26,12 +26,22 @@ SOFTWARE.
 #include <iostream>
 #include <ostream>
 #include <string>
+#include <vector>
 #include <sys/types.h>
 
+#include "tec/tec_container.hpp"
 #include "tec/net/tec_net_data.hpp"
 
 
+std::ostream& operator << (std::ostream& os, const std::list<int>& list) {
+    for( const auto& e: list ) {
+        os << e << ", ";
+    }
+    return os;
+}
+
 struct Payload {
+    std::list<int> list;
     int i32;
     unsigned long long u64;
     std::string str;
@@ -41,19 +51,21 @@ struct Payload {
     bool b;
 
     void store(tec::NetData& data_out) {
-        data_out
-            << i32
-            << u64
-            << str
-            << f
-            << d
-            << bs
-            << b
-            ;
+      data_out
+          << list
+          << i32
+          << u64
+          << str
+          << f
+          << d
+          << bs
+          << b
+          ;
     }
 
     void load(tec::NetData& data_in) {
         data_in
+            >> &list
             >> &i32
             >> &u64
             >> &str
@@ -66,6 +78,7 @@ struct Payload {
 
     void print(std::ostream& os) {
         os
+            << "list=[" << list << "]\n"
             << "i32=" << i32 << "\n"
             << "u64=" << u64 << "\n"
             << "str='" << str << "'\n"
@@ -79,15 +92,36 @@ struct Payload {
 
 
 int main() {
+    std::vector<int> vi{1, 2, 3};
+    std::list<int> li{4, 5, 6};
+    if constexpr(tec::is_std_vector_v<decltype(vi)>) {
+        std::cout << "This is a vector. ";
+    }
+    if constexpr(!tec::is_std_list_v<decltype(vi)>) {
+        std::cout << "Not a list!\n";
+    }
+
+    if constexpr(tec::is_std_list_v<decltype(li)>) {
+        std::cout << "This is a list. ";
+    }
+    if constexpr(!tec::is_std_vector_v<decltype(li)>) {
+        std::cout << "Not a vector!\n";
+    }
+
+    long double ld{7525.0};
+    std::cout << "sizeof(long double)=" << sizeof(ld) << "\n";
+
     char hello[] = "Hello!\0";
 
-    Payload pld{32
-                , 64
-                , "This is a string"
-                , 3.14f
-                , 2.78
-                , {hello, strlen(hello) + 1}
-                , true
+    Payload pld {
+        {1, 2, 3}
+        , 32
+        , 64
+        , "This is a string"
+        , 3.14f
+        , 2.78
+        , {hello, strlen(hello) + 1}
+        , true
     };
     tec::NetData nd;
 
