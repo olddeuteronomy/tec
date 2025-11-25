@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-25 23:12:28 by magnolia>
+// Time-stamp: <Last changed 2025-11-25 21:26:33 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -26,42 +26,20 @@ SOFTWARE.
 #pragma once
 
 #include <type_traits>
-#include <vector>
-#include <list>
-
 
 namespace tec {
 
-template<typename T, typename = void>
-struct is_std_vector : std::false_type {};
-
-template<typename T, typename Alloc>
-struct is_std_vector<std::vector<T, Alloc>> : std::true_type {};
 
 template<typename T, typename = void>
-struct is_std_list : std::false_type {};
-
-template<typename T, typename Alloc>
-struct is_std_list<std::list<T, Alloc>> : std::true_type {};
+struct is_serializable : std::false_type {};
 
 template<typename T>
-inline constexpr bool is_std_vector_v = is_std_vector<T>::value;
-
-template<typename T>
-inline constexpr bool is_std_list_v = is_std_list<T>::value;
-
-
-template<typename T, typename = void>
-struct is_container : std::false_type {};
-
-template<typename T>
-struct is_container<T,
-    std::void_t<decltype(std::declval<T>().begin()),
-                decltype(std::declval<T>().end()),
-                decltype(std::declval<T>().size())>>
+struct is_serializable<T,
+    std::void_t<decltype(std::declval<T>().serializable())>>
     : std::true_type {};
 
 template<typename T>
-inline constexpr bool is_container_v = is_container<T>::value;
+inline constexpr bool is_serializable_v = is_serializable<T>::value;
+
 
 } // namespace tec

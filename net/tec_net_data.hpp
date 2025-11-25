@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-22 15:16:50 by magnolia>
+// Time-stamp: <Last changed 2025-11-25 23:50:19 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -35,13 +35,13 @@ SOFTWARE.
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <list>
 #include <string>
-#include <sys/types.h>
+#include <type_traits>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_buffer.hpp"
-#include "tec/tec_trace.hpp"
+#include "tec/tec_container.hpp"
+#include "tec/tec_serialize.hpp"
 
 
 namespace tec {
@@ -49,22 +49,22 @@ namespace tec {
 
 class NetData {
 public:
-    using Tag =   uint16_t;
-    using Size =  uint32_t;
-    using Count = uint16_t;
+    using Tag =  uint32_t;
+    using Size = uint32_t;
 
     using Bool = uint16_t;
-
-    template <typename T>
-    using List = std::list<T>;
+    using String = std::string;
 
     struct Meta {
-        // First 8 bit (0..255) are reserved to hold an element type.
+        // First 8 bits (0..255) are reserved to hold an element type.
+        // ...
+        // Bits 9..23 are reserved for the meta flags.
         static constexpr const Tag kScalar{(  1 << 8)};
         static constexpr const Tag kFloat{(   1 << 9)};
         static constexpr const Tag kSequence{(1 << 10)};
-        static constexpr const Tag kIterable{(1 << 11)};
-        // Bits 12..31 are reserved.
+        static constexpr const Tag kContainer{(1 << 11)};
+        static constexpr const Tag kSerializable{(1 << 12)};
+        // Bits 24..31 are reserved.
     };
 
     struct Tags {
@@ -80,12 +80,15 @@ public:
         static constexpr const Tag kF128{(7 | Meta::kScalar | Meta::kFloat)};
         static constexpr const Tag kBool{(8 | Meta::kScalar)};
 
-        // Sequences.
+        // Scalar sequences.
         static constexpr const Tag kBytes{(32 | Meta::kScalar | Meta::kSequence)};
         static constexpr const Tag kString{(33 | Meta::kScalar | Meta::kSequence)};
 
-        // Iterable.
-        static constexpr const Tag kList{(64 | Meta::kIterable)};
+        // Any container.
+        static constexpr const Tag kContainer{(Meta::kContainer)};
+
+        // Any serizalizable.
+        static constexpr const Tag kSerializable{(Meta::kSerializable)};
     };
 
 #pragma pack(push, 1)
@@ -93,6 +96,7 @@ public:
         static constexpr const uint32_t kMagic{0x041b00};
         static constexpr const uint16_t kDefaultVersion{0x0100};
 
+        // 128 bits, 16 bytes.
         uint32_t magic;
         uint32_t size;
         uint16_t version;
@@ -114,56 +118,86 @@ public:
 
     struct ElemHeader {
         Tag tag;
-        Count count; //!< For iterable objects like vector or list.
-        Size size;   //!< Size of an element in bytes.
+        Size size;
 
         ElemHeader()
             : tag{Tags::kUnknown}
-            , count{0}
             , size{0}
         {}
 
-        ElemHeader(Tag _tag, Count _count, Size _size)
+        ElemHeader(Tag _tag, Size _size)
             : tag{_tag}
-            , count{_count}
             , size{_size}
         {}
     };
 #pragma pack(pop)
 
-    ElemHeader get_info(const int&)
-        { return {Tags::kI32, 1, 4}; }
-    ElemHeader get_info(const unsigned int&)
-        { return {Tags::kI32, 1, 4}; }
-    ElemHeader get_info(const long&)
-        { return {Tags::kI32, 1, 4}; }
-    ElemHeader get_info(const unsigned long&)
-        { return {Tags::kI32, 1, 4}; }
-    ElemHeader get_info(const long long&)
-        { return {Tags::kI64, 1, 8}; }
-    ElemHeader get_info(const unsigned long long&)
-        { return {Tags::kI64, 1, 8}; }
+    // Integers.
+    ElemHeader get_scalar_info(const short&)
+        { return {Tags::kI16, 2}; }
+    ElemHeader get_get_scalar_info(const unsigned short&)
+        { return {Tags::kI16, 2}; }
+    ElemHeader get_scalar_info(const int&)
+        { return {Tags::kI32, 4}; }
+    ElemHeader get_scalar_info(const unsigned int&)
+        { return {Tags::kI32, 4}; }
+    ElemHeader get_scalar_info(const long&)
+        { return {Tags::kI32, 4}; }
+    ElemHeader get_scalar_info(const unsigned long&)
+        { return {Tags::kI32, 4}; }
+    ElemHeader get_scalar_info(const long long&)
+        { return {Tags::kI64, 8}; }
+    ElemHeader get_scalar_info(const unsigned long long&)
+        { return {Tags::kI64, 8}; }
 
-    ElemHeader get_info(const bool&)
-        { return {Tags::kI16, 1, sizeof(Bool)}; }
+    // Boolean.
+    ElemHeader get_scalar_info(const bool&)
+        { return {Tags::kI16, sizeof(Bool)}; }
 
-    ElemHeader get_info(const float&)
-        { return {Tags::kF32, 1, 4}; }
-    ElemHeader get_info(const double&)
-        { return {Tags::kF64, 1, 8}; }
+    // Floating point.
+    ElemHeader get_scalar_info(const float&)
+        { return {Tags::kF32, 4}; }
+    ElemHeader get_scalar_info(const double&)
+        { return {Tags::kF64, 8}; }
+    ElemHeader get_scalar_info(const long double&)
+        { return {Tags::kF128, 16}; }
 
-    template <typename TSequence>
-    ElemHeader get_info(const TSequence& seq, Tag tag)
-        { return {tag, 1, static_cast<Size>(seq.size())}; }
-
-    ElemHeader get_info(const std::string& s)
-        { return get_info(s, Tags::kString); }
-    ElemHeader get_info(const Bytes& s)
-        { return get_info(s, Tags::kBytes); }
+    // Sequence: string.
+    ElemHeader get_seq_info(const String& s)
+        { return {Tags::kString, static_cast<Size>(s.size())}; }
+    // Sequence: Bytes.
+    ElemHeader get_seq_info(const Bytes& s)
+        { return {Tags::kBytes, static_cast<Size>(s.size())}; }
 
     template <typename TContainer>
-    ElemHeader get_container_info(const TContainer& list) {
-        return {Tags::kList, 1, static_cast<Size>(list.size())};
+    ElemHeader get_container_info(const TContainer& c)
+        { return {Tags::kContainer, static_cast<Size>(c.size())}; }
+
+    template <typename TObject>
+    ElemHeader get_object_info(const TObject& c)
+        { return {Tags::kSerializable, static_cast<Size>(sizeof(c))}; }
+
+    // Generic types.
+    template <typename T>
+    ElemHeader get_info(const T& val) {
+        if constexpr (std::is_arithmetic_v<T>) {
+            return get_scalar_info(val);
+        }
+        else if constexpr (
+            std::is_same_v<T, String> ||
+            std::is_same_v<T, Bytes>
+            ) {
+            return get_seq_info(val);
+        }
+        else if constexpr (is_serializable_v<T>) {
+            return get_object_info(val);
+        }
+        else if constexpr (is_container_v<T>) {
+            return get_container_info(val);
+        }
+        else {
+            return {};
+        }
     }
 
 protected:
@@ -179,7 +213,6 @@ public:
     }
 
     size_t size() const {
-        // Without Header.
         return data_.size();
     }
 
@@ -204,12 +237,7 @@ public:
 public:
 
     template <typename T>
-    NetData& operator << (const List<T>& val) {
-        return write_container(val);
-    }
-
-    template <typename T>
-    NetData& operator << (T val) {
+    NetData& operator << (const T& val) {
         ElemHeader hdr = get_info(val);
         if( hdr.tag & Meta::kSequence ) {
             return write_sequence(&hdr, &val);
@@ -217,19 +245,37 @@ public:
         else if( hdr.tag & Meta::kScalar ) {
             return write_scalar(&hdr, &val);
         }
-        // Skip unknown element.
-        data_.seek(hdr.size, SEEK_CUR);
+        else if( hdr.tag & Meta::kContainer ) {
+            return write_container(&hdr, val);
+        }
+        else if( hdr.tag & Meta::kSerializable ) {
+            return write_object(&hdr, val);
+        }
+        else {
+            // Skip unknown element.
+            data_.seek(hdr.size, SEEK_CUR);
+        }
         return *this;
     }
 
 protected:
 
     template <typename TContainer>
-    NetData& write_container(const TContainer& container) {
-        ElemHeader hdr = get_container_info<TContainer>(container);
-        data_.write(&hdr, sizeof(ElemHeader));
-        for( const auto& e: container ) {
-            *this << e;
+    NetData& write_container(ElemHeader* hdr, const TContainer& container) {
+        if constexpr (is_container_v<TContainer>) {
+            data_.write(hdr, sizeof(ElemHeader));
+            for( const auto& e: container ) {
+                *this << e;
+            }
+        }
+        return *this;
+    }
+
+    template <typename TObject>
+    NetData& write_object(ElemHeader* hdr, const TObject& obj) {
+        if constexpr (tec::is_serializable_v<TObject>) {
+            data_.write(hdr, sizeof(ElemHeader));
+            obj.store(std::ref(*this));
         }
         return *this;
     }
@@ -269,46 +315,57 @@ protected:
 public:
 
     template <typename T>
-    NetData& operator >> (List<T>* list) {
-        read_container(list);
-        return *this;
-    }
-
-    NetData& operator >> (void* dst) {
-        read(dst);
-        return *this;
-    }
-
-    virtual void read(void* dst) {
+    NetData& operator >> (T* val) {
         ElemHeader hdr;
         data_.read(&hdr, sizeof(ElemHeader));
+        if constexpr (is_serializable_v<T>) {
+            if( hdr.tag & Meta::kSerializable ) {
+                val->load(std::ref(*this));
+            }
+        }
+        else if constexpr (
+            is_container_v<T>  &&
+            !std::is_same_v<T, String>
+            ) {
+            read_container(&hdr, val);
+        }
+        else {
+            return read(&hdr, val);
+        }
+        return *this;
+    }
 
-        if( hdr.tag & Meta::kScalar) {
-            if( hdr.tag & Meta::kSequence ) {
-                read_sequence(&hdr, dst);
+protected:
+
+    template <typename TContainer>
+    NetData& read_container(ElemHeader* hdr, TContainer* c) {
+        if constexpr (
+            is_container_v<TContainer>  &&
+            !std::is_same_v<TContainer, String>
+            ) {
+            for( size_t n = 0 ; n < hdr->size ; ++n ) {
+                typename TContainer::value_type e;
+                *this >> &e;
+                c->push_back(e);
+            }
+        }
+        return *this;
+    }
+
+    virtual NetData& read(ElemHeader* hdr, void* dst) {
+        if( hdr->tag & Meta::kScalar) {
+            if( hdr->tag & Meta::kSequence ) {
+                read_sequence(hdr, dst);
             }
             else {
-                read_scalar(&hdr, dst);
+                read_scalar(hdr, dst);
             }
         }
         else {
             // Skip inknown element.
-            data_.seek(hdr.size, SEEK_CUR);
+            data_.seek(hdr->size, SEEK_CUR);
         }
-    }
-
-protected:
-    template <typename T>
-    void read_container(List<T>* list) {
-        ElemHeader hdr;
-        data_.read(&hdr, sizeof(ElemHeader));
-        if( hdr.tag == Tags::kList ) {
-            for( size_t n = 0 ; n < hdr.size ; n++ ) {
-                T e;
-                *this >> &e;
-                list->push_back(e);
-            }
-        }
+        return *this;
     }
 
     virtual void read_scalar(const ElemHeader* hdr, void* dst) {

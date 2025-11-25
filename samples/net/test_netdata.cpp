@@ -26,114 +26,159 @@ SOFTWARE.
 #include <iostream>
 #include <ostream>
 #include <string>
-#include <vector>
-#include <sys/types.h>
 
-#include "tec/tec_container.hpp"
 #include "tec/net/tec_net_data.hpp"
 
 
-std::ostream& operator << (std::ostream& os, const std::list<int>& list) {
-    for( const auto& e: list ) {
-        os << e << ", ";
+std::ostream& operator << (std::ostream& os, const std::list<int>& c) {
+    bool first{true};
+    for( const auto& e: c ) {
+        if( first ) {
+            os << "[\n";
+            first = false;
+        } else {
+            os << ",\n";
+        }
+        os << "\t" << e;
     }
+    os << "\n]";
     return os;
 }
 
+
+struct Person {
+    constexpr const bool serializable() { return true; }
+
+    std::string name;
+    std::string surname;
+    short age;
+
+    tec::NetData& store(tec::NetData& nd) const {
+        nd
+            << age
+            << name
+            << surname
+            ;
+        return nd;
+    }
+
+    tec::NetData& load(tec::NetData& nd) {
+        nd
+            >> &age
+            >> &name
+            >> &surname
+            ;
+        return nd;
+    }
+};
+
+
 struct Payload {
+    constexpr const bool serializable() { return true; }
+
     std::list<int> list;
     int i32;
     unsigned long long u64;
     std::string str;
-    float f;
-    double d;
+    float f32;
+    double d64;
+    Person p;
+    long double d128;
     tec::Bytes bs;
     bool b;
 
-    void store(tec::NetData& data_out) {
-      data_out
+    void store(tec::NetData& nd) const {
+      nd
           << list
           << i32
           << u64
           << str
-          << f
-          << d
+          << f32
+          << d64
+          << p
+          << d128
           << bs
           << b
           ;
     }
 
-    void load(tec::NetData& data_in) {
-        data_in
+    void load(tec::NetData& nd) {
+        nd
             >> &list
             >> &i32
             >> &u64
             >> &str
-            >> &f
-            >> &d
+            >> &f32
+            >> &d64
+            >> &p
+            >> &d128
             >> &bs
             >> &b
             ;
     }
 
-    void print(std::ostream& os) {
+    void dump(std::ostream& os) {
         os
-            << "list=[" << list << "]\n"
-            << "i32=" << i32 << "\n"
-            << "u64=" << u64 << "\n"
-            << "str='" << str << "'\n"
-            << "f=  " << f << "\n"
-            << "d=  " << d << "\n"
-            << "bs= " << bs.data() << "\n"
-            << "b=  " << b << "\n"
+            << "list=" << list << "\n"
+            << "i32= " << i32 << "\n"
+            << "u64= " << u64 << "\n"
+            << "str= '" << str << "'\n"
+            << "f32= " << f32 << "\n"
+            << "d64= " << d64 << "\n"
+            << "p  = " << "{\"" << p.name << " " << p.surname << "\", " << p.age << "}\n"
+            << "d128=" << d128 << "\n"
+            << "bs=  " << bs.data() << "\n"
+            << "b=   " << b << "\n"
             ;
     }
 };
 
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                           TEST
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+void save_payload(Payload& pld, tec::NetData& nd) {
+    nd << pld;
+
+    std::cout << "\n-------- STORE --------\n";
+    pld.dump(std::cout);
+    std::cout << std::string(23, '-') << "\nTotal size=" << nd.size() << "\n";
+
+}
+
+void restore_payload(tec::NetData& nd) {
+    Payload pld;
+    nd.rewind();
+    nd >> &pld;
+
+    std::cout << "\n-------- LOAD ---------\n";
+    pld.dump(std::cout);
+    std::cout << std::string(23, '-') << "\nTotal size=" << nd.size() << "\n";
+}
+
+
 int main() {
-    std::vector<int> vi{1, 2, 3};
-    std::list<int> li{4, 5, 6};
-    if constexpr(tec::is_std_vector_v<decltype(vi)>) {
-        std::cout << "This is a vector. ";
-    }
-    if constexpr(!tec::is_std_list_v<decltype(vi)>) {
-        std::cout << "Not a list!\n";
-    }
-
-    if constexpr(tec::is_std_list_v<decltype(li)>) {
-        std::cout << "This is a list. ";
-    }
-    if constexpr(!tec::is_std_vector_v<decltype(li)>) {
-        std::cout << "Not a vector!\n";
-    }
-
-    long double ld{7525.0};
-    std::cout << "sizeof(long double)=" << sizeof(ld) << "\n";
-
     char hello[] = "Hello!\0";
+    tec::NetData nd;
 
     Payload pld {
-        {1, 2, 3}
+        {1, 2, 3, 4}
         , 32
         , 64
         , "This is a string"
         , 3.14f
         , 2.78
+        , {"John", "Dow", 61}
+        , 1.123456e102
         , {hello, strlen(hello) + 1}
         , true
     };
-    tec::NetData nd;
 
-    std::cout << "-------- STORE\n";
-    pld.print(std::cout);
-    pld.store(nd);
-
-    std::cout << "-------- LOAD\n";
-    Payload pld2;
-    nd.rewind();
-    pld2.load(nd);
-    pld2.print(std::cout);
+    save_payload(pld, nd);
+    restore_payload(nd);
 
     return 0;
 }
