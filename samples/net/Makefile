@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2025-11-17 12:07:01 by magnolia>
+# Time-stamp: <Last changed 2025-11-26 15:12:52 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -85,10 +85,13 @@ endif
 
 
 # Build the targets
-all: buffer netdata
+all: buffer netdata dump
 
 buffer: test_buffer.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
 netdata: test_netdata.cpp
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
+
+dump: test_dump.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)

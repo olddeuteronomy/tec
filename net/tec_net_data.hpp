@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-25 23:50:19 by magnolia>
+// Time-stamp: <Last changed 2025-11-26 16:19:27 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -61,9 +61,10 @@ public:
         // Bits 9..23 are reserved for the meta flags.
         static constexpr const Tag kScalar{(  1 << 8)};
         static constexpr const Tag kFloat{(   1 << 9)};
-        static constexpr const Tag kSequence{(1 << 10)};
-        static constexpr const Tag kContainer{(1 << 11)};
-        static constexpr const Tag kSerializable{(1 << 12)};
+        static constexpr const Tag kSigned{(  1 << 10)};
+        static constexpr const Tag kSequence{(1 << 11)};
+        static constexpr const Tag kContainer{(1 << 12)};
+        static constexpr const Tag kSerializable{(1 << 13)};
         // Bits 24..31 are reserved.
     };
 
@@ -96,7 +97,7 @@ public:
         static constexpr const uint32_t kMagic{0x041b00};
         static constexpr const uint16_t kDefaultVersion{0x0100};
 
-        // 128 bits, 16 bytes.
+        // 128 bits = 16 bytes.
         uint32_t magic;
         uint32_t size;
         uint16_t version;
@@ -133,20 +134,28 @@ public:
 #pragma pack(pop)
 
     // Integers.
+    ElemHeader get_scalar_info(const char&)
+        { return {Tags::kI8 | Meta::kSigned, 1}; }
+    ElemHeader get_get_scalar_info(const unsigned char&)
+        { return {Tags::kI8, 1}; }
+
     ElemHeader get_scalar_info(const short&)
-        { return {Tags::kI16, 2}; }
+        { return {Tags::kI16 | Meta::kSigned, 2}; }
     ElemHeader get_get_scalar_info(const unsigned short&)
         { return {Tags::kI16, 2}; }
+
     ElemHeader get_scalar_info(const int&)
-        { return {Tags::kI32, 4}; }
+        { return {Tags::kI32 | Meta::kSigned, 4}; }
     ElemHeader get_scalar_info(const unsigned int&)
         { return {Tags::kI32, 4}; }
+
     ElemHeader get_scalar_info(const long&)
-        { return {Tags::kI32, 4}; }
+        { return {Tags::kI32 | Meta::kSigned, 4}; }
     ElemHeader get_scalar_info(const unsigned long&)
         { return {Tags::kI32, 4}; }
+
     ElemHeader get_scalar_info(const long long&)
-        { return {Tags::kI64, 8}; }
+        { return {Tags::kI64 | Meta::kSigned, 8}; }
     ElemHeader get_scalar_info(const unsigned long long&)
         { return {Tags::kI64, 8}; }
 
@@ -156,11 +165,11 @@ public:
 
     // Floating point.
     ElemHeader get_scalar_info(const float&)
-        { return {Tags::kF32, 4}; }
+        { return {Tags::kF32 | Meta::kSigned, 4}; }
     ElemHeader get_scalar_info(const double&)
-        { return {Tags::kF64, 8}; }
+        { return {Tags::kF64 | Meta::kSigned, 8}; }
     ElemHeader get_scalar_info(const long double&)
-        { return {Tags::kF128, 16}; }
+        { return {Tags::kF128 | Meta::kSigned, 16}; }
 
     // Sequence: string.
     ElemHeader get_seq_info(const String& s)
@@ -169,13 +178,16 @@ public:
     ElemHeader get_seq_info(const Bytes& s)
         { return {Tags::kBytes, static_cast<Size>(s.size())}; }
 
+    // Flat container.
     template <typename TContainer>
     ElemHeader get_container_info(const TContainer& c)
         { return {Tags::kContainer, static_cast<Size>(c.size())}; }
 
+    // Serializable object.
     template <typename TObject>
     ElemHeader get_object_info(const TObject& c)
-        { return {Tags::kSerializable, static_cast<Size>(sizeof(c))}; }
+        { return {Tags::kSerializable, 0}; }
+        // { return {Tags::kSerializable, static_cast<Size>(sizeof(c))}; }
 
     // Generic types.
     template <typename T>
