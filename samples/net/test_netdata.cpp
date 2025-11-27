@@ -161,16 +161,16 @@ void restore_payload(tec::NetData& nd) {
     nd.rewind();
 
     // Header
-    tec::NetData::Header hdr = nd.get_header();
+    tec::NetData::Header hdr = nd.header();
     std::cout
-        << "\nMagic:   " <<std::hex << hdr.magic << std::dec
+        << "\nMagic:   " << std::hex << hdr.magic << std::dec
         << "\nVersion: " << hdr.version
         << "\nSize:    " << hdr.size
         << "\n";
 
     // Dump
-    tec::Dump::print<>(std::cout, (const char*)nd.data(), nd.data_size());
-    std::cout << std::string(72, '-') << "\nTotal size=" << nd.size() << "\n";
+    tec::Dump::print<>(std::cout, (const char*)nd.data(), nd.size());
+    std::cout << std::string(72, '-') << "\nTotal size (w/header)=" << nd.total_size() << "\n";
 }
 
 

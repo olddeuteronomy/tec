@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-27 15:12:00 by magnolia>
+// Time-stamp: <Last changed 2025-11-27 18:49:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -222,14 +222,14 @@ protected:
 public:
 
     NetData() {
-        hdr_ptr_ = (Header*)data_.data();
         Header hdr;
         data_.write(&hdr, sizeof(Header));
+        hdr_ptr_ = (Header*)data_.data();
     }
 
     virtual ~NetData() = default;
 
-    Header get_header() const {
+    Header header() const {
         return *hdr_ptr_;
     }
 
@@ -237,11 +237,11 @@ public:
         data_.seek(sizeof(Header), SEEK_SET);
     }
 
-    size_t size() const {
+    size_t total_size() const {
         return data_.size();
     }
 
-    size_t data_size() const {
+    size_t size() const {
         return hdr_ptr_->size;
     }
 
@@ -269,20 +269,16 @@ public:
     NetData& operator << (const T& val) {
         ElemHeader hdr = get_info(val);
         if( hdr.tag & Meta::kSequence ) {
-            return write_sequence(&hdr, &val);
+            write_sequence(&hdr, &val);
         }
         else if( hdr.tag & Meta::kScalar ) {
-            return write_scalar(&hdr, &val);
+            write_scalar(&hdr, &val);
         }
         else if( hdr.tag & Meta::kContainer ) {
-            return write_container(&hdr, val);
+            write_container(&hdr, val);
         }
         else if( hdr.tag & Meta::kObject ) {
-            return write_object(&hdr, val);
-        }
-        else {
-            // Skip unknown element.
-            data_.seek(hdr.size, SEEK_CUR);
+            write_object(&hdr, val);
         }
         hdr_ptr_->size = data_.tell() - sizeof(Header);
         return *this;
@@ -291,34 +287,41 @@ public:
 protected:
 
     template <typename TContainer>
-    NetData& write_container(ElemHeader* hdr, const TContainer& container) {
+    size_t write_container(ElemHeader* hdr, const TContainer& container) {
         if constexpr (is_container_v<TContainer>) {
             ElemHeader* hdr_ptr = (ElemHeader*)data_.at(data_.tell());
             data_.write(hdr, sizeof(ElemHeader));
             size_t cur_pos = data_.tell();
+            // Write all elements of a container.
             for( const auto& e: container ) {
                 *this << e;
             }
+            auto bytes_written = data_.tell() - cur_pos;
             // Set actual container size.
-            hdr_ptr->size = data_.tell() - cur_pos;
+            hdr_ptr->size = bytes_written;
+            return bytes_written;
         }
-        return *this;
+        return 0;
     }
 
     template <typename TObject>
-    NetData& write_object(ElemHeader* hdr, const TObject& obj) {
+    size_t write_object(ElemHeader* hdr, const TObject& obj) {
         if constexpr (tec::is_serializable_v<TObject>) {
             ElemHeader* hdr_ptr = (ElemHeader*)data_.at(data_.tell());
             data_.write(hdr, sizeof(ElemHeader));
             size_t cur_pos = data_.tell();
+            // Write an object
             obj.store(std::ref(*this));
             // Set actual object size.
-            hdr_ptr->size = data_.tell() - cur_pos;
+            auto bytes_written = data_.tell() - cur_pos;
+            // Set actual object size.
+            hdr_ptr->size = bytes_written;
+            return bytes_written;
         }
-        return *this;
+        return 0;
     }
 
-    virtual NetData& write_scalar(ElemHeader* hdr, const void* p) {
+    virtual size_t write_scalar(ElemHeader* hdr, const void* p) {
         data_.write(hdr, sizeof(ElemHeader));
         if( hdr->tag == Tags::kBool ) {
             const bool* val = static_cast<const bool*>(p);
@@ -328,10 +331,10 @@ protected:
         else {
             data_.write(p, hdr->size);
         }
-        return *this;
+        return hdr->size;
     }
 
-    virtual NetData& write_sequence(ElemHeader* hdr, const void* p) {
+    virtual size_t write_sequence(ElemHeader* hdr, const void* p) {
         data_.write(hdr, sizeof(ElemHeader));
         if( hdr->tag == Tags::kString ) {
             const std::string* s = static_cast<const std::string*>(p);
@@ -341,7 +344,7 @@ protected:
             const Bytes* bs = static_cast<const Bytes*>(p);
             data_.write(bs->data(), hdr->size);
         }
-        return *this;
+        return hdr->size;
     }
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
