@@ -1,70 +1,6 @@
 
-#include <cstddef>
-#include <iostream>
-#include <iomanip>
-#include <cctype>
+#include "tec/tec_dump.hpp"
 
-
-void dump(std::ostream& os, const char* dst, size_t length)
-{
-    constexpr size_t bytes_per_line = 32;
-
-    // Header: decimal column numbers, 2 digits, padded with 0
-    os << "offset|";
-    for (size_t i = 0; i < bytes_per_line; i += 2) {
-        os << std::setw(2) << std::setfill('0') << i << "  ";
-    }
-    os << '\n';
-
-    // Separator line.
-    os << "======|";
-    for (size_t i = 0 ; i < bytes_per_line / 2 ; ++i) {
-        os << "++--";
-    }
-    os << "|\n";
-
-    const char* byte = dst;
-    char fill[3]{' ', ' ', '\0'};
-
-    // For all rows.
-    for (size_t base = 0; base < length; base += bytes_per_line) {
-        size_t n = std::min(bytes_per_line, length - base);
-
-        // Offset: 6-digit decimal
-        os << std::setw(6) << std::setfill('0') << base << "|";
-
-        // Dump all columns.
-        for (size_t col = 0; col < n; ++col) {
-            char c = *byte++;
-            if (std::isprint(c) && c != ' ' ) {
-                fill[1] = c;
-                os << std::setw(2) << std::setfill(' ');
-                os << fill;
-            }
-            else {
-                os << std::hex << std::setw(2) << std::setfill('0')
-                   << int(c);
-            }
-        }
-
-        // Pad incomplete line.
-        for (size_t i = n; i < bytes_per_line; ++i) {
-            os << "  ";
-        }
-
-        os << "|\n";
-    }
-
-    // Restore defaults.
-    os << std::dec << std::setfill(' ');
-}
-
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                           TEST
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 int main() {
     const char data[] =
@@ -72,7 +8,7 @@ int main() {
         "Non-printable bytes are shown in hex: \x00\x01\x02\x03\x04\x05\x06\x07"
         "\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x1A\x1B\x1C\x1D\x1E\x1F";
 
-    dump(std::cout, data, sizeof(data) - 1);
+    tec::Dump::print(std::cout, data, sizeof(data) - 1);
     return 0;
 }
 

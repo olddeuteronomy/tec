@@ -27,6 +27,7 @@ SOFTWARE.
 #include <ostream>
 #include <string>
 
+#include "tec/tec_dump.hpp"
 #include "tec/net/tec_net_data.hpp"
 
 
@@ -156,7 +157,20 @@ void restore_payload(tec::NetData& nd) {
 
     std::cout << "\n-------- LOAD ---------\n";
     pld.dump(std::cout);
-    std::cout << std::string(23, '-') << "\nTotal size=" << nd.size() << "\n";
+
+    nd.rewind();
+
+    // Header
+    tec::NetData::Header hdr = nd.get_header();
+    std::cout
+        << "\nMagic:   " <<std::hex << hdr.magic << std::dec
+        << "\nVersion: " << hdr.version
+        << "\nSize:    " << hdr.size
+        << "\n";
+
+    // Dump
+    tec::Dump::print<>(std::cout, (const char*)nd.data(), nd.data_size());
+    std::cout << std::string(72, '-') << "\nTotal size=" << nd.size() << "\n";
 }
 
 

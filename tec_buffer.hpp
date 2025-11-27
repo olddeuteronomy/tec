@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-22 01:06:53 by magnolia>
+// Time-stamp: <Last changed 2025-11-27 14:09:51 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -117,6 +117,14 @@ public:
 
     const T* data() const {
         return buffer_.data();
+    }
+
+    T* at(size_t pos) {
+        return &buffer_.at(pos);
+    }
+
+    const T* at(size_t pos) const {
+        return &buffer_.at(pos);
     }
 
     /**

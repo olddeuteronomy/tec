@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-26 16:19:27 by magnolia>
+// Time-stamp: <Last changed 2025-11-27 15:12:00 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -64,7 +64,7 @@ public:
         static constexpr const Tag kSigned{(  1 << 10)};
         static constexpr const Tag kSequence{(1 << 11)};
         static constexpr const Tag kContainer{(1 << 12)};
-        static constexpr const Tag kSerializable{(1 << 13)};
+        static constexpr const Tag kObject{(1 << 13)};
         // Bits 24..31 are reserved.
     };
 
@@ -89,7 +89,7 @@ public:
         static constexpr const Tag kContainer{(Meta::kContainer)};
 
         // Any serizalizable.
-        static constexpr const Tag kSerializable{(Meta::kSerializable)};
+        static constexpr const Tag kObject{(Meta::kObject)};
     };
 
 #pragma pack(push, 1)
@@ -97,7 +97,7 @@ public:
         static constexpr const uint32_t kMagic{0x041b00};
         static constexpr const uint16_t kDefaultVersion{0x0100};
 
-        // 128 bits = 16 bytes.
+        // 16 bytes.
         uint32_t magic;
         uint32_t size;
         uint16_t version;
@@ -118,17 +118,21 @@ public:
     };
 
     struct ElemHeader {
+        // 12 bytes.
         Tag tag;
         Size size;
+        Size count;
 
         ElemHeader()
             : tag{Tags::kUnknown}
             , size{0}
+            , count{0}
         {}
 
-        ElemHeader(Tag _tag, Size _size)
+        ElemHeader(Tag _tag, Size _size, Size _count = 1)
             : tag{_tag}
             , size{_size}
+            , count{_count}
         {}
     };
 #pragma pack(pop)
@@ -181,13 +185,12 @@ public:
     // Flat container.
     template <typename TContainer>
     ElemHeader get_container_info(const TContainer& c)
-        { return {Tags::kContainer, static_cast<Size>(c.size())}; }
+        { return {Tags::kContainer, 0, static_cast<Size>(c.size())}; }
 
     // Serializable object.
     template <typename TObject>
-    ElemHeader get_object_info(const TObject& c)
-        { return {Tags::kSerializable, 0}; }
-        // { return {Tags::kSerializable, static_cast<Size>(sizeof(c))}; }
+    ElemHeader get_object_info(const TObject&)
+        { return {Tags::kObject, 0}; }
 
     // Generic types.
     template <typename T>
@@ -214,18 +217,32 @@ public:
 
 protected:
     Bytes data_;
+    Header* hdr_ptr_;
 
 public:
 
-    NetData() {}
+    NetData() {
+        hdr_ptr_ = (Header*)data_.data();
+        Header hdr;
+        data_.write(&hdr, sizeof(Header));
+    }
+
     virtual ~NetData() = default;
 
+    Header get_header() const {
+        return *hdr_ptr_;
+    }
+
     void rewind() {
-        data_.rewind();
+        data_.seek(sizeof(Header), SEEK_SET);
     }
 
     size_t size() const {
         return data_.size();
+    }
+
+    size_t data_size() const {
+        return hdr_ptr_->size;
     }
 
     size_t capacity() const {
@@ -233,11 +250,11 @@ public:
     }
 
     void* data() {
-        return data_.data();
+        return data_.data() + sizeof(Header);
     }
 
     const void* data() const {
-        return data_.data();
+        return data_.data() + sizeof(Header);
     }
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -260,13 +277,14 @@ public:
         else if( hdr.tag & Meta::kContainer ) {
             return write_container(&hdr, val);
         }
-        else if( hdr.tag & Meta::kSerializable ) {
+        else if( hdr.tag & Meta::kObject ) {
             return write_object(&hdr, val);
         }
         else {
             // Skip unknown element.
             data_.seek(hdr.size, SEEK_CUR);
         }
+        hdr_ptr_->size = data_.tell() - sizeof(Header);
         return *this;
     }
 
@@ -275,10 +293,14 @@ protected:
     template <typename TContainer>
     NetData& write_container(ElemHeader* hdr, const TContainer& container) {
         if constexpr (is_container_v<TContainer>) {
+            ElemHeader* hdr_ptr = (ElemHeader*)data_.at(data_.tell());
             data_.write(hdr, sizeof(ElemHeader));
+            size_t cur_pos = data_.tell();
             for( const auto& e: container ) {
                 *this << e;
             }
+            // Set actual container size.
+            hdr_ptr->size = data_.tell() - cur_pos;
         }
         return *this;
     }
@@ -286,8 +308,12 @@ protected:
     template <typename TObject>
     NetData& write_object(ElemHeader* hdr, const TObject& obj) {
         if constexpr (tec::is_serializable_v<TObject>) {
+            ElemHeader* hdr_ptr = (ElemHeader*)data_.at(data_.tell());
             data_.write(hdr, sizeof(ElemHeader));
+            size_t cur_pos = data_.tell();
             obj.store(std::ref(*this));
+            // Set actual object size.
+            hdr_ptr->size = data_.tell() - cur_pos;
         }
         return *this;
     }
@@ -331,7 +357,7 @@ public:
         ElemHeader hdr;
         data_.read(&hdr, sizeof(ElemHeader));
         if constexpr (is_serializable_v<T>) {
-            if( hdr.tag & Meta::kSerializable ) {
+            if( hdr.tag & Meta::kObject ) {
                 val->load(std::ref(*this));
             }
         }
@@ -355,7 +381,7 @@ protected:
             is_container_v<TContainer>  &&
             !std::is_same_v<TContainer, String>
             ) {
-            for( size_t n = 0 ; n < hdr->size ; ++n ) {
+            for( size_t n = 0 ; n < hdr->count ; ++n ) {
                 typename TContainer::value_type e;
                 *this >> &e;
                 c->push_back(e);
