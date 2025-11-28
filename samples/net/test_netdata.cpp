@@ -163,8 +163,8 @@ void restore_payload(tec::NetData& nd) {
     // Header
     tec::NetData::Header hdr = nd.header();
     std::cout
-        << "\nMagic:   " << std::hex << hdr.magic << std::dec
-        << "\nVersion: " << hdr.version
+        << "\nMagic:   " << std::hex << hdr.magic
+        << "\nVersion: " << hdr.version << std::dec
         << "\nSize:    " << hdr.size
         << "\n";
 
@@ -175,6 +175,11 @@ void restore_payload(tec::NetData& nd) {
 
 
 int main() {
+    std::cout << "Size of bool=" << sizeof(bool) << "\n";
+    std::cout << "Size of float=" << sizeof(float) << "\n";
+    std::cout << "Size of double=" << sizeof(double) << "\n";
+    std::cout << "Size of long double=" << sizeof(long double) << "\n\n";
+
     char hello[] = "Hello!\0";
     tec::NetData nd;
 
