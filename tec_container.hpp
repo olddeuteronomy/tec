@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-25 23:12:28 by magnolia>
+// Time-stamp: <Last changed 2025-11-28 19:45:29 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -56,12 +56,32 @@ struct is_container : std::false_type {};
 
 template<typename T>
 struct is_container<T,
-    std::void_t<decltype(std::declval<T>().begin()),
-                decltype(std::declval<T>().end()),
-                decltype(std::declval<T>().size())>>
+    std::void_t<
+        decltype(std::declval<T>().begin()),
+        decltype(std::declval<T>().end()),
+        decltype(std::declval<T>().size())
+        >>
     : std::true_type {};
 
 template<typename T>
 inline constexpr bool is_container_v = is_container<T>::value;
+
+
+// Matches std::unordered_map
+template<typename T, typename = void>
+struct is_map : std::false_type {};
+
+template<typename T>
+struct is_map<T,
+    std::void_t<
+        decltype(std::declval<T>().begin()),
+        decltype(std::declval<T>().end()),
+        decltype(std::declval<T>().size()),
+        decltype(std::declval<T>().bucket_count())
+        >>
+    : std::true_type {};
+
+template<typename T>
+inline constexpr bool is_map_v = is_map<T>::value;
 
 } // namespace tec

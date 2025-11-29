@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-28 18:23:50 by magnolia>
+// Time-stamp: <Last changed 2025-11-29 14:31:52 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -38,10 +38,18 @@ SOFTWARE.
 #include <type_traits>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_trace.hpp"
 #include "tec/tec_buffer.hpp"
 #include "tec/tec_container.hpp"
 #include "tec/tec_serialize.hpp"
 #include "tec/net/tec_nd_types.hpp"
+#include "tec/tec_trace.hpp"
+
+
+#ifdef __TEC_GNUC__
+// Something wrong with g++ 13.3
+#pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
 
 
 namespace tec {
@@ -104,13 +112,16 @@ public:
         if( hdr.tag & Meta::Sequence ) {
             write_sequence(&hdr, &val);
         }
-        else if( hdr.tag & Meta::Scalar ) {
+        else if(hdr.tag & Meta::Scalar) {
             write_scalar(&hdr, &val);
         }
-        else if( hdr.tag == Tags::Container ) {
+        else if(hdr.tag == Tags::Map) {
+            write_map(&hdr, val);
+        }
+        else if(hdr.tag == Tags::Container) {
             write_container(&hdr, val);
         }
-        else if( hdr.tag == Tags::Object ) {
+        else if(hdr.tag == Tags::Object) {
             write_object(&hdr, val);
         }
         hdr_ptr_->size = data_.tell() - sizeof(Header);
@@ -118,6 +129,25 @@ public:
     }
 
 protected:
+
+    template <typename TMap>
+    size_t write_map(ElemHeader* hdr, const TMap& map) {
+        if constexpr (is_map_v<TMap>) {
+            ElemHeader* hdr_ptr = (ElemHeader*)data_.at(data_.tell());
+            data_.write(hdr, sizeof(ElemHeader));
+            size_t cur_pos = data_.tell();
+            // Write all elements of a container.
+            for( const auto& [key, value]: map ) {
+                *this << key;
+                *this << value;
+            }
+            auto bytes_written = data_.tell() - cur_pos;
+            // Set actual container size.
+            hdr_ptr->size = bytes_written;
+            return bytes_written;
+        }
+        return 0;
+    }
 
     template <typename TContainer>
     size_t write_container(ElemHeader* hdr, const TContainer& container) {
@@ -200,6 +230,12 @@ public:
                 val->load(std::ref(*this));
             }
         }
+        // Map.
+        else if constexpr(is_map_v<T>) {
+            if(hdr.tag == Tags::Map) {
+                read_map(&hdr, val);
+            }
+        }
         // Container (but not a String!).
         else if constexpr (
             is_container_v<T>  &&
@@ -215,6 +251,21 @@ public:
     }
 
 protected:
+
+    template <typename TMap>
+    void read_map(ElemHeader* hdr, TMap* map) {
+        TEC_ENTER("read_map");
+        TEC_TRACE("count={}", hdr->count);
+        if constexpr (is_map_v<TMap>) {
+            for( size_t n = 0 ; n < hdr->count ; ++n ) {
+                typename TMap::key_type k;
+                typename TMap::mapped_type e;
+                *this >> &k;
+                *this >> &e;
+                (*map)[k] = e;
+            }
+        }
+    }
 
     template <typename TContainer>
     void read_container(ElemHeader* hdr, TContainer* c) {

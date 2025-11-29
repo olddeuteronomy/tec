@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2025-11-26 15:12:52 by magnolia>
+# Time-stamp: <Last changed 2025-11-29 14:25:23 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4

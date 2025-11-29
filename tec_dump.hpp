@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-27 13:47:25 by magnolia>
+// Time-stamp: <Last changed 2025-11-29 14:12:40 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -53,10 +53,8 @@ struct Dump {
         }
         os << "|\n";
 
-        const char* byte = dst;
-        char fill[3]{' ', ' ', '\0'};
-
         // For all rows.
+        const char* byte = dst;
         for (size_t base = 0; base < length; base += bytes_per_line) {
             size_t n = std::min(bytes_per_line, length - base);
 
@@ -67,9 +65,8 @@ struct Dump {
             for (size_t col = 0; col < n; ++col) {
                 int c = *byte++ & 0xFF;
                 if (32 < c && c < 127) {
-                    fill[1] = c;
-                    os << std::setw(2) << std::setfill(' ');
-                    os << fill;
+                    os << std::dec << std::setw(2) << std::setfill(' ')
+                       << char(c);
                 }
                 else {
                     os << std::hex << std::setw(2) << std::setfill('0')

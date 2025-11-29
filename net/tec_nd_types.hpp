@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-28 18:27:41 by magnolia>
+// Time-stamp: <Last changed 2025-11-29 10:36:08 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -73,10 +73,12 @@ struct NdTypes {
         static constexpr Tag SByte{(32 | Meta::Scalar | Meta::Sequence)};
         static constexpr Tag SChar{(33 | Meta::Scalar | Meta::Sequence)};
         static constexpr Tag SWChar{(34 | Meta::Scalar | Meta::Sequence)};
-        // Flat container.
+        // Containers.
         static constexpr Tag Container{64};
+        static constexpr Tag Map{65};
+
         // Serizalizable object.
-        static constexpr Tag Object{65};
+        static constexpr Tag Object{80};
     };
 
 #pragma pack(push, 1)
@@ -174,6 +176,11 @@ struct NdTypes {
     ElemHeader get_container_info(const TContainer& c)
         { return {Tags::Container, 0, static_cast<Size>(c.size())}; }
 
+    // Map.
+    template <typename TMap>
+    ElemHeader get_map_info(const TMap& m)
+        { return {Tags::Map, 0, static_cast<Size>(m.size())}; }
+
     // Serializable object.
     template <typename TObject>
     ElemHeader get_object_info(const TObject&)
@@ -193,6 +200,9 @@ struct NdTypes {
         }
         else if constexpr (is_serializable_v<T>) {
             return get_object_info(val);
+        }
+        else if constexpr (is_map_v<T>) {
+            return get_map_info(val);
         }
         else if constexpr (is_container_v<T>) {
             return get_container_info(val);

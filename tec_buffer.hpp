@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-27 14:09:51 by magnolia>
+// Time-stamp: <Last changed 2025-11-29 12:34:14 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -80,7 +80,7 @@ private:
     size_t calc_required_capacity(long pos, size_t len) {
        return buffer_.capacity()
                 + blk_size_
-                + ((pos_ + len) / blk_size_) * blk_size_;
+                + ((pos + len) / blk_size_) * blk_size_;
     }
 
 public:

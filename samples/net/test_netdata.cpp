@@ -26,23 +26,30 @@ SOFTWARE.
 #include <iostream>
 #include <ostream>
 #include <string>
+#include <list>
+#include <unordered_map>
 
 #include "tec/tec_dump.hpp"
 #include "tec/net/tec_net_data.hpp"
 
 
-std::ostream& operator << (std::ostream& os, const std::list<int>& c) {
-    bool first{true};
+template <typename T>
+std::ostream& operator << (std::ostream& os, const std::list<T>& c) {
+    os << "[";
     for( const auto& e: c ) {
-        if( first ) {
-            os << "[\n";
-            first = false;
-        } else {
-            os << ",\n";
-        }
-        os << "\t" << e;
+        os << "\n\t" << e;
     }
     os << "\n]";
+    return os;
+}
+
+template <typename K, typename V>
+std::ostream& operator << (std::ostream& os, const std::unordered_map<K, V>& m) {
+    os << "(";
+    for( const auto& [k, v]: m) {
+        os << "\n\t" << k << ": " << v;
+    }
+    os << "\n)";
     return os;
 }
 
@@ -50,9 +57,9 @@ std::ostream& operator << (std::ostream& os, const std::list<int>& c) {
 struct Person {
     constexpr const bool serializable() { return true; }
 
+    short age;
     std::string name;
     std::string surname;
-    short age;
 
     tec::NetData& store(tec::NetData& nd) const {
         nd
@@ -71,6 +78,16 @@ struct Person {
             ;
         return nd;
     }
+
+    friend std::ostream& operator << (std::ostream& os, const Person& p) {
+        os
+            << "{"
+            << "\n\t" << p.age
+            << ",\n\t\"" << p.name << "\""
+            << ",\n\t\"" << p.surname << "\""
+            << "\n}\n";
+        return os;
+    }
 };
 
 
@@ -87,6 +104,7 @@ struct Payload {
     long double d128;
     tec::Bytes bs;
     bool b;
+    std::unordered_map<int, Person> map;
 
     void store(tec::NetData& nd) const {
       nd
@@ -100,6 +118,7 @@ struct Payload {
           << d128
           << bs
           << b
+          << map
           ;
     }
 
@@ -115,22 +134,25 @@ struct Payload {
             >> &d128
             >> &bs
             >> &b
+            >> &map
             ;
     }
 
-    void dump(std::ostream& os) {
+    friend std::ostream& operator <<(std::ostream& os, const Payload& pld) {
         os
-            << "list=" << list << "\n"
-            << "i32= " << i32 << "\n"
-            << "u64= " << u64 << "\n"
-            << "str= '" << str << "'\n"
-            << "f32= " << f32 << "\n"
-            << "d64= " << d64 << "\n"
-            << "p  = " << "{\"" << p.name << " " << p.surname << "\", " << p.age << "}\n"
-            << "d128=" << d128 << "\n"
-            << "bs=  " << bs.data() << "\n"
-            << "b=   " << b << "\n"
+            << "list=" << pld.list << "\n"
+            << "i32= " << pld.i32 << "\n"
+            << "u64= " << pld.u64 << "\n"
+            << "str= '" << pld.str << "'\n"
+            << "f32= " << pld.f32 << "\n"
+            << "d64= " << pld.d64 << "\n"
+            << "Person=" << pld.p
+            << "d128=" << pld.d128 << "\n"
+            << "bs=  " << pld.bs.data() << "\n"
+            << "b=   " << pld.b << "\n"
+            << "Persons= " << pld.map << "\n"
             ;
+        return os;
     }
 };
 
@@ -145,8 +167,8 @@ void save_payload(Payload& pld, tec::NetData& nd) {
     nd << pld;
 
     std::cout << "\n-------- STORE --------\n";
-    pld.dump(std::cout);
-    std::cout << std::string(23, '-') << "\nTotal size=" << nd.size() << "\n";
+    std::cout << pld;
+    std::cout << std::string(23, '-') << "\nsize=" << nd.size() << "\n";
 
 }
 
@@ -156,7 +178,7 @@ void restore_payload(tec::NetData& nd) {
     nd >> &pld;
 
     std::cout << "\n-------- LOAD ---------\n";
-    pld.dump(std::cout);
+    std::cout << pld;
 
     nd.rewind();
 
@@ -169,7 +191,7 @@ void restore_payload(tec::NetData& nd) {
         << "\n";
 
     // Dump
-    tec::Dump::print<>(std::cout, (const char*)nd.data(), nd.size());
+    tec::Dump::print(std::cout, static_cast<const char*>(nd.data()), nd.size());
     std::cout << std::string(72, '-') << "\nTotal size (w/header)=" << nd.total_size() << "\n";
 }
 
@@ -181,6 +203,12 @@ int main() {
     std::cout << "Size of long double=" << sizeof(long double) << "\n\n";
 
     char hello[] = "Hello!\0";
+    std::unordered_map<int, Person> persons = {
+        {1256, {31, "John", "Smith"}},
+        {78, {39, "Harry", "Long"}},
+        {375, {67, "Kevin", "Longsdale"}},
+    };
+
     tec::NetData nd;
 
     Payload pld {
@@ -190,10 +218,11 @@ int main() {
         , "This is a string"
         , 3.14f
         , 2.78
-        , {"John", "Dow", 61}
+        , {61, "John", "Dow"}
         , 1.123456e102
         , {hello, strlen(hello) + 1}
         , true
+        , persons
     };
 
     save_payload(pld, nd);
