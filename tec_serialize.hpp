@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-25 21:26:33 by magnolia>
+// Time-stamp: <Last changed 2025-11-30 00:51:20 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -41,5 +41,16 @@ struct is_serializable<T,
 template<typename T>
 inline constexpr bool is_serializable_v = is_serializable<T>::value;
 
+
+template <typename TStream>
+struct Serializable {
+    constexpr const bool serializable() { return true; }
+
+    Serializable() = default;
+    virtual ~Serializable() = default;
+
+    virtual TStream& store(TStream& s) const = 0;
+    virtual TStream& load(TStream& s) = 0;
+} ;
 
 } // namespace tec

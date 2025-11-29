@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-29 14:31:52 by magnolia>
+// Time-stamp: <Last changed 2025-11-30 02:24:05 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -38,12 +38,10 @@ SOFTWARE.
 #include <type_traits>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_trace.hpp"
 #include "tec/tec_buffer.hpp"
 #include "tec/tec_container.hpp"
 #include "tec/tec_serialize.hpp"
 #include "tec/net/tec_nd_types.hpp"
-#include "tec/tec_trace.hpp"
 
 
 #ifdef __TEC_GNUC__
@@ -138,8 +136,7 @@ protected:
             size_t cur_pos = data_.tell();
             // Write all elements of a container.
             for( const auto& [key, value]: map ) {
-                *this << key;
-                *this << value;
+                *this << key << value;
             }
             auto bytes_written = data_.tell() - cur_pos;
             // Set actual container size.
@@ -169,7 +166,7 @@ protected:
 
     template <typename TObject>
     size_t write_object(ElemHeader* hdr, const TObject& obj) {
-        if constexpr (tec::is_serializable_v<TObject>) {
+        if constexpr (is_serializable_v<TObject>) {
             ElemHeader* hdr_ptr = (ElemHeader*)data_.at(data_.tell());
             data_.write(hdr, sizeof(ElemHeader));
             size_t cur_pos = data_.tell();
@@ -184,18 +181,20 @@ protected:
         return 0;
     }
 
+    virtual size_t write_long_double_64(ElemHeader* hdr, const double* d64) {
+        double dst[2]{*d64, 0.0};
+        data_.write(dst, hdr->size);
+        return hdr->size;
+    }
+
     virtual size_t write_scalar(ElemHeader* hdr, const void* p) {
         data_.write(hdr, sizeof(ElemHeader));
-        const void* dst = p;
-        if( hdr->tag == Tags::F128 ) {
-            // On Windows, sizeof(long double) == sizeof(double) == 8
-            if( sizeof(long double) == 8 ) {
-                double d[2]{0.0, 0.0};
-                d[0] = *(double*)p;
-                dst = d;
-            }
+        if(sizeof(long double) == 8 && hdr->tag == Tags::F128) {
+            // On Windows, sizeof(long double) == sizeof(double) == 8,
+            // but we always use 16-byte for storing long double.
+            return write_long_double_64(hdr, static_cast<const double*>(p));
         }
-        data_.write(dst, hdr->size);
+        data_.write(p, hdr->size);
         return hdr->size;
     }
 
@@ -221,13 +220,13 @@ protected:
 public:
 
     template <typename T>
-    NetData& operator >> (T* val) {
+    NetData& operator >> (T& val) {
         ElemHeader hdr;
         data_.read(&hdr, sizeof(ElemHeader));
         // Object.
         if constexpr (is_serializable_v<T>) {
             if( hdr.tag == Tags::Object ) {
-                val->load(std::ref(*this));
+                val.load(std::ref(*this));
             }
         }
         // Map.
@@ -245,7 +244,7 @@ public:
         }
         // Scalar.
         else {
-            read(&hdr, val);
+            read(&hdr, &val);
         }
         return *this;
     }
@@ -253,30 +252,27 @@ public:
 protected:
 
     template <typename TMap>
-    void read_map(ElemHeader* hdr, TMap* map) {
-        TEC_ENTER("read_map");
-        TEC_TRACE("count={}", hdr->count);
+    void read_map(ElemHeader* hdr, TMap& map) {
         if constexpr (is_map_v<TMap>) {
             for( size_t n = 0 ; n < hdr->count ; ++n ) {
                 typename TMap::key_type k;
                 typename TMap::mapped_type e;
-                *this >> &k;
-                *this >> &e;
-                (*map)[k] = e;
+                *this >> k >> e;
+                map[k] = e;
             }
         }
     }
 
     template <typename TContainer>
-    void read_container(ElemHeader* hdr, TContainer* c) {
+    void read_container(ElemHeader* hdr, TContainer& c) {
         if constexpr (
             is_container_v<TContainer>  &&
             !std::is_same_v<TContainer, String>
             ) {
             for( size_t n = 0 ; n < hdr->count ; ++n ) {
                 typename TContainer::value_type e;
-                *this >> &e;
-                c->push_back(e);
+                *this >> e;
+                c.push_back(e);
             }
         }
     }
@@ -296,15 +292,17 @@ protected:
         }
     }
 
+    virtual void read_long_double_64(const ElemHeader* hdr, double* d64) {
+        double d[2]{0.0, 0.0};
+        data_.read(d, hdr->size);
+        *d64 = d[0];
+    }
+
     virtual void read_scalar(const ElemHeader* hdr, void* dst) {
-        if( hdr->tag == Tags::F128 ) {
-            if( sizeof(long double) == 8 ) {
+        if(sizeof(long double) == 8 && hdr->tag == Tags::F128) {
                 // On Windows, sizeof(long double) == sizeof(double) == 8
-                double d[2];
-                data_.read(d, hdr->size);
-                *(long double*)dst = d[0];
+                read_long_double_64(hdr, static_cast<double*>(dst));
                 return;
-            }
         }
         data_.read(dst, hdr->size);
     }

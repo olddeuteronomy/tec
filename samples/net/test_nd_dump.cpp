@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 
-#include "tec/net/tec_net_data.hpp"
+#include "tec/net/tec_nd_types.hpp"
 
 
 namespace tec {
@@ -13,25 +13,27 @@ class NdDump {
 public:
 
 protected:
-    using TagsMap = std::unordered_map<NetData::Tag, const char*>;
+    using TagsMap = std::unordered_map<NdTypes::Tag, const char*>;
 
     inline static TagsMap tag_map = {
-        {NetData::Tags::kI8, "uint8"},
-        {NetData::Tags::kI8 | NetData::Meta::kSigned, "sint8"},
-        {NetData::Tags::kI16, "uint16"},
-        {NetData::Tags::kI16 | NetData::Meta::kSigned, "sint16"},
-        {NetData::Tags::kI32, "uint32"},
-        {NetData::Tags::kI32 | NetData::Meta::kSigned, "sint32"},
-        {NetData::Tags::kI64, "uint64"},
-        {NetData::Tags::kI64 | NetData::Meta::kSigned, "uint64"},
-        {NetData::Tags::kBool, "bool"},
-        {NetData::Tags::kF32, "real32"},
-        {NetData::Tags::kF64, "real64"},
-        {NetData::Tags::kF128, "real128"},
-        {NetData::Tags::kBytes, "bytes"},
-        {NetData::Tags::kString, "string"},
-        {NetData::Tags::kContainer, "container"},
-        {NetData::Tags::kSerializable, "object"},
+        {NdTypes::Tags::I8, "uint8"},
+        {NdTypes::Tags::I8 | NdTypes::Meta::Signed, "sint8"},
+        {NdTypes::Tags::I16, "uint16"},
+        {NdTypes::Tags::I16 | NdTypes::Meta::Signed, "sint16"},
+        {NdTypes::Tags::I32, "uint32"},
+        {NdTypes::Tags::I32 | NdTypes::Meta::Signed, "sint32"},
+        {NdTypes::Tags::I64, "uint64"},
+        {NdTypes::Tags::I64 | NdTypes::Meta::Signed, "uint64"},
+        {NdTypes::Tags::IBool, "bool"},
+        {NdTypes::Tags::F32, "real32"},
+        {NdTypes::Tags::F64, "real64"},
+        {NdTypes::Tags::F128, "real128"},
+        {NdTypes::Tags::SByte, "bytes"},
+        {NdTypes::Tags::SChar, "string"},
+        {NdTypes::Tags::SWChar, "wstring"},
+        {NdTypes::Tags::Container, "container"},
+        {NdTypes::Tags::Map, "map"},
+        {NdTypes::Tags::Object, "object"},
     };
 
 };
