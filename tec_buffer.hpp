@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-29 12:34:14 by magnolia>
+// Time-stamp: <Last changed 2025-12-02 03:01:20 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -260,6 +260,6 @@ public:
 
 
 /** @brief Convenience alias for a byte-oriented buffer (`uint8_t`). */
-using Bytes = Buffer<uint8_t>;
+using Bytes = Buffer<std::byte>;
 
 } // namespace tec

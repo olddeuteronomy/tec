@@ -26,39 +26,24 @@ SOFTWARE.
 #include <iostream>
 #include <ostream>
 #include <string>
+#include <sstream>
 #include <list>
 #include <unordered_map>
 
-// #include "tec/tec_dump.hpp"
+#include "tec/tec_dump.hpp"
 #include "tec/net/tec_net_data.hpp"
 #include "tec/tec_serialize.hpp"
 
 
-template <typename T>
-std::ostream& operator << (std::ostream& os, const std::list<T>& c) {
-    os << "[";
-    for( const auto& e: c ) {
-        os << "\n\t" << e;
-    }
-    os << "\n]";
-    return os;
-}
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                             Person
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-template <typename K, typename V>
-std::ostream& operator << (std::ostream& os, const std::unordered_map<K, V>& m) {
-    os << "(";
-    for( const auto& [k, v]: m) {
-        os << "\n\t" << k << ": " << v;
-    }
-    os << "\n)";
-    return os;
-}
-
-
-template <typename TStream>
-struct _Person: tec::Serializable<TStream> {
-    _Person() {}
-    _Person(short _age, const char* _name, const char* _surname)
+struct Person: tec::Serializable {
+    Person() {}
+    Person(short _age, const char* _name, const char* _surname)
         : age{_age}
         , name{_name}
         , surname{_surname}
@@ -68,7 +53,7 @@ struct _Person: tec::Serializable<TStream> {
     std::string name;
     std::string surname;
 
-    TStream& store(TStream& nd) const override {
+    tec::NetData& store(tec::NetData& nd) const override {
         nd
             << age
             << name
@@ -77,7 +62,7 @@ struct _Person: tec::Serializable<TStream> {
         return nd;
     }
 
-    TStream& load(TStream& nd) override {
+    tec::NetData& load(tec::NetData& nd) override {
         nd
             >> age
             >> name
@@ -86,22 +71,30 @@ struct _Person: tec::Serializable<TStream> {
         return nd;
     }
 
-    friend std::ostream& operator << (std::ostream& os, const _Person& p) {
-        os
-            << "{"
-            << "\n\t" << p.age
-            << ",\n\t\"" << p.name << "\""
-            << ",\n\t\"" << p.surname << "\""
-            << "\n}\n";
+    friend std::ostream& operator << (std::ostream& os, const Person& p) {
+        os << p.json_object(p);
         return os;
+    }
+
+    std::string to_json() const {
+        std::ostringstream os;
+        os
+            << this->json(age, "age") << sep
+            << this->json_str(name, "name") << sep
+            << this->json_str(surname, "surname")
+            ;
+        return os.str();
     }
 };
 
-using Person = _Person<tec::NetData>;
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                         Payload
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-template <typename TStream>
-struct _Payload: tec::Serializable<TStream> {
+struct Payload: tec::Serializable {
 
     std::list<int> list;
     int i32;
@@ -115,7 +108,7 @@ struct _Payload: tec::Serializable<TStream> {
     bool b;
     std::unordered_map<int, Person> map;
 
-    TStream& store(TStream& nd) const override {
+    tec::NetData& store(tec::NetData& nd) const override {
       nd
           << list
           << i32
@@ -132,7 +125,7 @@ struct _Payload: tec::Serializable<TStream> {
       return nd;
     }
 
-    TStream& load(TStream& nd) override {
+    tec::NetData& load(tec::NetData& nd) override {
         nd
             >> list
             >> i32
@@ -149,30 +142,36 @@ struct _Payload: tec::Serializable<TStream> {
         return nd;
     }
 
-    friend std::ostream& operator <<(std::ostream& os, const _Payload& pld) {
-        os
-            << "list=" << pld.list << "\n"
-            << "i32= " << pld.i32 << "\n"
-            << "u64= " << pld.u64 << "\n"
-            << "str= '" << pld.str << "'\n"
-            << "f32= " << pld.f32 << "\n"
-            << "d64= " << pld.d64 << "\n"
-            << "Person=" << pld.p
-            << "d128=" << pld.d128 << "\n"
-            << "bs=  " << pld.bs.data() << "\n"
-            << "b=   " << pld.b << "\n"
-            << "Persons= " << pld.map << "\n"
-            ;
+
+    friend std::ostream& operator << (std::ostream& os, const Payload& p) {
+        os << p.json_object(p);
         return os;
+    }
+
+    std::string to_json() const {
+        std::ostringstream os;
+        os
+            << this->json_container(list, "list") << sep
+            << this->json(i32, "i32") << sep
+            << this->json(u64, "u64") << sep
+            << this->json_str(str, "str") << sep
+            << this->json(f32, "f32") << sep
+            << this->json(d64, "d64") << sep
+            << this->json_object(p, "person") << sep
+            << this->json(d128, "d128") << sep
+            // << "bs: " << this->bs.data() << ", "
+            << this->json(b, "b") << sep
+            << this->json_map(map, "persons")
+            ;
+        return os.str();
     }
 };
 
-using Payload = _Payload<tec::NetData>;
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                           TEST
+*                               TEST
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -180,7 +179,7 @@ void save_payload(const Payload& pld, tec::NetData& nd) {
     nd << pld;
 
     std::cout << "\n-------- STORE --------\n";
-    std::cout << pld;
+    std::cout << pld << "\n";
     std::cout << std::string(23, '-') << "\nsize=" << nd.size() << "\n";
 
 }
@@ -191,7 +190,7 @@ void restore_payload(tec::NetData& nd) {
     nd >> pld;
 
     std::cout << "\n-------- LOAD ---------\n";
-    std::cout << pld;
+    std::cout << pld << "\n";
 
     // Header
     tec::NetData::Header hdr = nd.header();

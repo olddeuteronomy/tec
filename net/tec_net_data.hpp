@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-30 02:24:05 by magnolia>
+// Time-stamp: <Last changed 2025-12-01 12:18:30 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -113,15 +113,16 @@ public:
         else if(hdr.tag & Meta::Scalar) {
             write_scalar(&hdr, &val);
         }
+        else if(hdr.tag == Tags::Object) {
+            write_object(&hdr, val);
+        }
         else if(hdr.tag == Tags::Map) {
             write_map(&hdr, val);
         }
         else if(hdr.tag == Tags::Container) {
             write_container(&hdr, val);
         }
-        else if(hdr.tag == Tags::Object) {
-            write_object(&hdr, val);
-        }
+
         hdr_ptr_->size = data_.tell() - sizeof(Header);
         return *this;
     }

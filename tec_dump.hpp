@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-29 14:12:40 by magnolia>
+// Time-stamp: <Last changed 2025-12-02 02:53:17 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -29,14 +29,14 @@ SOFTWARE.
 #include <iostream>
 #include <iomanip>
 #include <cctype>
+#include <ostream>
 
 
 namespace tec {
 
 struct Dump {
 
-    template <typename TStream>
-    static void print(TStream& os, const char* dst, size_t length) {
+    static void print(std::ostream& os, const char* dst, size_t length) {
         constexpr size_t bytes_per_line = 32;
 
         // Header: decimal column numbers, 2 digits, padded with 0

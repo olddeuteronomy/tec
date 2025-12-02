@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-30 00:51:20 by magnolia>
+// Time-stamp: <Last changed 2025-12-02 02:51:22 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,7 +25,11 @@ SOFTWARE.
 
 #pragma once
 
+#include <ostream>
+#include <sstream>
+#include <string>
 #include <type_traits>
+
 
 namespace tec {
 
@@ -42,15 +46,89 @@ template<typename T>
 inline constexpr bool is_serializable_v = is_serializable<T>::value;
 
 
-template <typename TStream>
+// Forward reference.
+class NetData;
+
 struct Serializable {
-    constexpr const bool serializable() { return true; }
+    constexpr bool serializable() { return true; }
+    static constexpr const char* sep{", "};
 
     Serializable() = default;
     virtual ~Serializable() = default;
 
-    virtual TStream& store(TStream& s) const = 0;
-    virtual TStream& load(TStream& s) = 0;
-} ;
+    virtual NetData& store(NetData& s) const = 0;
+    virtual NetData& load(NetData& s) = 0;
+
+
+    template <typename TContainer>
+    static std::string json_container(const TContainer& c, const char* name = nullptr) {
+        std::ostringstream os;
+        bool first{true};
+        if(name) os << name << ": ";
+        os << "[";
+        for( const auto& e: c ) {
+            if(first) {
+                os << e;
+                first = false;
+            }
+            else {
+                os << ", " << e;
+            }
+        }
+        os << "]";
+        return os.str();
+    }
+
+    template <typename TMap>
+    static std::string json_map(const TMap& m, const char* name = nullptr) {
+        std::ostringstream os;
+        bool first{true};
+        if(name) os << name << ": ";
+        os << "{";
+        for( const auto& [k, v]: m) {
+            if(first) {
+                os << k << ": " << v;
+                first = false;
+            }
+            else {
+                os << ", " << k << ": " << v;
+
+            }
+        }
+        os << "}";
+        return os.str();
+    }
+
+    template <typename TObject>
+    static std::string json_object(const TObject& obj, const char* name = nullptr) {
+        std::ostringstream os;
+        if(name) os << name << ": ";
+        os << "{" << obj.to_json() << "}";
+        return os.str();
+    }
+
+    static std::string json_str(const std::string& val, const char* name = nullptr) {
+        std::ostringstream os;
+        if(name) os << name << ": ";
+        os <<  "\"" << val << "\"";
+        return os.str();
+    }
+
+    static std::string json(const bool& val, const char* name = nullptr) {
+        std::ostringstream os;
+        if(name) os << name << ": ";
+        os << (val ? "true" : "false");
+        return os.str();
+    }
+
+    template <typename T>
+    static std::string json(const T& val, const char* name = nullptr) {
+        std::ostringstream os;
+        if(name) os << name << ": ";
+        os << val;
+        return os.str();
+    }
+};
+
 
 } // namespace tec

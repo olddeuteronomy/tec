@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-29 10:36:08 by magnolia>
+// Time-stamp: <Last changed 2025-12-01 12:43:55 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -46,6 +46,7 @@ struct NdTypes {
 
     using Bool = uint8_t;
     using String = std::string;
+    using Blob = Bytes;
 
     struct Meta {
         // First 8 bits 0..7 (<=255) are reserved to hold an element type.
@@ -189,7 +190,10 @@ struct NdTypes {
     // Generic types.
     template <typename T>
     ElemHeader get_info(const T& val) {
-        if constexpr (std::is_arithmetic_v<T>) {
+        if constexpr (is_serializable_v<T>) {
+            return get_object_info(val);
+        }
+        else if constexpr (std::is_arithmetic_v<T>) {
             return get_scalar_info(val);
         }
         else if constexpr (
@@ -197,9 +201,6 @@ struct NdTypes {
             std::is_same_v<T, Bytes>
             ) {
             return get_seq_info(val);
-        }
-        else if constexpr (is_serializable_v<T>) {
-            return get_object_info(val);
         }
         else if constexpr (is_map_v<T>) {
             return get_map_info(val);
