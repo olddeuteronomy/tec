@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-03 16:06:41 by magnolia>
+// Time-stamp: <Last changed 2025-12-04 01:03:03 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -45,7 +45,39 @@ SOFTWARE.
 
 namespace tec {
 
-inline constexpr std::array<char, 2> to_hex_chars(std::byte value) {
+/**
+ * @brief Converts a byte to a 2-character representation suitable for hex dumps.
+ *
+ * Returns a 2-element array containing either:
+ * - The two hexadecimal digits (uppercase) representing the byte value, or
+ * - The literal ASCII character preceded by a space, **but only for printable ASCII characters**
+ *   in the range 0x21–0x7E (`!` to `~`).
+ *   Space (0x20) is deliberately treated as non-printable and rendered in hex.
+ *
+ * This format is commonly used in classic hex dump tools (e.g. `hexdump -C`, `xxd`, debug output)
+ * where printable characters are shown directly and everything else in hex.
+ *
+ * @param value The byte to convert.
+ *
+ * @return std::array<char, 2>
+ *         A fixed-size array with two characters:
+ *         - For printable ASCII (except space): `{ ' ', actual_char }`
+ *         - For all other values (including space, control chars, and high bytes): `{ '0'..'F', '0'..'F' }`
+ *
+ * @par Examples
+ * @code
+ *     to_hex_chars(std::byte{65});   // 'A'  → {' ', 'A'}
+ *     to_hex_chars(std::byte{32});   // ' '  → {'2', '0'}   (space is forced to hex)
+ *     to_hex_chars(std::byte{10});   // '\n' → {'0', 'A'}
+ *     to_hex_chars(std::byte{255});  // 0xFF → {'F', 'F'}
+ * @endcode
+ *
+ * @note The function is `constexpr` and `inline`, making it usable in both
+ *       runtime and compile-time contexts with zero overhead.
+ *
+ * @see as_hex()
+ */
+inline constexpr std::array<char, 2> to_hex_chars(std::byte value) noexcept {
     constexpr char table[] = "0123456789ABCDEF";
     int i = std::to_integer<int>(value);
     if(0x20 < i && i < 0x7F) {
@@ -53,7 +85,7 @@ inline constexpr std::array<char, 2> to_hex_chars(std::byte value) {
         return {' ', char(i & 0xFF)};
     }
     else {
-        // Non-printable
+        // Non-printable.
         return { table[i >> 4], table[(i & 0x0F)] };
     }
 }
@@ -62,7 +94,7 @@ inline constexpr std::array<char, 2> to_hex_chars(std::byte value) {
 /**
  * @brief A byte buffer class with stream-like read/write semantics.
  *
- * The `Buffer<T>` class provides a dynamically resizing buffer for sequential
+  * The `Bytes` class provides a dynamically resizing buffer for sequential
  * reading and writing of elements of type `std::byte`. It mimics the behavior of file
  * streams using `seek`, `tell`, `read`, and `write` operations. The buffer grows
  * in blocks of a configurable size to minimize reallocations.
@@ -268,6 +300,41 @@ public:
     }
 
 
+    /**
+     * @brief Returns a human-readable hex+ASCII dump string.
+     *
+     * Each byte is represented by exactly two characters:
+     * - Printable ASCII characters in the range 0x21–0x7E (`!` to `~`)
+     *   are shown as space + the character itself.
+     * - All other bytes (including space 0x20, control characters, DEL,
+     *   and values ≥ 0x7F) are shown as two uppercase hexadecimal digits.
+     *
+     * This format is extremely useful for debugging binary data,
+     * network packets, or memory contents, because it makes text-like
+     * regions immediately recognizable while still showing exact byte
+     * values.
+     *
+     * @return std::string
+     *         A string of length exactly `2 * size()`,
+     *         containing the mixed hex/ASCII representation.
+     *
+     * @par Complexity
+     *      O(N) where N = `size()`, with a very tight constant factor.
+     *
+     * @par Example
+     * @code
+     *     const char hello[] = "Hello\x01\x02World\xFF\0";
+     *     Bytes data(hello, strlen(hello));
+     *     // data contains: 48 65 6C 6C 6F 01 02 57 6F 72 6C 64 FF
+     *     std::cout << data.as_hex() << '\n';
+     *     // Output: " H e l l o010203 W o r l dFF"
+     * @endcode
+     *
+     * @note Space (0x20) is deliberately rendered as hex `"20"`, not as `' ' + ' '`,
+     *       which matches classic hex dump tools and avoids ambiguity.
+     *
+     * @see to_hex_chars()
+     */
     std::string as_hex() const {
         std::ostringstream os;
         auto ptr = data();

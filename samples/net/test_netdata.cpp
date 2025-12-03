@@ -31,8 +31,8 @@ SOFTWARE.
 #include <unordered_map>
 
 #include "tec/tec_dump.hpp"
-#include "tec/net/tec_net_data.hpp"
 #include "tec/tec_serialize.hpp"
+#include "tec/net/tec_net_data.hpp"
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -76,7 +76,7 @@ struct Person: tec::Serializable {
         return os;
     }
 
-    std::string to_json() const {
+    std::string to_json() const override {
         std::ostringstream os;
         os
             << this->json(age, "age") << sep
@@ -148,7 +148,7 @@ struct Payload: tec::Serializable {
         return os;
     }
 
-    std::string to_json() const {
+    std::string to_json() const override {
         std::ostringstream os;
         os
             << this->json_container(list, "list") << sep
@@ -159,7 +159,7 @@ struct Payload: tec::Serializable {
             << this->json(d64, "d64") << sep
             << this->json(p, "person") << sep
             << this->json(d128, "d128") << sep
-            // << "bs: " << this->bs.data() << ", "
+            << this->json(bs, "bytes") << sep
             << this->json(b, "b") << sep
             << this->json(map, "persons")
             ;
@@ -200,7 +200,8 @@ void restore_payload(tec::NetData& nd) {
         << "\nSize:    " << hdr.size
         << "\n";
 
-    // TODO: valgrind emitted errors in tec::Dump::print!
+    // If compiled with `g++ -O2` v.13.3, valgrind reports
+    // "Use of uninitialised value of size 8".
     std::cout << tec::Dump::dump_as_table(nd.bytes()) << "\n";
     std::cout << std::string(72, '-')
               << "\nTotal size (w/header)=" << nd.total_size() << "\n";
@@ -210,7 +211,7 @@ void restore_payload(tec::NetData& nd) {
 int main() {
     tec::NetData nd;
 
-    char hello[] = "Hello!\0";
+    const char hello[] = "Hello\x01\x02World\xFF\x00";
     std::unordered_map<int, Person> persons = {
         {1256, {31, "Mary", "Smith"}},
         {78, {39, "Harry", "Long"}},
@@ -221,12 +222,12 @@ int main() {
     pld.list = {1, 2, 3, 4};
     pld.i32 = 32;
     pld.u64 = 1767623391515;
-    pld.str = "This is a string";
+    pld.str = "This is a UTF-8 string 😀";
     pld.f32 = 3.14f;
     pld.d64 = 2.78;
     pld.p = {61, "John", "Dow"};
     pld.d128 = 1.123456e102;
-    pld.bs = {hello, strlen(hello) + 1};
+    pld.bs = {hello, strlen(hello)};
     pld.b = true;
     pld.map = persons;
 

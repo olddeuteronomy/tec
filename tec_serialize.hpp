@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-03 13:13:38 by magnolia>
+// Time-stamp: <Last changed 2025-12-04 01:22:56 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -30,6 +30,7 @@ SOFTWARE.
 #include <string>
 #include <type_traits>
 
+#include "tec/tec_bytes.hpp"
 #include "tec/tec_container.hpp"
 
 
@@ -73,10 +74,19 @@ struct Serializable {
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+    virtual std::string to_json() const = 0;
+
     static std::string json(const std::string& val, const char* name = nullptr) {
         std::ostringstream os;
         if(name) os << name << ": ";
         os <<  "\"" << val << "\"";
+        return os.str();
+    }
+
+    static std::string json(const Bytes& val, const char* name = nullptr) {
+        std::ostringstream os;
+        if(name) os << name << ": ";
+        os <<  "\"" << val.as_hex() << "\"";
         return os.str();
     }
 

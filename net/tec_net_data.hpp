@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-03 16:24:10 by magnolia>
+// Time-stamp: <Last changed 2025-12-04 01:53:02 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -44,14 +44,7 @@ SOFTWARE.
 #include "tec/net/tec_nd_types.hpp"
 
 
-#ifdef __TEC_GNUC__
-// Something wrong with g++ 13.3
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#endif
-
-
 namespace tec {
-
 
 class NetData: public NdTypes {
 
@@ -307,11 +300,12 @@ protected:
 
     virtual void read_scalar(const ElemHeader* hdr, void* dst) {
         if(sizeof(long double) == 8 && hdr->tag == Tags::F128) {
-                // On Windows, sizeof(long double) == sizeof(double) == 8
-                read_long_double_64(hdr, static_cast<double*>(dst));
-                return;
+            // On Windows, sizeof(long double) == sizeof(double) == 8
+            read_long_double_64(hdr, static_cast<double*>(dst));
         }
-        data_.read(dst, hdr->size);
+        else {
+            data_.read(dst, hdr->size);
+        }
     }
 
     virtual void read_sequence(const ElemHeader* hdr, void* dst) {
