@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-01 12:43:55 by magnolia>
+// Time-stamp: <Last changed 2025-12-03 13:02:09 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -31,7 +31,7 @@ SOFTWARE.
 #include <type_traits>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_buffer.hpp"
+#include "tec/tec_bytes.hpp"
 #include "tec/tec_container.hpp"
 #include "tec/tec_serialize.hpp"
 

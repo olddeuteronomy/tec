@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-02 02:51:22 by magnolia>
+// Time-stamp: <Last changed 2025-12-03 13:13:38 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -30,6 +30,8 @@ SOFTWARE.
 #include <string>
 #include <type_traits>
 
+#include "tec/tec_container.hpp"
+
 
 namespace tec {
 
@@ -56,15 +58,39 @@ struct Serializable {
     Serializable() = default;
     virtual ~Serializable() = default;
 
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     *                       Binary serialization
+     *
+     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
     virtual NetData& store(NetData& s) const = 0;
     virtual NetData& load(NetData& s) = 0;
 
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     *                       JSON serialization
+     *
+     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+    static std::string json(const std::string& val, const char* name = nullptr) {
+        std::ostringstream os;
+        if(name) os << name << ": ";
+        os <<  "\"" << val << "\"";
+        return os.str();
+    }
+
+    static std::string json(const bool& val, const char* name = nullptr) {
+        std::ostringstream os;
+        if(name) os << name << ": ";
+        os << (val ? "true" : "false");
+        return os.str();
+    }
 
     template <typename TContainer>
     static std::string json_container(const TContainer& c, const char* name = nullptr) {
         std::ostringstream os;
         bool first{true};
-        if(name) os << name << ": ";
         os << "[";
         for( const auto& e: c ) {
             if(first) {
@@ -83,7 +109,6 @@ struct Serializable {
     static std::string json_map(const TMap& m, const char* name = nullptr) {
         std::ostringstream os;
         bool first{true};
-        if(name) os << name << ": ";
         os << "{";
         for( const auto& [k, v]: m) {
             if(first) {
@@ -102,22 +127,7 @@ struct Serializable {
     template <typename TObject>
     static std::string json_object(const TObject& obj, const char* name = nullptr) {
         std::ostringstream os;
-        if(name) os << name << ": ";
         os << "{" << obj.to_json() << "}";
-        return os.str();
-    }
-
-    static std::string json_str(const std::string& val, const char* name = nullptr) {
-        std::ostringstream os;
-        if(name) os << name << ": ";
-        os <<  "\"" << val << "\"";
-        return os.str();
-    }
-
-    static std::string json(const bool& val, const char* name = nullptr) {
-        std::ostringstream os;
-        if(name) os << name << ": ";
-        os << (val ? "true" : "false");
         return os.str();
     }
 
@@ -125,7 +135,19 @@ struct Serializable {
     static std::string json(const T& val, const char* name = nullptr) {
         std::ostringstream os;
         if(name) os << name << ": ";
-        os << val;
+        if constexpr (is_serializable_v<T>) {
+            return json_object(val, name);
+        }
+        else if constexpr (is_map_v<T>) {
+            return json_map(val, name);
+        }
+        else if constexpr (is_container_v<T>) {
+            return json_container(val, name);
+        }
+        else {
+            // Any scalar
+            os << val;
+        }
         return os.str();
     }
 };

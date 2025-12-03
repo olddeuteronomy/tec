@@ -72,7 +72,7 @@ struct Person: tec::Serializable {
     }
 
     friend std::ostream& operator << (std::ostream& os, const Person& p) {
-        os << p.json_object(p);
+        os << p.json(p);
         return os;
     }
 
@@ -80,8 +80,8 @@ struct Person: tec::Serializable {
         std::ostringstream os;
         os
             << this->json(age, "age") << sep
-            << this->json_str(name, "name") << sep
-            << this->json_str(surname, "surname")
+            << this->json(name, "name") << sep
+            << this->json(surname, "surname")
             ;
         return os.str();
     }
@@ -144,7 +144,7 @@ struct Payload: tec::Serializable {
 
 
     friend std::ostream& operator << (std::ostream& os, const Payload& p) {
-        os << p.json_object(p);
+        os << p.json(p);
         return os;
     }
 
@@ -154,14 +154,14 @@ struct Payload: tec::Serializable {
             << this->json_container(list, "list") << sep
             << this->json(i32, "i32") << sep
             << this->json(u64, "u64") << sep
-            << this->json_str(str, "str") << sep
+            << this->json(str, "str") << sep
             << this->json(f32, "f32") << sep
             << this->json(d64, "d64") << sep
-            << this->json_object(p, "person") << sep
+            << this->json(p, "person") << sep
             << this->json(d128, "d128") << sep
             // << "bs: " << this->bs.data() << ", "
             << this->json(b, "b") << sep
-            << this->json_map(map, "persons")
+            << this->json(map, "persons")
             ;
         return os.str();
     }
@@ -201,7 +201,7 @@ void restore_payload(tec::NetData& nd) {
         << "\n";
 
     // TODO: valgrind emitted errors in tec::Dump::print!
-    // tec::Dump::print(std::cout, static_cast<const char*>(nd.data()), nd.size());
+    std::cout << tec::Dump::dump_as_table(nd.bytes()) << "\n";
     std::cout << std::string(72, '-')
               << "\nTotal size (w/header)=" << nd.total_size() << "\n";
 }

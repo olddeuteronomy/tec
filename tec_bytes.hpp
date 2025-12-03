@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-02 03:01:20 by magnolia>
+// Time-stamp: <Last changed 2025-12-03 16:06:41 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,8 +23,8 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 /**
- * @file tec_buffer.hpp
- * @brief A generic binary buffer class with stream-like read/write semantics.
+ * @file tec_bytes.hpp
+ * @brief A byte buffer class with stream-like read/write semantics.
  * @author The Emacs Cat
  * @date 2025-11-14
  */
@@ -33,38 +33,48 @@ SOFTWARE.
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
-#include <stddef.h>
-#include <stdint.h>
+#include <array>
+#include <vector>
+#include <sstream>
+
 #include <stdio.h>
 #include <memory.h>
-
-#include <vector>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 
 
 namespace tec {
 
+inline constexpr std::array<char, 2> to_hex_chars(std::byte value) {
+    constexpr char table[] = "0123456789ABCDEF";
+    int i = std::to_integer<int>(value);
+    if(0x20 < i && i < 0x7F) {
+        // ASCII characters, except SPC.
+        return {' ', char(i & 0xFF)};
+    }
+    else {
+        // Non-printable
+        return { table[i >> 4], table[(i & 0x0F)] };
+    }
+}
+
+
 /**
- * @brief A generic binary buffer class with stream-like read/write semantics.
+ * @brief A byte buffer class with stream-like read/write semantics.
  *
  * The `Buffer<T>` class provides a dynamically resizing buffer for sequential
- * reading and writing of elements of type `T`. It mimics the behavior of file
+ * reading and writing of elements of type `std::byte`. It mimics the behavior of file
  * streams using `seek`, `tell`, `read`, and `write` operations. The buffer grows
  * in blocks of a configurable size to minimize reallocations.
- *
- * @tparam T The element type stored in the buffer (typically `uint8_t` for bytes).
  */
-template <typename T>
-class Buffer {
+class Bytes {
 public:
     /** @brief Default block size for buffer expansion, matches `BUFSIZ` from `<stdio.h>`. */
-    static constexpr const size_t kDefaultBlockSize{BUFSIZ};
+    static constexpr size_t kDefaultBlockSize{BUFSIZ};
 
 private:
     /** @brief Underlying storage for buffer elements. */
-    std::vector<T> buffer_;
+    std::vector<std::byte> buffer_;
 
     /** @brief Size of each allocation block used when expanding the buffer. */
     size_t blk_size_;
@@ -93,14 +103,14 @@ public:
      * @param block_size Size of each growth block. Must be greater than 0.
      *                   Defaults to `kDefaultBlockSize`.
      */
-    explicit Buffer(size_t block_size = kDefaultBlockSize)
+    explicit Bytes(size_t block_size = kDefaultBlockSize)
         : buffer_(block_size)
         , blk_size_{block_size}
         , pos_{0}
         , size_{0}
     {}
 
-    Buffer(const void* src, size_t len, size_t block_size = kDefaultBlockSize)
+    Bytes(const void* src, size_t len, size_t block_size = kDefaultBlockSize)
         : buffer_(block_size)
         , blk_size_{block_size}
         , pos_{0}
@@ -109,21 +119,21 @@ public:
         write(src, len);
     }
 
-    virtual ~Buffer() = default;
+    virtual ~Bytes() = default;
 
-    T* data() {
+    std::byte* data() {
         return buffer_.data();
     }
 
-    const T* data() const {
+    const std::byte* data() const {
         return buffer_.data();
     }
 
-    T* at(size_t pos) {
+    std::byte* at(size_t pos) {
         return &buffer_.at(pos);
     }
 
-    const T* at(size_t pos) const {
+    const std::byte* at(size_t pos) const {
         return &buffer_.at(pos);
     }
 
@@ -226,7 +236,7 @@ public:
             }
             buffer_.reserve(new_cap);
         }
-        memcpy(buffer_.data() + pos_, src, len * sizeof(T));
+        ::memcpy(buffer_.data() + pos_, src, len);
         pos_ += len;
         if( pos_ > size_ ) {
             size_ = pos_;
@@ -252,14 +262,23 @@ public:
             // Reading out of bound.
             return 0;
         }
-        memcpy(dst, buffer_.data() + pos_, len * sizeof(T));
+        ::memcpy(dst, buffer_.data() + pos_, len);
         pos_ += len;
         return len;
     }
+
+
+    std::string as_hex() const {
+        std::ostringstream os;
+        auto ptr = data();
+        for(size_t n = 0 ; n < size() ; ++n, ++ptr) {
+           auto ch = to_hex_chars(*ptr);
+           os << ch[0] << ch[1];
+        }
+        return os.str();
+    }
+
 };
 
-
-/** @brief Convenience alias for a byte-oriented buffer (`uint8_t`). */
-using Bytes = Buffer<std::byte>;
 
 } // namespace tec

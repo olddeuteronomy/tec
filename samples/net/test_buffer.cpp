@@ -1,7 +1,7 @@
 
 #include <iostream>
 
-#include "tec/tec_buffer.hpp"
+#include "tec/tec_bytes.hpp"
 
 
 void print_buffer(const tec::Bytes& buf) {
@@ -21,8 +21,8 @@ int main() {
     print_buffer(buf);
 
     // 2)
-    uint32_t int32{1234};
-    buf.write(&int32, sizeof(uint32_t));
+    unsigned int32{1234};
+    buf.write(&int32, sizeof(unsigned));
     print_buffer(buf);
 
     // 4)
@@ -35,8 +35,8 @@ int main() {
     print_buffer(buf);
 
     // 6)
-    uint32_t int32a{0};
-    buf.read(&int32a, sizeof(uint32_t));
+    unsigned int32a{0};
+    buf.read(&int32a, sizeof(unsigned));
     std::cout << int32a << "\n";
     print_buffer(buf);
 
@@ -51,8 +51,8 @@ int main() {
     // 8)
     buf.seek(0, SEEK_SET);
     print_buffer(buf);
-    uint32_t int32b{0};
-    buf.read(&int32b, sizeof(uint32_t));
+    unsigned int32b{0};
+    buf.read(&int32b, sizeof(unsigned));
     std::cout << int32b << "\n";
     print_buffer(buf);
 

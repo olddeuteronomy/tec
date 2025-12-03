@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-01 12:18:30 by magnolia>
+// Time-stamp: <Last changed 2025-12-03 16:24:10 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -38,7 +38,7 @@ SOFTWARE.
 #include <type_traits>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_buffer.hpp"
+#include "tec/tec_bytes.hpp"
 #include "tec/tec_container.hpp"
 #include "tec/tec_serialize.hpp"
 #include "tec/net/tec_nd_types.hpp"
@@ -67,6 +67,10 @@ public:
     }
 
     virtual ~NetData() = default;
+
+    const Bytes& bytes() const {
+        return data_;
+    }
 
     Header header() const {
         return *hdr_ptr_;
@@ -226,7 +230,7 @@ public:
         data_.read(&hdr, sizeof(ElemHeader));
         // Object.
         if constexpr (is_serializable_v<T>) {
-            if( hdr.tag == Tags::Object ) {
+            if(hdr.tag == Tags::Object) {
                 val.load(std::ref(*this));
             }
         }
@@ -241,7 +245,9 @@ public:
             is_container_v<T>  &&
             !std::is_same_v<T, String>
             ) {
-            read_container(&hdr, val);
+            if(hdr.tag == Tags::Container) {
+                read_container(&hdr, val);
+            }
         }
         // Scalar.
         else {
