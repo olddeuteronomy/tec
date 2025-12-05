@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "tec/tec_dump.hpp"
 #include "tec/tec_serialize.hpp"
+#include "tec/tec_json.hpp"
 #include "tec/net/tec_net_data.hpp"
 
 
@@ -42,6 +43,9 @@ SOFTWARE.
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 struct Person: tec::Serializable {
+    using json = tec::Json;
+    static constexpr auto sep{tec::Json::sep};
+
     Person() {}
     Person(short _age, const char* _name, const char* _surname)
         : age{_age}
@@ -72,16 +76,16 @@ struct Person: tec::Serializable {
     }
 
     friend std::ostream& operator << (std::ostream& os, const Person& p) {
-        os << p.json(p);
+        os << tec::Json{}(p);
         return os;
     }
 
     std::string to_json() const override {
         std::ostringstream os;
         os
-            << this->json(age, "age") << sep
-            << this->json(name, "name") << sep
-            << this->json(surname, "surname")
+            << json{}(age, "age") << sep
+            << json{}(name, "name") << sep
+            << json{}(surname, "surname")
             ;
         return os.str();
     }
@@ -95,6 +99,8 @@ struct Person: tec::Serializable {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 struct Payload: tec::Serializable {
+    using json = tec::Json;
+    static constexpr auto sep{tec::Json::sep};
 
     std::list<int> list;
     int i32;
@@ -144,24 +150,24 @@ struct Payload: tec::Serializable {
 
 
     friend std::ostream& operator << (std::ostream& os, const Payload& p) {
-        os << p.json(p);
+        os << tec::Json{}(p);
         return os;
     }
 
     std::string to_json() const override {
         std::ostringstream os;
         os
-            << this->json_container(list, "list") << sep
-            << this->json(i32, "i32") << sep
-            << this->json(u64, "u64") << sep
-            << this->json(str, "str") << sep
-            << this->json(f32, "f32") << sep
-            << this->json(d64, "d64") << sep
-            << this->json(p, "person") << sep
-            << this->json(d128, "d128") << sep
-            << this->json(bs, "bytes") << sep
-            << this->json(b, "b") << sep
-            << this->json(map, "persons")
+            << json{}(list, "list") << sep
+            << json{}(i32, "i32") << sep
+            << json{}(u64, "u64") << sep
+            << json{}(str, "str") << sep
+            << json{}(f32, "f32") << sep
+            << json{}(d64, "d64") << sep
+            << json{}(p, "person") << sep
+            << json{}(d128, "d128") << sep
+            << json{}(bs, "bytes") << sep
+            << json{}(b, "b") << sep
+            << json{}(map, "persons")
             ;
         return os.str();
     }

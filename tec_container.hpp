@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-28 19:45:29 by magnolia>
+// Time-stamp: <Last changed 2025-12-05 15:46:49 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,33 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
 #pragma once
 
 #include <type_traits>
-#include <vector>
-#include <list>
+
+#include "tec/tec_def.hpp" // IWYU pragma: keep
 
 
 namespace tec {
-
-template<typename T, typename = void>
-struct is_std_vector : std::false_type {};
-
-template<typename T, typename Alloc>
-struct is_std_vector<std::vector<T, Alloc>> : std::true_type {};
-
-template<typename T, typename = void>
-struct is_std_list : std::false_type {};
-
-template<typename T, typename Alloc>
-struct is_std_list<std::list<T, Alloc>> : std::true_type {};
-
-template<typename T>
-inline constexpr bool is_std_vector_v = is_std_vector<T>::value;
-
-template<typename T>
-inline constexpr bool is_std_list_v = is_std_list<T>::value;
 
 
 template<typename T, typename = void>
