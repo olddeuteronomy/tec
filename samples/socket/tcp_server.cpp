@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-11 16:11:41 by magnolia>
+// Time-stamp: <Last changed 2025-12-06 12:50:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,7 +23,7 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
-#include <sys/socket.h>
+// #include <sys/socket.h>
 
 #include <csignal>
 
@@ -36,7 +36,7 @@ SOFTWARE.
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                     Test BSD socket server
+*                     Simplest BSD socket server
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -49,10 +49,10 @@ tec::Signal sig_quit;
 
 tec::Status tcp_server() {
     tec::SocketServerParams params;
-    auto cli{TCPServerWorker::Builder<TCPServerWorker, TCPServer>{}(params)};
+    auto srv{TCPServerWorker::Builder<TCPServerWorker, TCPServer>{}(params)};
 
     // Run it and check for the result.
-    auto status = cli->run();
+    auto status = srv->run();
     if( !status ) {
         tec::println("run(): {}", status);
         return status;
@@ -63,7 +63,7 @@ tec::Status tcp_server() {
     sig_quit.wait();
 
     // Terminate the server
-    status = cli->terminate();
+    status = srv->terminate();
     return status;
 }
 

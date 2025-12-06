@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-06 01:11:33 by magnolia>
+// Time-stamp: <Last changed 2025-12-06 13:20:34 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -66,10 +66,10 @@ namespace tec {
 struct Json {
 
     /// Separator used between array/object elements
-    static constexpr const char* sep{", "};
+    static constexpr char sep[]{", "};
 
     /// Separator used between object key and value
-    static constexpr const char* infix{": "};
+    static constexpr char infix[]{": "};
 
     /**
      * @brief Helper to optionally emit a JSON key name.

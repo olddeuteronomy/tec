@@ -44,7 +44,7 @@ SOFTWARE.
 
 struct Person: tec::Serializable {
     using json = tec::Json;
-    static constexpr auto sep{tec::Json::sep};
+    static constexpr const char* sep{tec::Json::sep};
 
     Person() {}
     Person(short _age, const char* _name, const char* _surname)

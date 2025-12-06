@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-15 09:51:05 by magnolia>
+// Time-stamp: <Last changed 2025-12-06 15:33:55 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -50,13 +50,13 @@ namespace tec {
 
 
 struct SocketParams {
-    static constexpr const char kDefaultAddr[] = "127.0.0.1";   ///!< localhost.
-    static constexpr const char kDefaultPort[] = "8080";        ///!< Test port.
-    static constexpr const int kDefaultFamily{AF_UNSPEC};       ///!< IPv4 or IPv6.
-    static constexpr const int kDefaultSockType{SOCK_STREAM};   ///!< TCP.
-    static constexpr const int kDefaultProtocol{0};             ///!< Any protocol.
-    static constexpr const int kDefaultServerFlags{AI_PASSIVE}; ///!< Server: use local IP.
-    static constexpr const int kDefaultClientFlags{0};          ///!< Client: not set.
+    static constexpr char kDefaultAddr[]{"127.0.0.1"};    ///< localhost.
+    static constexpr char kDefaultPort[]{"8080"};         ///< Test port.
+    static constexpr int kDefaultFamily{AF_UNSPEC};       ///< IPv4 or IPv6.
+    static constexpr int kDefaultSockType{SOCK_STREAM};   ///< TCP.
+    static constexpr int kDefaultProtocol{0};             ///< Any protocol.
+    static constexpr int kDefaultServerFlags{AI_PASSIVE}; ///< Server: use local IP.
+    static constexpr int kDefaultClientFlags{0};          ///< Client: not set.
 
     std::string addr;
     std::string port;
