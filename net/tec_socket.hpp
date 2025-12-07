@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-06 15:33:55 by magnolia>
+// Time-stamp: <Last changed 2025-12-06 23:26:29 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -75,6 +75,12 @@ struct SocketParams {
     {}
 };
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                     Client parameters
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 
 struct SocketClientParams: public SocketParams {
 
@@ -83,10 +89,24 @@ struct SocketClientParams: public SocketParams {
     }
 };
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                         Server parameters
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 
 struct SocketServerParams: public SocketParams  {
+    static constexpr int kModeCharStream{0};
+    static constexpr int kModeNetData{1};
 
-    SocketServerParams() {
+    static constexpr int kDefaultMode{kModeCharStream};
+
+    int mode;
+
+    SocketServerParams()
+        : mode{kDefaultMode}
+    {
         flags = kDefaultServerFlags;
     }
 };

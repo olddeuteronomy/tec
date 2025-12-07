@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-06 12:50:18 by magnolia>
+// Time-stamp: <Last changed 2025-12-07 01:42:16 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,8 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
-// #include <sys/socket.h>
 
 #include <csignal>
 
