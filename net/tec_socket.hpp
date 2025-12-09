@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-09 02:38:09 by magnolia>
+// Time-stamp: <Last changed 2025-12-09 15:58:04 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -112,10 +112,19 @@ struct SocketServerParams: public SocketParams  {
 
     static constexpr int kDefaultMode{kModeCharStream};
 
+    /** The maximum length to which the queue of pending connections for socket fd may
+       grow. If a connection request arrives when the queue is full, the client may receive an error with an
+       indication of ECONNREFUSED or, if the underlying protocol supports retransmission, the request may be
+       ignored so that a later reattempt at connection succeeds.
+     */
+    static constexpr int kDefaultConnQueueSize{4096};
+
     int mode;
+    int queue_size;
 
     SocketServerParams()
         : mode{kDefaultMode}
+        , queue_size{kDefaultConnQueueSize}
     {
         flags = kDefaultServerFlags;
     }
@@ -139,7 +148,7 @@ struct Socket {
     std::string addr;
     int port;
 
-    static Status read_bytes(Bytes& data, Socket* pci, size_t length) {
+    static Status recv(Bytes& data, Socket* pci, size_t length) {
         TEC_ENTER("Socket::recv");
         std::array<char, BUFSIZ> buffer;
         ssize_t received{0};
@@ -186,27 +195,36 @@ struct Socket {
     }
 
 
-    static Status write_bytes(Bytes& data, Socket* pci) {
+    static Status send(Bytes& data, Socket* ps) {
         TEC_ENTER("Socket::send");
 
         // Send data to the client
-        ssize_t sent = write(pci->socketfd, data.data(), data.size());
-        TEC_TRACE("[{}]:{} <-- SEND {} bytes.", pci->addr, pci->port, sent);
+        ssize_t sent = write(ps->socketfd, data.data(), data.size());
+        TEC_TRACE("[{}]:{} <-- SEND {} bytes.", ps->addr, ps->port, sent);
 
         // Check error.
         if (sent < 0) {
-            auto errmsg = format("[{}]:{} socket write error {}.", pci->addr, pci->port, errno);
+            auto errmsg = format("[{}]:{} socket write error {}.", ps->addr, ps->port, errno);
             TEC_TRACE(errmsg.c_str());
             return {errno, errmsg, Error::Kind::NetErr};
         }
         else if (data.size() != static_cast<size_t>(sent)) {
             auto errmsg = format("[{}]:{} socket partial write: {} bytes of {}.",
-                                 pci->addr, pci->port, sent, data.size());
+                                 ps->addr, ps->port, sent, data.size());
             return {EIO, errmsg, Error::Kind::NetErr};
         }
 
         return {};
     }
+
+
+    static Status send_error(Socket* ps){
+        char zero{'\0'};
+        Bytes b;
+        b.write(&zero, sizeof(char));
+        return send(b, ps);
+    }
+
 
 }; // struct Socket
 

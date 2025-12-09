@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-09 02:31:14 by magnolia>
+// Time-stamp: <Last changed 2025-12-09 15:54:59 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -170,7 +170,7 @@ public:
         TEC_ENTER("SocketClient::recv_char");
         Bytes data;
         Socket sock{sockfd_, params_.addr, ::atoi(params_.port.c_str())};
-        auto status = Socket::read_bytes(data, &sock, 0);
+        auto status = Socket::recv(data, &sock, 0);
         reply->str = (const char*)(data.data());
         return status;
     }
@@ -180,7 +180,7 @@ public:
         Bytes data;
         Socket sock{sockfd_, params_.addr, ::atoi(params_.port.c_str())};
         data.write(request->str.c_str(), request->str.size() + 1);
-        auto status = Socket::write_bytes(data, &sock);
+        auto status = Socket::send(data, &sock);
         return status;
     }
 

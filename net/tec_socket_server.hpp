@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-08 15:42:46 by magnolia>
+// Time-stamp: <Last changed 2025-12-09 15:57:34 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -91,116 +91,22 @@ public:
     }
 
 
-    virtual Status set_socket_options(int sockfd) {
-        // Avoid "Address already in use" error
-        int yes{1};
-        if( ::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1 ) {
-            return {EADDRNOTAVAIL, "`setsockopt' SO_REUSEADDR failed"};
-        }
-        return {};
-    }
-
-
-    virtual Socket get_client_info(int client_fd, sockaddr_storage* client_addr) {
-        // Get client IP and port
-        char client_ip[INET6_ADDRSTRLEN];
-        int client_port;
-        if (client_addr->ss_family == AF_INET) {
-            struct sockaddr_in *s = (struct sockaddr_in *)&client_addr;
-            ::inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
-            client_port = ntohs(s->sin_port);
-        } else {
-            struct sockaddr_in6 *s = (struct sockaddr_in6 *)&client_addr;
-            ::inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
-            client_port = ntohs(s->sin6_port);
-        }
-        return {client_fd, client_ip, client_port};
-    }
-
-
     void start(Signal* sig_started, Status* status) override {
         TEC_ENTER("SocketServer::start");
 
-        // Resolve the server address.
-        TEC_TRACE("Resolving host [{}]:{}...", params_.addr, params_.port);
-        addrinfo hints;
-        ::memset(&hints, 0, sizeof(hints));
-        hints.ai_family = params_.family;
-        hints.ai_socktype = params_.socktype;
-        hints.ai_protocol = params_.protocol;
-
-        // getaddrinfo() returns a list of address structures.
-        // Try each address until we successfully bind().
-        addrinfo* servinfo{NULL};
-        int ecode = ::getaddrinfo(params_.addr.c_str(), params_.port.c_str(),
-                                  &hints, &servinfo);
-        if( ecode != 0 ) {
-            std::string emsg{::gai_strerror(ecode)};
-            TEC_TRACE("Host resolving error: {}", emsg);
-            *status = {ecode, emsg, Error::Kind::NetErr};
-            sig_started->set();
-            return;
-        }
-        TEC_TRACE("Host resolved OK.");
-
-        // If socket() (or bind()) fails, we close the socket
-        // and try the next address.
-        addrinfo* p{NULL};
-        int fd{-1};
-        TEC_TRACE("Binding...");
-        for( p = servinfo; p != NULL; p = p->ai_next ) {
-            fd = ::socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-            if( fd == -1 ) {
-                // Try next socket.
-                continue;
-            }
-
-            // Set options.
-            auto option_status = set_socket_options(fd);
-            if( !option_status ) {
-                ::close(fd);
-                ::freeaddrinfo(servinfo);
-                *status = option_status;
-                sig_started->set();
-                return;
-            }
-
-            if( ::bind(fd, p->ai_addr, p->ai_addrlen) != -1 ) {
-                // Success.
-                break;
-            }
-
-            // Try next socket.
-            ::close(fd);
-        }
-
-        // No longer needed.
-        ::freeaddrinfo(servinfo);
-
-        if( p == NULL ) {
-            auto emsg{format(
-                    "Failed to bind to [{}]:{}", params_.addr, params_.port
-                    )};
-            TEC_TRACE(emsg);
-            *status = {EAFNOSUPPORT, emsg, Error::Kind::NetErr};
+        // Resolve the server address and bind the host.
+        *status = resolve_and_bind_host();
+        if (!status->ok()) {
             sig_started->set();
             return;
         }
 
-        // Success.
-        listenfd_ = fd;
-
-        // Start listening.
-        if( listen(listenfd_, 16) == -1 ) {
-            auto emsg{format(
-                    "Failed to listen to [{}]:{}.", params_.addr, params_.port
-                    )};
-            ::close(listenfd_);
-            *status = {EADDRNOTAVAIL, emsg, Error::Kind::NetErr};
+        // Start listening on the host.
+        *status = start_listening();
+        if (!status->ok()) {
             sig_started->set();
             return;
         }
-        TEC_TRACE("Server listening on [{}]:{}.", params_.addr, params_.port);
 
         // Start polling.
         poll(sig_started);
@@ -227,65 +133,188 @@ public:
     }
 
 
-    virtual void poll(Signal* sig_started) {
-        TEC_ENTER("SocketServer::poll");
-        sig_started->set();
-        while (!stop_polling_) {
-            sockaddr_storage client_addr;
-            socklen_t sin_size = sizeof(client_addr);
-            // Wait for incoming connection.
-            int clientfd = ::accept(listenfd_,
-                                    (sockaddr *)&client_addr,
-                                    &sin_size);
-            // Check result.
-            if (clientfd == -1) {
-                std::string err_msg;
-                if( errno == EINVAL || errno == EINTR || errno == EBADF ) {
-                    err_msg = format("Polling interrupted by signal {}.", errno);
-                }
-                else {
-                    err_msg = format("accept() failed with errno={}.", errno);
-                }
-                TEC_TRACE(err_msg);
+    Status process_request(Request request, Reply reply) override {
+        return {Error::Kind::NotImplemented};
+    }
+
+protected:
+
+    virtual Status set_socket_options(int sockfd) {
+        // Avoid "Address already in use" error
+        int yes{1};
+        if( ::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1 ) {
+            return {EADDRNOTAVAIL, "`setsockopt' SO_REUSEADDR failed"};
+        }
+        return {};
+    }
+
+
+    virtual Socket get_socket_info(int client_fd, sockaddr_storage* client_addr) {
+        // Get client IP and port
+        char client_ip[INET6_ADDRSTRLEN];
+        int client_port;
+        if (client_addr->ss_family == AF_INET) {
+            struct sockaddr_in *s = (struct sockaddr_in *)&client_addr;
+            ::inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
+            client_port = ::ntohs(s->sin_port);
+        } else {
+            struct sockaddr_in6 *s = (struct sockaddr_in6 *)&client_addr;
+            ::inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
+            client_port = ::ntohs(s->sin6_port);
+        }
+        return {client_fd, client_ip, client_port};
+    }
+
+
+    virtual Status resolve_and_bind_host() {
+        TEC_ENTER("SocketServer::resolve_and_bind_host");
+
+        // Resolve the server address.
+        TEC_TRACE("Resolving host [{}]:{}...", params_.addr, params_.port);
+        addrinfo hints;
+        ::memset(&hints, 0, sizeof(hints));
+        hints.ai_family = params_.family;
+        hints.ai_socktype = params_.socktype;
+        hints.ai_protocol = params_.protocol;
+
+        // getaddrinfo() returns a list of address structures.
+        // Try each address until we successfully bind().
+        addrinfo* servinfo{NULL};
+        int ecode = ::getaddrinfo(params_.addr.c_str(), params_.port.c_str(),
+                                  &hints, &servinfo);
+        if( ecode != 0 ) {
+            std::string emsg{::gai_strerror(ecode)};
+            TEC_TRACE("Host resolving error: {}", emsg);
+            return {ecode, emsg, Error::Kind::NetErr};
+        }
+        TEC_TRACE("Host resolved OK.");
+
+        // If socket() or bind() fails, we close the socket
+        // and try the next address.
+        addrinfo* p{NULL};
+        int fd{-1};
+        TEC_TRACE("Binding...");
+        for (p = servinfo ; p != NULL ; p = p->ai_next) {
+            fd = ::socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+            if( fd == -1 ) {
+                // Try next socket.
                 continue;
             }
 
-            Socket ci = get_client_info(clientfd, &client_addr);
-            TEC_TRACE("Accepted connection from [{}]:{}.", ci.addr, ci.port);
+            // Set options.
+            auto option_status = set_socket_options(fd);
+            if (!option_status) {
+                ::close(fd);
+                // TODO: should we continue with the next socket here?
+                ::freeaddrinfo(servinfo);
+                return option_status;
+            }
 
-            // Pass the client for further processing.
-            on_received(ci);
+            if (::bind(fd, p->ai_addr, p->ai_addrlen) != -1) {
+                // Success.
+                break;
+            }
+
+            // Try next socket.
+            ::close(fd);
+        }
+
+        // No longer needed.
+        ::freeaddrinfo(servinfo);
+
+        if (p == NULL) {
+            auto emsg = format("Failed to bind to [{}]:{}", params_.addr, params_.port);
+            TEC_TRACE(emsg);
+            return {EAFNOSUPPORT, emsg, Error::Kind::NetErr};
+        }
+
+        // Success.
+        listenfd_ = fd;
+        return {};
+    }
+
+
+    virtual Status start_listening() {
+        TEC_ENTER("SocketServer::start_listening");
+
+        if (listen(listenfd_, params_.queue_size) == -1) {
+            auto emsg = format("Failed to listen to [{}]:{}.", params_.addr, params_.port);
+            ::close(listenfd_);
+            return {errno, emsg, Error::Kind::NetErr};
+        }
+        TEC_TRACE("Server listening on [{}]:{}.", params_.addr, params_.port);
+        return {};
+    }
+
+
+    virtual Status accept_connection(int* clientfd, sockaddr_storage* client_addr) {
+        TEC_ENTER("SocketServer::accept_connection");
+
+        // Wait for incoming connection.
+        socklen_t sin_size = sizeof(sockaddr_storage);
+        *clientfd = ::accept(listenfd_,
+                             (sockaddr *)client_addr,
+                             &sin_size);
+        // Check result.
+        if (*clientfd == -1) {
+            std::string err_msg;
+            if( errno == EINVAL || errno == EINTR || errno == EBADF ) {
+                err_msg = format("Polling interrupted by signal {}.", errno);
+            }
+            else {
+                err_msg = format("accept() failed with errno={}.", errno);
+            }
+            TEC_TRACE(err_msg);
+            return {errno, err_msg, Error::Kind::NetErr};
+        }
+
+        return {};
+    }
+
+
+    virtual void poll(Signal* sig_started) {
+        TEC_ENTER("SocketServer::poll");
+        sig_started->set();
+
+        while (!stop_polling_) {
+            int clientfd{-1};
+
+            sockaddr_storage client_addr;
+            if (!accept_connection(&clientfd, &client_addr)) {
+                continue;
+            }
+
+            Socket sock = get_socket_info(clientfd, &client_addr);
+            TEC_TRACE("Accepted connection from [{}]:{}.", sock.addr, sock.port);
+
+            // Pass the client socket for further processing.
+            process_socket(sock);
         }
         polling_stopped_.set();
     }
 
 
-    Status process_request(Request request, Reply reply) override {
-        return {Error::Kind::NotImplemented};
-    }
-
-
-    virtual void on_received(Socket ci) {
-        TEC_ENTER("SocketServer::on_received");
+    virtual void process_socket(Socket sock) {
+        TEC_ENTER("SocketServer::process_socket");
         if(params_.mode == SocketServerParams::kModeCharStream) {
-            on_char_stream(&ci);
+            on_char_stream(&sock);
         }
         else if(params_.mode == SocketServerParams::kModeNetData) {
-            on_net_data(&ci);
+            on_net_data(&sock);
         }
 
-        TEC_TRACE("Closing connection with [{}]:{}...", ci.addr, ci.port);
-        ::shutdown(ci.socketfd, SHUT_RDWR);
-        ::close(ci.socketfd);
+        TEC_TRACE("Closing connection with [{}]:{}...", sock.addr, sock.port);
+        ::shutdown(sock.socketfd, SHUT_RDWR);
+        ::close(sock.socketfd);
     }
 
 
-    virtual void on_char_stream(Socket* pci) {
+    virtual void on_char_stream(Socket* ps) {
         TEC_ENTER("SocketServer::on_char_stream");
         // Default implementation just echoes received data.
         Bytes data;
-        Socket::read_bytes(data, pci, 0);
-        Socket::write_bytes(data, pci);
+        Socket::recv(data, ps, 0);
+        Socket::send(data, ps);
     }
 
 
