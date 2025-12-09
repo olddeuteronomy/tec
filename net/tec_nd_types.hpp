@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-03 13:02:09 by magnolia>
+// Time-stamp: <Last changed 2025-12-07 11:43:48 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -40,9 +40,11 @@ namespace tec {
 
 
 struct NdTypes {
+    using ID = uint16_t;
 
     using Tag =  uint16_t;
     using Size = uint32_t;
+    using Count = uint16_t;
 
     using Bool = uint8_t;
     using String = std::string;
@@ -91,14 +93,14 @@ struct NdTypes {
         uint32_t magic;
         uint32_t size;
         uint16_t version;
-        uint16_t reserved16;
+        uint16_t id;
         uint32_t reserved32;
 
         Header()
             : magic(kMagic)
             , size{0}
             , version{kDefaultVersion}
-            , reserved16{0}
+            , id{0}
             , reserved32{0}
         {}
 
@@ -108,10 +110,10 @@ struct NdTypes {
     };
 
     struct ElemHeader {
-        // 12 bytes.
+        // 8 bytes.
         Tag tag;
         Size size;
-        Size count;
+        Count count;
 
         ElemHeader()
             : tag{Tags::Unknown}
@@ -119,13 +121,17 @@ struct NdTypes {
             , count{0}
         {}
 
-        ElemHeader(Tag _tag, Size _size, Size _count = 1)
+        ElemHeader(Tag _tag, Size _size, Count _count = 1)
             : tag{_tag}
             , size{_size}
             , count{_count}
         {}
     };
 #pragma pack(pop)
+
+    inline static Count to_count(size_t count) {
+        return (count > __UINT16_MAX__) ? __UINT16_MAX__ : count;
+    }
 
     // Integers.
     ElemHeader get_scalar_info(const char&)
@@ -175,12 +181,12 @@ struct NdTypes {
     // Flat container.
     template <typename TContainer>
     ElemHeader get_container_info(const TContainer& c)
-        { return {Tags::Container, 0, static_cast<Size>(c.size())}; }
+        { return {Tags::Container, 0, to_count(c.size())}; }
 
     // Map.
     template <typename TMap>
     ElemHeader get_map_info(const TMap& m)
-        { return {Tags::Map, 0, static_cast<Size>(m.size())}; }
+        { return {Tags::Map, 0, to_count(m.size())}; }
 
     // Serializable object.
     template <typename TObject>
@@ -221,7 +227,7 @@ struct NdTypes {
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO:
+NOTE:
 
  - float — single precision floating-point type. Usually IEEE-754
    binary32 format.

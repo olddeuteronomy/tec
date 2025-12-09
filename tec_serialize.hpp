@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-06 00:49:13 by magnolia>
+// Time-stamp: <Last changed 2025-12-07 12:21:50 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,6 +32,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <type_traits>
 
@@ -136,6 +137,20 @@ struct Serializable {
      */
     virtual std::string to_json() const = 0;
 };
+
+
+struct NdRoot: public Serializable {
+    uint16_t id_;
+
+    explicit NdRoot(uint16_t _id)
+        : id_{_id}
+    {}
+
+    uint16_t id() const { return id_; }
+};
+
+template <typename T>
+inline constexpr bool is_root_v = std::is_base_of<NdRoot, T>::value;
 
 
 } // namespace tec

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-04 01:03:03 by magnolia>
+// Time-stamp: <Last changed 2025-12-09 01:24:36 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <cstddef>
 #include <array>
+#include <string>
 #include <vector>
 #include <sstream>
 
@@ -135,16 +136,16 @@ public:
      * @param block_size Size of each growth block. Must be greater than 0.
      *                   Defaults to `kDefaultBlockSize`.
      */
-    explicit Bytes(size_t block_size = kDefaultBlockSize)
-        : buffer_(block_size)
-        , blk_size_{block_size}
+    Bytes()
+        : buffer_(kDefaultBlockSize)
+        , blk_size_{kDefaultBlockSize}
         , pos_{0}
         , size_{0}
     {}
 
-    Bytes(const void* src, size_t len, size_t block_size = kDefaultBlockSize)
-        : buffer_(block_size)
-        , blk_size_{block_size}
+    Bytes(const void* src, size_t len)
+        : buffer_(kDefaultBlockSize)
+        , blk_size_{kDefaultBlockSize}
         , pos_{0}
         , size_{0}
     {

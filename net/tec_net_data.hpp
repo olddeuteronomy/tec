@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-04 01:53:02 by magnolia>
+// Time-stamp: <Last changed 2025-12-07 12:32:27 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -49,14 +49,11 @@ namespace tec {
 class NetData: public NdTypes {
 
 protected:
+    Header header_;
     Bytes data_;
-    Header* hdr_ptr_;
 
 public:
     NetData() {
-        Header hdr;
-        data_.write(&hdr, sizeof(Header));
-        hdr_ptr_ = (Header*)data_.data();
     }
 
     virtual ~NetData() = default;
@@ -65,20 +62,20 @@ public:
         return data_;
     }
 
-    Header header() const {
-        return *hdr_ptr_;
+    Header* header() {
+        return &header_;
+    }
+
+    size_t header_size() const {
+        return sizeof(Header);
     }
 
     void rewind() {
-        data_.seek(sizeof(Header), SEEK_SET);
-    }
-
-    size_t total_size() const {
-        return data_.size();
+        data_.rewind();
     }
 
     size_t size() const {
-        return hdr_ptr_->size;
+        return header_.size;
     }
 
     size_t capacity() const {
@@ -86,11 +83,11 @@ public:
     }
 
     void* data() {
-        return data_.data() + sizeof(Header);
+        return data_.data();
     }
 
     const void* data() const {
-        return data_.data() + sizeof(Header);
+        return data_.data();
     }
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -120,7 +117,7 @@ public:
             write_container(&hdr, val);
         }
 
-        hdr_ptr_->size = data_.tell() - sizeof(Header);
+        header_.size = data_.size();
         return *this;
     }
 
@@ -136,8 +133,8 @@ protected:
             for( const auto& [key, value]: map ) {
                 *this << key << value;
             }
-            auto bytes_written = data_.tell() - cur_pos;
             // Set actual container size.
+            auto bytes_written = data_.tell() - cur_pos;
             hdr_ptr->size = bytes_written;
             return bytes_written;
         }
@@ -154,8 +151,8 @@ protected:
             for( const auto& e: container ) {
                 *this << e;
             }
-            auto bytes_written = data_.tell() - cur_pos;
             // Set actual container size.
+            auto bytes_written = data_.tell() - cur_pos;
             hdr_ptr->size = bytes_written;
             return bytes_written;
         }
@@ -165,6 +162,9 @@ protected:
     template <typename TObject>
     size_t write_object(ElemHeader* hdr, const TObject& obj) {
         if constexpr (is_serializable_v<TObject>) {
+            if constexpr (is_root_v<TObject>) {
+                    header_.id = obj.id();
+            }
             ElemHeader* hdr_ptr = (ElemHeader*)data_.at(data_.tell());
             data_.write(hdr, sizeof(ElemHeader));
             size_t cur_pos = data_.tell();
@@ -172,7 +172,6 @@ protected:
             obj.store(std::ref(*this));
             // Set actual object size.
             auto bytes_written = data_.tell() - cur_pos;
-            // Set actual object size.
             hdr_ptr->size = bytes_written;
             return bytes_written;
         }

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-06 23:26:29 by magnolia>
+// Time-stamp: <Last changed 2025-12-09 02:38:09 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,17 +33,27 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstddef>
 #ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L   // This line fixes the "storage size of ‘hints’ isn’t known" issue.
+// This line fixes the "storage size of 'hints' isn't known" issue.
+#define _POSIX_C_SOURCE 200809L
 #endif
 
+#include <unistd.h>
+// #include <memory.h>
 #include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
+// #include <arpa/inet.h>
+// #include <sys/types.h>
+// #include <sys/socket.h>
 
+// #include <cstdio>
+// #include <cerrno>
 #include <string>
 
 #include "tec/tec_def.hpp"  // IWYU pragma: keep
+#include "tec/tec_trace.hpp"
+#include "tec/tec_status.hpp"
+#include "tec/tec_bytes.hpp"
 
 
 namespace tec {
@@ -115,5 +125,89 @@ struct SocketServerParams: public SocketParams  {
 struct SocketCharStream {
     std::string str;
 };
+
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                        Socket helpers
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+struct Socket {
+
+    int socketfd;
+    std::string addr;
+    int port;
+
+    static Status read_bytes(Bytes& data, Socket* pci, size_t length) {
+        TEC_ENTER("Socket::recv");
+        std::array<char, BUFSIZ> buffer;
+        ssize_t received{0};
+        size_t total_received{0};
+        bool eof{false};
+
+        // Read data from the client.
+        while ((received = read(pci->socketfd, buffer.data(), BUFSIZ)) > 0) {
+            if (length == 0) {
+                // Length is unknown -- check for null-terminated char stream.
+                if (buffer[received-1] == '\0') {
+                    TEC_TRACE("[{}]:{} EOF received.", pci->addr, pci->port);
+                    eof = true;
+                 }
+            }
+            if (received > 0) {
+                data.write(buffer.data(), received);
+                TEC_TRACE("[{}]:{} --> RECV {} bytes.", pci->addr, pci->port, received);
+                total_received += received;
+                if (length > 0 && length == total_received) {
+                    break;
+                }
+            }
+            if (eof || received < BUFSIZ) {
+                break;
+            }
+        }
+
+        if (received == 0) {
+            TEC_TRACE("[{}]:{} Client closed connection.", pci->addr, pci->port);
+        }
+        else if (received == -1) {
+            auto errmsg = format("[{}]:{} socket read error {}.", pci->addr, pci->port, errno);
+            TEC_TRACE(errmsg);
+            return {errno, errmsg, Error::Kind::NetErr};
+        }
+        else if (length > 0  &&  total_received != length) {
+            auto errmsg = format("[{}]:{} socket partial read: {} bytes of {}.",
+                                 pci->addr, pci->port, total_received, length);
+            return {EIO, errmsg, Error::Kind::NetErr};
+        }
+
+        return {};
+    }
+
+
+    static Status write_bytes(Bytes& data, Socket* pci) {
+        TEC_ENTER("Socket::send");
+
+        // Send data to the client
+        ssize_t sent = write(pci->socketfd, data.data(), data.size());
+        TEC_TRACE("[{}]:{} <-- SEND {} bytes.", pci->addr, pci->port, sent);
+
+        // Check error.
+        if (sent < 0) {
+            auto errmsg = format("[{}]:{} socket write error {}.", pci->addr, pci->port, errno);
+            TEC_TRACE(errmsg.c_str());
+            return {errno, errmsg, Error::Kind::NetErr};
+        }
+        else if (data.size() != static_cast<size_t>(sent)) {
+            auto errmsg = format("[{}]:{} socket partial write: {} bytes of {}.",
+                                 pci->addr, pci->port, sent, data.size());
+            return {EIO, errmsg, Error::Kind::NetErr};
+        }
+
+        return {};
+    }
+
+}; // struct Socket
 
 } // namespace tec

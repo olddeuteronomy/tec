@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-07 02:59:32 by magnolia>
+// Time-stamp: <Last changed 2025-12-08 15:42:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,24 +33,23 @@ SOFTWARE.
 
 #pragma once
 
-#include <cstdio>
-#include <unistd.h>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
 #endif
 
-#include <netdb.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
+#include <cstdio>
+#include <unistd.h>
 #include <memory.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include <atomic>
 #include <cerrno>
 #include <csignal>
 #include <string>
-#include <array>
 #include <thread>
 
 #include "tec/tec_def.hpp"  // IWYU pragma: keep
@@ -68,22 +67,17 @@ template <typename TParams>
 class SocketServer: public Actor {
 
 public:
-    typedef TParams Params;
+    using Params = TParams;
 
 protected:
+
     Params params_;
     int listenfd_;
     std::atomic_bool stop_polling_;
     Signal polling_stopped_;
 
-protected:
-    struct ClientInfo {
-        int fd;
-        std::string addr;
-        int port;
-    };
-
 public:
+
     explicit SocketServer(const Params& params)
         : Actor()
         , params_{params}
@@ -97,17 +91,17 @@ public:
     }
 
 
-    virtual Status set_socket_options(int sockid) {
+    virtual Status set_socket_options(int sockfd) {
         // Avoid "Address already in use" error
         int yes{1};
-        if( ::setsockopt(sockid, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1 ) {
+        if( ::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1 ) {
             return {EADDRNOTAVAIL, "`setsockopt' SO_REUSEADDR failed"};
         }
         return {};
     }
 
 
-    virtual ClientInfo get_client_info(int client_fd, sockaddr_storage* client_addr) {
+    virtual Socket get_client_info(int client_fd, sockaddr_storage* client_addr) {
         // Get client IP and port
         char client_ip[INET6_ADDRSTRLEN];
         int client_port;
@@ -209,7 +203,7 @@ public:
         TEC_TRACE("Server listening on [{}]:{}.", params_.addr, params_.port);
 
         // Start polling.
-        poll(sig_started, status);
+        poll(sig_started);
     }
 
 
@@ -228,12 +222,12 @@ public:
         TEC_TRACE("Closing server socket...");
         polling_stopped_.wait();
 
-        TEC_TRACE("Server stopped");
+        TEC_TRACE("Server stopped.");
         sig_stopped->set();
     }
 
 
-    virtual void poll(Signal* sig_started, Status* status) {
+    virtual void poll(Signal* sig_started) {
         TEC_ENTER("SocketServer::poll");
         sig_started->set();
         while (!stop_polling_) {
@@ -256,7 +250,7 @@ public:
                 continue;
             }
 
-            ClientInfo ci = get_client_info(clientfd, &client_addr);
+            Socket ci = get_client_info(clientfd, &client_addr);
             TEC_TRACE("Accepted connection from [{}]:{}.", ci.addr, ci.port);
 
             // Pass the client for further processing.
@@ -271,7 +265,7 @@ public:
     }
 
 
-    virtual void on_received(ClientInfo ci) {
+    virtual void on_received(Socket ci) {
         TEC_ENTER("SocketServer::on_received");
         if(params_.mode == SocketServerParams::kModeCharStream) {
             on_char_stream(&ci);
@@ -281,71 +275,21 @@ public:
         }
 
         TEC_TRACE("Closing connection with [{}]:{}...", ci.addr, ci.port);
-        ::shutdown(ci.fd, SHUT_RDWR);
-        ::close(ci.fd);
+        ::shutdown(ci.socketfd, SHUT_RDWR);
+        ::close(ci.socketfd);
     }
 
 
-    virtual ssize_t read_bytes(Bytes& data, ClientInfo* pci, bool trailing_zero = false) {
-        TEC_ENTER("SocketServer::read_bytes");
-        std::array<char, BUFSIZ> buffer;
-        ssize_t received{0};
-        bool eof{false};
-
-        // Read data from the client.
-        while ((received = ::read(pci->fd, buffer.data(), BUFSIZ)) > 0) {
-            if (trailing_zero) {
-                if (buffer[received-1] == '\0') {
-                    TEC_TRACE("[{}]:{} EOF received.", pci->addr, pci->port);
-                    received -= 1;
-                    eof = true;
-                }
-            }
-
-            if (received > 0) {
-                data.write(buffer.data(), received);
-                TEC_TRACE("[{}]:{} --> Received {} bytes.", pci->addr, pci->port, received);
-
-            }
-
-            if (eof || received < BUFSIZ) {
-                break;
-            }
-        }
-
-        if (received == 0) {
-            TEC_TRACE("[{}]:{} Client finised transmission.", pci->addr, pci->port);
-        }
-        else if (received == -1) {
-            TEC_TRACE("[{}]:{} read error {}.", pci->addr, pci->port, errno);
-        }
-
-        return data.size();
-    }
-
-
-    virtual ssize_t write_bytes(Bytes& data, ClientInfo* pci) {
-        TEC_ENTER("SocketServer::write_bytes");
-
-        // Send data to the client
-        ssize_t sent = ::write(pci->fd, data.data(), data.size());
-
-        TEC_TRACE("[{}]:{} <-- {} bytes of {} are sent.",
-                  pci->addr, pci->port, sent, data.size());
-        return sent;
-    }
-
-
-    virtual void on_char_stream(ClientInfo* pci) {
+    virtual void on_char_stream(Socket* pci) {
         TEC_ENTER("SocketServer::on_char_stream");
         // Default implementation just echoes received data.
         Bytes data;
-        read_bytes(data, pci, true);
-        write_bytes(data, pci);
+        Socket::read_bytes(data, pci, 0);
+        Socket::write_bytes(data, pci);
     }
 
 
-    virtual void on_net_data(ClientInfo* pci) {
+    virtual void on_net_data(Socket* pci) {
     }
 
 }; // class SocketServer

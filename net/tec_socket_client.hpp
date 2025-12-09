@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-16 12:32:10 by magnolia>
+// Time-stamp: <Last changed 2025-12-09 02:31:14 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -35,12 +35,12 @@ SOFTWARE.
 
 #include <any>
 #include <cerrno>
-#include <cstdio>
+#include <cstdlib>
+
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L   // This line fixes the "storage size of ‘hints’ isn’t known" issue.
 #endif
 
-#include <memory.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -60,7 +60,7 @@ template <typename TParams>
 class SocketClient: public Actor {
 
 public:
-    typedef TParams Params;
+    using Params = TParams;
 
 protected:
     Params params_;
@@ -74,7 +74,7 @@ public:
     {
         static_assert(
             std::is_base_of<SocketClientParams, Params>::value,
-            "not derived from tec::SocketClientParams class");
+            "Not derived from tec::SocketClientParams class");
     }
 
 
@@ -97,7 +97,7 @@ public:
                                   &hints, &servinfo);
         if( ecode != 0 ) {
             std::string emsg{::gai_strerror(ecode)};
-            TEC_TRACE("Resolving server error: {}", emsg);
+            TEC_TRACE("Error resolving server address: {}", emsg);
             *status = {ecode, emsg, Error::Kind::NetErr};
             return;
         }
@@ -128,9 +128,7 @@ public:
         ::freeaddrinfo(servinfo);
 
         if( p == NULL ) {
-            auto emsg{format(
-                    "failed to connect to [{}]:{}", params_.addr, params_.port
-                    )};
+            auto emsg = format("Failed to connect to [{}]:{}", params_.addr, params_.port);
             *status = {ECONNREFUSED, emsg, Error::Kind::NetErr};
             TEC_TRACE(emsg);
             return;
@@ -168,34 +166,32 @@ public:
     }
 
 
-    virtual Status send_recv_char(const SocketCharStream* str_req, SocketCharStream* str_rep) {
-        TEC_ENTER("SocketClient::send_recv_char");
-
-        // Send.
-        ssize_t sent = ::send(sockfd_, str_req->str.data(), str_req->str.length(), 0);
-        if( sent == -1 ) {
-            return {EIO, "cannot send the request", Error::Kind::NetErr};
-        }
-        TEC_TRACE("Sent {} bytes.", str_req->str.length());
-
-        // Wait for a reply if required.
-        if( str_rep ) {
-            char buf[BUFSIZ];
-            ssize_t received = ::recv(sockfd_, buf, BUFSIZ - 1, 0);
-            if( received == -1 ) {
-                return {EIO, "cannot receive a reply", Error::Kind::NetErr};
-            }
-            else if( received == 0 ) {
-                return {ECONNABORTED, "server closed the connection", Error::Kind::NetErr};
-            }
-            TEC_TRACE("Received {} bytes.", received);
-
-            buf[received] = '\0';
-            str_rep->str = buf;
-        }
-        return {};
+    virtual Status recv_char(SocketCharStream* reply) {
+        TEC_ENTER("SocketClient::recv_char");
+        Bytes data;
+        Socket sock{sockfd_, params_.addr, ::atoi(params_.port.c_str())};
+        auto status = Socket::read_bytes(data, &sock, 0);
+        reply->str = (const char*)(data.data());
+        return status;
     }
 
+    virtual Status send_char(const SocketCharStream* request) {
+        TEC_ENTER("SocketClient::send_char");
+        Bytes data;
+        Socket sock{sockfd_, params_.addr, ::atoi(params_.port.c_str())};
+        data.write(request->str.c_str(), request->str.size() + 1);
+        auto status = Socket::write_bytes(data, &sock);
+        return status;
+    }
+
+    virtual Status send_recv_char(const SocketCharStream* request, SocketCharStream* reply) {
+        TEC_ENTER("SocketClient::send_recv_char");
+        auto status = send_char(request);
+        if (status && reply) {
+            status = recv_char(reply);
+        }
+        return status;
+    }
 
     virtual Status send_recv(Request req, Reply rep) {
         return {Error::Kind::NotImplemented};

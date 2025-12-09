@@ -98,7 +98,7 @@ struct Person: tec::Serializable {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-struct Payload: tec::Serializable {
+struct Payload: tec::NdRoot {
     using json = tec::Json;
     static constexpr auto sep{tec::Json::sep};
 
@@ -113,6 +113,9 @@ struct Payload: tec::Serializable {
     tec::Bytes bs;
     bool b;
     std::unordered_map<int, Person> map;
+
+    Payload(): tec::NdRoot(1)
+    {}
 
     tec::NetData& store(tec::NetData& nd) const override {
       nd
@@ -199,18 +202,18 @@ void restore_payload(tec::NetData& nd) {
     std::cout << pld << "\n";
 
     // Header
-    tec::NetData::Header hdr = nd.header();
+    auto hdr = nd.header();
     std::cout
-        << "\nMagic:   " << std::hex << hdr.magic
-        << "\nVersion: " << hdr.version << std::dec
-        << "\nSize:    " << hdr.size
-        << "\n";
+        << "\nMagic:   " << std::hex << hdr->magic
+        << "\nVersion: " << hdr->version << std::dec
+        << "\nID:      " << hdr->id
+        << "\nSize:    " << hdr->size
+        << "\n"
+        ;
 
     // If compiled with `g++ -O2` v.13.3, valgrind reports
     // "Use of uninitialised value of size 8".
     std::cout << tec::Dump::dump_as_table(nd.bytes()) << "\n";
-    std::cout << std::string(72, '-')
-              << "\nTotal size (w/header)=" << nd.total_size() << "\n";
 }
 
 

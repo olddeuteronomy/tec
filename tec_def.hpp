@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-17 13:40:24 by magnolia>
+// Time-stamp: <Last changed 2025-12-07 11:39:39 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -124,7 +124,6 @@ SOFTWARE.
   #endif
 
 #endif // OS specific defines end here
-
 
 #if !defined(__TEC_INT__) || !defined(__TEC_PTR__) || !defined(__TEC_LONG__)
   #error Missing feature-test macro for 32/64-bit on this compiler.

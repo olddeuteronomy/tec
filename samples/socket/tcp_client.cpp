@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-18 00:22:00 by magnolia>
+// Time-stamp: <Last changed 2025-12-09 01:55:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -55,14 +55,17 @@ tec::Status tcp_client() {
     }
 
     // Send a message.
-    tec::SocketCharStream req{"Hello world!\n"};
+    tec::SocketCharStream req{"Hello world!"};
     tec::SocketCharStream rep;
 
-    status = cli->request<>(&req);
+    status = cli->request<>(&req, &rep);
     if( !status ) {
         tec::println("tcp_client: {}", status);
         return status;
     }
+
+    tec::println("SEND:\"{}\"", req.str);
+    tec::println("RECV:\"{}\"", rep.str);
 
     cli->terminate();
     return status;
