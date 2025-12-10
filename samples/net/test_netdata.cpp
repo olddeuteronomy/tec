@@ -213,6 +213,7 @@ void restore_payload(tec::NetData& nd) {
 
     // If compiled with `g++ -O2` v.13.3, valgrind reports
     // "Use of uninitialised value of size 8".
+    // `clang` is OK.
     std::cout << tec::Dump::dump_as_table(nd.bytes()) << "\n";
 }
 

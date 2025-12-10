@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-27 14:40:43 by magnolia>
+// Time-stamp: <Last changed 2025-12-10 23:15:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -98,6 +98,7 @@ inline constexpr const char* kind_as_string(Error::Kind k) {
     case Error::Kind::TimeoutErr: return "Timeout";
     case Error::Kind::Invalid: return "Invalid";
     case Error::Kind::System: return "System";
+    case Error::Kind::NotImplemented: return "NotImplemented";
     case Error::Kind::Unsupported: return "Unsupported";
     default: return "Unspecified";
     }

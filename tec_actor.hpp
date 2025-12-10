@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-08 01:12:03 by magnolia>
+// Time-stamp: <Last changed 2025-12-11 00:30:21 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -180,29 +180,45 @@ class Actor {
        */
       virtual void shutdown(Signal* sig_stopped) = 0;
 
-      /**
-       * @brief Processes a single request and produces a reply.
-       *
-       * This is the **core message handling entry point**. Implementations should:
-       * - Validate the `request`
-       * - Perform necessary work
-       * - Populate `reply` with results
-       * - Return appropriate `Status`
-       *
-       * @param request [in] Input message to process (moved-from if possible).
-       * @param reply [out] Output message populated with response.
-       *
-       * @return Status indicating success or specific error condition.
-       *
-       * @par Example
-       * @code
-       * Status s = actor->process_request(req, reply);
-       * if (!s.ok()) { handle_error(s); }
-       * @endcode
-       *
-       * @see Request, Reply, Status
-       */
-      virtual Status process_request(Request request, Reply reply) = 0;
+    /**
+     * @brief Processes a single request and produces a reply.
+     *
+     * This is the **core message handling entry point**. Implementations should:
+     * - Validate the `request`
+     * - Perform necessary work
+     * - Populate `reply` with results
+     * - Return appropriate `Status`
+     *
+     * @param request [in] Input message to process (moved-from if possible).
+     * @param reply [out] Output message populated with response.
+     *
+     * @return Status indicating success or specific error condition.
+     *
+     * @par Example
+     * @code
+     * Status s = actor->process_request(req, reply);
+     * if (!s.ok()) { handle_error(s); }
+     * @endcode
+     *
+     * @see Request, Reply, Status
+     */
+    virtual Status process_request(Request request, Reply reply) = 0;
+
+
+    virtual Status run() {
+        Status status;
+        Signal sig;
+        start(&sig, &status);
+        sig.wait();
+        return status;
+    }
+
+    virtual void terminate() {
+        Signal sig;
+        shutdown(&sig);
+        sig.wait();
+    }
+
 
   }; // class Actor
 

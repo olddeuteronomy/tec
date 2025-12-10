@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-09 15:57:34 by magnolia>
+// Time-stamp: <Last changed 2025-12-10 23:26:55 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -152,7 +152,7 @@ protected:
     virtual Socket get_socket_info(int client_fd, sockaddr_storage* client_addr) {
         // Get client IP and port
         char client_ip[INET6_ADDRSTRLEN];
-        int client_port;
+        int client_port{0};
         if (client_addr->ss_family == AF_INET) {
             struct sockaddr_in *s = (struct sockaddr_in *)&client_addr;
             ::inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
@@ -162,6 +162,7 @@ protected:
             ::inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
             client_port = ::ntohs(s->sin6_port);
         }
+
         return {client_fd, client_ip, client_port};
     }
 

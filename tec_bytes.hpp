@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-09 01:24:36 by magnolia>
+// Time-stamp: <Last changed 2025-12-10 15:38:08 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -143,6 +143,22 @@ public:
         , size_{0}
     {}
 
+    explicit Bytes(size_t block_size)
+        : buffer_(block_size)
+        , blk_size_{block_size}
+        , pos_{0}
+        , size_{0}
+    {}
+
+    explicit Bytes(const std::string& s)
+        : buffer_(kDefaultBlockSize)
+        , blk_size_{kDefaultBlockSize}
+        , pos_{0}
+        , size_{0}
+    {
+        write(s.data(), s.size()+1);
+    }
+
     Bytes(const void* src, size_t len)
         : buffer_(kDefaultBlockSize)
         , blk_size_{kDefaultBlockSize}
@@ -154,13 +170,14 @@ public:
 
     virtual ~Bytes() = default;
 
-    std::byte* data() {
+    const void* data() const {
         return buffer_.data();
     }
 
-    const std::byte* data() const {
+    void* data()  {
         return buffer_.data();
     }
+
 
     std::byte* at(size_t pos) {
         return &buffer_.at(pos);
@@ -338,7 +355,7 @@ public:
      */
     std::string as_hex() const {
         std::ostringstream os;
-        auto ptr = data();
+        auto ptr = buffer_.data();
         for(size_t n = 0 ; n < size() ; ++n, ++ptr) {
            auto ch = to_hex_chars(*ptr);
            os << ch[0] << ch[1];

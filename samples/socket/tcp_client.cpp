@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-09 01:55:43 by magnolia>
+// Time-stamp: <Last changed 2025-12-11 02:53:58 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,6 +23,8 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
+#include <memory>
+#include <string>
 #include <sys/socket.h>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
@@ -43,9 +45,18 @@ using TCPParams = tec::SocketClientParams;
 using TCPClient = tec::SocketClient<TCPParams>;
 using TCPClientWorker = tec::ActorWorker<TCPParams, TCPClient>;
 
+#define USE_DAEMON 1
+
 tec::Status tcp_client() {
-    tec::SocketClientParams params;
+    TCPParams params;
+
+#ifdef USE_DAEMON
+    // Use Daemon interface.
     auto cli{TCPClientWorker::Builder<TCPClientWorker, TCPClient>{}(params)};
+#else
+    // A pure client.
+    auto cli{std::make_unique<TCPClient>(params)};
+#endif
 
     // Run it and check for the result.
     auto status = cli->run();
@@ -54,19 +65,31 @@ tec::Status tcp_client() {
         return status;
     }
 
-    // Send a message.
-    tec::SocketCharStream req{"Hello world!"};
-    tec::SocketCharStream rep;
+    // Data to process.
+    std::string str_send{"Hello world!"};
+    std::string str_recv;
 
-    status = cli->request<>(&req, &rep);
+    // Send a message.
+
+#ifdef USE_DAEMON
+    // Use Daemon interface.
+    tec::SocketCharStreamIn req{&str_send};
+    tec::SocketCharStreamOut rep{&str_recv};
+    status = cli->request(&req, &rep);
+#else
+    // Use direct call.
+    status = cli->request(&str_send, &str_recv);
+#endif
+
     if( !status ) {
         tec::println("tcp_client: {}", status);
         return status;
     }
 
-    tec::println("SEND:\"{}\"", req.str);
-    tec::println("RECV:\"{}\"", rep.str);
+    tec::println("SEND:\"{}\"", str_send);
+    tec::println("RECV:\"{}\"", str_recv);
 
+    // Optionally.
     cli->terminate();
     return status;
 }

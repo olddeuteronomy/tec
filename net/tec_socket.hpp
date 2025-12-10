@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-09 15:58:04 by magnolia>
+// Time-stamp: <Last changed 2025-12-11 02:03:05 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,29 +25,22 @@ SOFTWARE.
 
 /**
  * @file tec_socket.hpp
- * @brief Generic BSD socket parameters.
- * @note For BSD, macOS, Linux. Windows version is not implemented yet.
+ * @brief Generic BSD socket parameters and helpers.
+ * @note For BSD, macOS, Linux.
  * @author The Emacs Cat
  * @date 2025-11-10
  */
 
 #pragma once
 
-#include <cstddef>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
 #endif
 
 #include <unistd.h>
-// #include <memory.h>
 #include <netdb.h>
-// #include <arpa/inet.h>
-// #include <sys/types.h>
-// #include <sys/socket.h>
 
-// #include <cstdio>
-// #include <cerrno>
 #include <string>
 
 #include "tec/tec_def.hpp"  // IWYU pragma: keep
@@ -67,6 +60,8 @@ struct SocketParams {
     static constexpr int kDefaultProtocol{0};             ///< Any protocol.
     static constexpr int kDefaultServerFlags{AI_PASSIVE}; ///< Server: use local IP.
     static constexpr int kDefaultClientFlags{0};          ///< Client: not set.
+
+    static constexpr char kNullString{0};
 
     std::string addr;
     std::string port;
@@ -131,8 +126,12 @@ struct SocketServerParams: public SocketParams  {
 };
 
 
-struct SocketCharStream {
-    std::string str;
+struct SocketCharStreamIn {
+    const std::string* str;
+};
+
+struct SocketCharStreamOut {
+    std::string* str;
 };
 
 
@@ -148,8 +147,21 @@ struct Socket {
     std::string addr;
     int port;
 
+    Socket(int _fd, const std::string& _addr, const std::string& _port)
+        : socketfd{_fd}
+        , addr{_addr}
+        , port{::atoi(_port.c_str())}
+    {}
+
+    Socket(int _fd, const std::string& _addr, int _port)
+        : socketfd{_fd}
+        , addr{_addr}
+        , port{_port}
+    {}
+
     static Status recv(Bytes& data, Socket* pci, size_t length) {
         TEC_ENTER("Socket::recv");
+        // Default buffer size as defined in stdio.h (8192).
         std::array<char, BUFSIZ> buffer;
         ssize_t received{0};
         size_t total_received{0};
@@ -219,9 +231,9 @@ struct Socket {
 
 
     static Status send_error(Socket* ps){
-        char zero{'\0'};
         Bytes b;
-        b.write(&zero, sizeof(char));
+        char c{SocketParams::kNullString};
+        b.write(&c, sizeof(char));
         return send(b, ps);
     }
 

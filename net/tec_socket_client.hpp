@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-09 15:54:59 by magnolia>
+// Time-stamp: <Last changed 2025-12-11 02:34:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,14 +33,14 @@ SOFTWARE.
 
 #pragma once
 
-#include <any>
-#include <cerrno>
-#include <cstdlib>
-
+#include <cstdio>
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L   // This line fixes the "storage size of ‘hints’ isn’t known" issue.
 #endif
 
+#include <any>
+#include <cerrno>
+#include <cstdlib>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -70,11 +70,17 @@ public:
     explicit SocketClient(const Params& params)
         : Actor()
         , params_{params}
-        , sockfd_{-1}
+        , sockfd_{EOF}
     {
         static_assert(
             std::is_base_of<SocketClientParams, Params>::value,
             "Not derived from tec::SocketClientParams class");
+    }
+
+    virtual ~SocketClient() {
+        if (sockfd_ != EOF) {
+            terminate();
+        }
     }
 
 
@@ -83,7 +89,7 @@ public:
         Actor::SignalOnExit on_exit{sig_started};
 
         // Resolve the server address.
-        TEC_TRACE("Resolving server [{}]:{}...", params_.addr, params_.port);
+        TEC_TRACE("Resolving address [{}]:{}...", params_.addr, params_.port);
         addrinfo hints;
         ::memset(&hints, 0, sizeof(hints));
         hints.ai_family = params_.family;
@@ -96,12 +102,12 @@ public:
         int ecode = ::getaddrinfo(params_.addr.c_str(), params_.port.c_str(),
                                   &hints, &servinfo);
         if( ecode != 0 ) {
-            std::string emsg{::gai_strerror(ecode)};
-            TEC_TRACE("Error resolving server address: {}", emsg);
+            std::string emsg = ::gai_strerror(ecode);
+            TEC_TRACE("Error resolving address: {}", emsg);
             *status = {ecode, emsg, Error::Kind::NetErr};
             return;
         }
-        TEC_TRACE("Server resolved OK.");
+        TEC_TRACE("Address resolved OK.");
 
         // If socket() (or connect()) fails, we close the socket
         // and try the next address.
@@ -145,50 +151,72 @@ public:
         Actor::SignalOnExit on_exit(sig_stopped);
         ::shutdown(sockfd_, SHUT_RDWR);
         close(sockfd_);
-        sockfd_ = -1;
+        sockfd_ = EOF;
     }
 
 
     Status process_request(Request request, Reply reply) override {
         TEC_ENTER("SocketClient::process_request");
-        if( request.type() == typeid(const SocketCharStream*) ) {
+        if( request.type() == typeid(const SocketCharStreamIn*) ) {
             // Process raw character stream.
-            const SocketCharStream* req = std::any_cast<const SocketCharStream*>(request);
-            SocketCharStream* rep = nullptr;
+            const SocketCharStreamIn* req = std::any_cast<const SocketCharStreamIn*>(request);
+            SocketCharStreamOut* rep = nullptr;
             if( reply.has_value() ) {
-                rep = std::any_cast<SocketCharStream*>(reply);
+                rep = std::any_cast<SocketCharStreamOut*>(reply);
             }
-            return send_recv_char(req, rep);
+            return send_recv_chars(req, rep);
         }
 
-        // Process NetData request.
-        return send_recv(request, reply);
+        return {Error::Kind::NotImplemented};
     }
 
 
-    virtual Status recv_char(SocketCharStream* reply) {
-        TEC_ENTER("SocketClient::recv_char");
-        Bytes data;
-        Socket sock{sockfd_, params_.addr, ::atoi(params_.port.c_str())};
-        auto status = Socket::recv(data, &sock, 0);
-        reply->str = (const char*)(data.data());
+    virtual Status request(const std::string* str_in, std::string* str_out) {
+        TEC_ENTER("SocketClient::request_chars");
+        SocketCharStreamIn request{str_in};
+        SocketCharStreamOut reply{str_out};
+        auto status = send_recv_chars(&request, &reply);
+        if (status && (str_out != nullptr)) {
+            *str_out = *reply.str;
+        }
         return status;
     }
 
-    virtual Status send_char(const SocketCharStream* request) {
+protected:
+
+    virtual Status send_chars(const SocketCharStreamIn* request) {
         TEC_ENTER("SocketClient::send_char");
+        if (request && request->str) {
+            // `request` must be valid.
+            Bytes data(*request->str);
+            Socket sock{sockfd_, params_.addr, params_.port};
+            auto status = Socket::send(data, &sock);
+            return status;
+        }
+        return {EFAULT, Error::Kind::Invalid};
+    }
+
+    virtual Status recv_chars(SocketCharStreamOut* reply) {
+        TEC_ENTER("SocketClient::recv_char");
+        if (reply == nullptr) {
+            // Notification message -- no reply required.
+            return {};
+        }
+        if (reply->str == nullptr) {
+            return {EFAULT, Error::Kind::Invalid};
+        }
         Bytes data;
-        Socket sock{sockfd_, params_.addr, ::atoi(params_.port.c_str())};
-        data.write(request->str.c_str(), request->str.size() + 1);
-        auto status = Socket::send(data, &sock);
+        Socket sock{sockfd_, params_.addr, params_.port};
+        auto status = Socket::recv(data, &sock, 0);
+        *reply->str = static_cast<const char*>(data.data());
         return status;
     }
 
-    virtual Status send_recv_char(const SocketCharStream* request, SocketCharStream* reply) {
+    virtual Status send_recv_chars(const SocketCharStreamIn* request, SocketCharStreamOut* reply) {
         TEC_ENTER("SocketClient::send_recv_char");
-        auto status = send_char(request);
-        if (status && reply) {
-            status = recv_char(reply);
+        auto status = send_chars(request);
+        if (status) {
+            status = recv_chars(reply);
         }
         return status;
     }
@@ -199,4 +227,3 @@ public:
 };
 
 }
-
