@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-11 02:03:05 by magnolia>
+// Time-stamp: <Last changed 2025-12-11 13:21:56 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,6 +33,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <sys/socket.h>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
@@ -102,9 +103,11 @@ struct SocketClientParams: public SocketParams {
 
 
 struct SocketServerParams: public SocketParams  {
+    static constexpr int kOptReuseAddress{0};
+    static constexpr int kOptReusePort{1};
+
     static constexpr int kModeCharStream{0};
     static constexpr int kModeNetData{1};
-
     static constexpr int kDefaultMode{kModeCharStream};
 
     /** The maximum length to which the queue of pending connections for socket fd may
@@ -112,19 +115,29 @@ struct SocketServerParams: public SocketParams  {
        indication of ECONNREFUSED or, if the underlying protocol supports retransmission, the request may be
        ignored so that a later reattempt at connection succeeds.
      */
-    static constexpr int kDefaultConnQueueSize{4096};
+    static constexpr int kDefaultConnQueueSize{SOMAXCONN};
 
     int mode;
     int queue_size;
+    int opt_reuse_addr;
+    int opt_reuse_port;
 
     SocketServerParams()
         : mode{kDefaultMode}
         , queue_size{kDefaultConnQueueSize}
+        , opt_reuse_addr{kOptReuseAddress}
+        , opt_reuse_port{kOptReusePort}
     {
         flags = kDefaultServerFlags;
     }
 };
 
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                       Character stream request
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 struct SocketCharStreamIn {
     const std::string* str;
@@ -137,7 +150,7 @@ struct SocketCharStreamOut {
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                        Socket helpers
+*                           Socket helpers
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

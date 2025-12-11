@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-11 02:53:58 by magnolia>
+// Time-stamp: <Last changed 2025-12-11 11:34:22 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -45,7 +45,7 @@ using TCPParams = tec::SocketClientParams;
 using TCPClient = tec::SocketClient<TCPParams>;
 using TCPClientWorker = tec::ActorWorker<TCPParams, TCPClient>;
 
-#define USE_DAEMON 1
+// #define USE_DAEMON 1
 
 tec::Status tcp_client() {
     TCPParams params;

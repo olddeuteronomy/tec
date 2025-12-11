@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-11 02:34:46 by magnolia>
+// Time-stamp: <Last changed 2025-12-11 12:46:29 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -184,6 +184,11 @@ public:
 
 protected:
 
+    virtual Status set_socket_options(int sockfd) {
+        return {};
+    }
+
+
     virtual Status send_chars(const SocketCharStreamIn* request) {
         TEC_ENTER("SocketClient::send_char");
         if (request && request->str) {
@@ -217,6 +222,9 @@ protected:
         auto status = send_chars(request);
         if (status) {
             status = recv_chars(reply);
+        }
+        if (!status) {
+            terminate();
         }
         return status;
     }

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-10 23:26:55 by magnolia>
+// Time-stamp: <Last changed 2025-12-11 14:02:08 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -141,9 +141,14 @@ protected:
 
     virtual Status set_socket_options(int sockfd) {
         // Avoid "Address already in use" error
-        int yes{1};
-        if( ::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1 ) {
-            return {EADDRNOTAVAIL, "`setsockopt' SO_REUSEADDR failed"};
+        if( ::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,
+                         &params_.opt_reuse_addr, sizeof(int)) < 0 ) {
+            return {errno, "setsockopt SO_REUSEADDR failed", Error::Kind::NetErr};
+        }
+        if (::setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT,
+                       &params_.opt_reuse_port, sizeof(int)) < 0) {
+            ::close(sockfd);
+            return {errno, "setsockopt SO_REUSEPORT", Error::Kind::NetErr};
         }
         return {};
     }
@@ -238,9 +243,10 @@ protected:
     virtual Status start_listening() {
         TEC_ENTER("SocketServer::start_listening");
 
-        if (listen(listenfd_, params_.queue_size) == -1) {
+        if (::listen(listenfd_, params_.queue_size) == -1) {
             auto emsg = format("Failed to listen to [{}]:{}.", params_.addr, params_.port);
             ::close(listenfd_);
+            listenfd_ = EOF;
             return {errno, emsg, Error::Kind::NetErr};
         }
         TEC_TRACE("Server listening on [{}]:{}.", params_.addr, params_.port);
@@ -257,7 +263,7 @@ protected:
                              (sockaddr *)client_addr,
                              &sin_size);
         // Check result.
-        if (*clientfd == -1) {
+        if (*clientfd == EOF) {
             std::string err_msg;
             if( errno == EINVAL || errno == EINTR || errno == EBADF ) {
                 err_msg = format("Polling interrupted by signal {}.", errno);
@@ -281,6 +287,7 @@ protected:
             int clientfd{-1};
 
             sockaddr_storage client_addr;
+            TEC_TRACE("Waiting for incoming connection...");
             if (!accept_connection(&clientfd, &client_addr)) {
                 continue;
             }
