@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-11 11:34:22 by magnolia>
+// Time-stamp: <Last changed 2025-12-12 16:56:31 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -48,7 +48,14 @@ using TCPClientWorker = tec::ActorWorker<TCPParams, TCPClient>;
 // #define USE_DAEMON 1
 
 tec::Status tcp_client() {
+    // By default, it can connect to either IPv4 or IPv6 tec::SocketServer.
     TCPParams params;
+    // To use IPv6 only:
+    //     params.addr = tec::SocketParams::kLocalAddrIP6;
+    //     params.family = AF_INET6;
+    // To use IPv4 only:
+    //     params.addr = tec::SocketParams::kLocalAddr;
+    //     params.family = AF_INET4;
 
 #ifdef USE_DAEMON
     // Use Daemon interface.

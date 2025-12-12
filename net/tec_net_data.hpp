@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-07 12:32:27 by magnolia>
+// Time-stamp: <Last changed 2025-12-11 18:21:45 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,7 +25,7 @@ SOFTWARE.
 
 /**
  * @file tec_net_data.hpp
- * @brief Data serialization routines.
+ * @brief Binary serialization.
  * @author The Emacs Cat
  * @date 2025-11-16
  */
@@ -45,6 +45,7 @@ SOFTWARE.
 
 
 namespace tec {
+
 
 class NetData: public NdTypes {
 
@@ -320,6 +321,40 @@ protected:
         }
     }
 
+public:
+
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     *                         NetData streams
+     *
+     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+    struct StreamIn {
+        NetData* nd;
+
+        StreamIn()
+            : nd{nullptr}
+            {}
+
+        StreamIn(NetData* _nd)
+            : nd{_nd}
+            {}
+    };
+
+    struct StreamOut {
+        NetData* nd;
+
+        StreamOut()
+            : nd{nullptr}
+            {}
+
+        StreamOut(NetData* _nd)
+            : nd{_nd}
+            {}
+    };
+
+
 }; // class NetData
+
 
 } // namespace tec

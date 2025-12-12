@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-11 13:21:56 by magnolia>
+// Time-stamp: <Last changed 2025-12-12 16:37:47 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,6 +33,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <netinet/in.h>
 #include <sys/socket.h>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
@@ -54,8 +55,15 @@ namespace tec {
 
 
 struct SocketParams {
-    static constexpr char kDefaultAddr[]{"127.0.0.1"};    ///< localhost.
-    static constexpr char kDefaultPort[]{"8080"};         ///< Test port.
+    static constexpr char kAnyAddr[]{"0.0.0.0"};          ///< IPv4 accept from any address.
+    static constexpr char kLocalAddr[]{"127.0.0.1"};      ///< IPv4 localhost.
+
+    static constexpr char kLocalURI[]{"localhost"};       ///< IPv4 and IPv6 localhost.
+
+    static constexpr char kAnyAddrIP6[]{"::"};            ///< IPv6 accept from any address.
+    static constexpr char kLocalAddrIP6[]{"::1"};         ///< IPv6 localhost.
+
+    static constexpr int kDefaultPort{4321};              ///< Test port.
     static constexpr int kDefaultFamily{AF_UNSPEC};       ///< IPv4 or IPv6.
     static constexpr int kDefaultSockType{SOCK_STREAM};   ///< TCP.
     static constexpr int kDefaultProtocol{0};             ///< Any protocol.
@@ -65,14 +73,14 @@ struct SocketParams {
     static constexpr char kNullString{0};
 
     std::string addr;
-    std::string port;
+    int port;
     int family;
     int socktype;
     int protocol;
     int flags;
 
     SocketParams()
-        : addr{kDefaultAddr}
+        : addr{kLocalURI}
         , port{kDefaultPort}
         , family{kDefaultFamily}
         , socktype{kDefaultSockType}
@@ -129,6 +137,7 @@ struct SocketServerParams: public SocketParams  {
         , opt_reuse_port{kOptReusePort}
     {
         flags = kDefaultServerFlags;
+        addr = kAnyAddr; // IPv4, use kAnyAddrIP6 to accept from both IPv4 and IPv6.
     }
 };
 
@@ -160,12 +169,6 @@ struct Socket {
     std::string addr;
     int port;
 
-    Socket(int _fd, const std::string& _addr, const std::string& _port)
-        : socketfd{_fd}
-        , addr{_addr}
-        , port{::atoi(_port.c_str())}
-    {}
-
     Socket(int _fd, const std::string& _addr, int _port)
         : socketfd{_fd}
         , addr{_addr}
@@ -185,13 +188,13 @@ struct Socket {
             if (length == 0) {
                 // Length is unknown -- check for null-terminated char stream.
                 if (buffer[received-1] == '\0') {
-                    TEC_TRACE("[{}]:{} EOF received.", pci->addr, pci->port);
+                    TEC_TRACE("{}:{} EOF received.", pci->addr, pci->port);
                     eof = true;
                  }
             }
             if (received > 0) {
                 data.write(buffer.data(), received);
-                TEC_TRACE("[{}]:{} --> RECV {} bytes.", pci->addr, pci->port, received);
+                TEC_TRACE("{}:{} --> RECV {} bytes.", pci->addr, pci->port, received);
                 total_received += received;
                 if (length > 0 && length == total_received) {
                     break;
@@ -203,15 +206,15 @@ struct Socket {
         }
 
         if (received == 0) {
-            TEC_TRACE("[{}]:{} Client closed connection.", pci->addr, pci->port);
+            TEC_TRACE("{}:{} Client closed connection.", pci->addr, pci->port);
         }
         else if (received == -1) {
-            auto errmsg = format("[{}]:{} socket read error {}.", pci->addr, pci->port, errno);
+            auto errmsg = format("{}:{} socket read error {}.", pci->addr, pci->port, errno);
             TEC_TRACE(errmsg);
             return {errno, errmsg, Error::Kind::NetErr};
         }
         else if (length > 0  &&  total_received != length) {
-            auto errmsg = format("[{}]:{} socket partial read: {} bytes of {}.",
+            auto errmsg = format("{}:{} socket partial read: {} bytes of {}.",
                                  pci->addr, pci->port, total_received, length);
             return {EIO, errmsg, Error::Kind::NetErr};
         }
@@ -225,16 +228,16 @@ struct Socket {
 
         // Send data to the client
         ssize_t sent = write(ps->socketfd, data.data(), data.size());
-        TEC_TRACE("[{}]:{} <-- SEND {} bytes.", ps->addr, ps->port, sent);
+        TEC_TRACE("{}:{} <-- SEND {} bytes.", ps->addr, ps->port, sent);
 
         // Check error.
         if (sent < 0) {
-            auto errmsg = format("[{}]:{} socket write error {}.", ps->addr, ps->port, errno);
+            auto errmsg = format("{}:{} socket write error {}.", ps->addr, ps->port, errno);
             TEC_TRACE(errmsg.c_str());
             return {errno, errmsg, Error::Kind::NetErr};
         }
         else if (data.size() != static_cast<size_t>(sent)) {
-            auto errmsg = format("[{}]:{} socket partial write: {} bytes of {}.",
+            auto errmsg = format("{}:{} socket partial write: {} bytes of {}.",
                                  ps->addr, ps->port, sent, data.size());
             return {EIO, errmsg, Error::Kind::NetErr};
         }
@@ -243,7 +246,7 @@ struct Socket {
     }
 
 
-    static Status send_error(Socket* ps){
+    static Status send_null(Socket* ps){
         Bytes b;
         char c{SocketParams::kNullString};
         b.write(&c, sizeof(char));

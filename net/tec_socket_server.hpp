@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-11 14:02:08 by magnolia>
+// Time-stamp: <Last changed 2025-12-12 16:26:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -159,11 +159,11 @@ protected:
         char client_ip[INET6_ADDRSTRLEN];
         int client_port{0};
         if (client_addr->ss_family == AF_INET) {
-            struct sockaddr_in *s = (struct sockaddr_in *)&client_addr;
+            struct sockaddr_in *s = (struct sockaddr_in*)&client_addr;
             ::inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
             client_port = ::ntohs(s->sin_port);
         } else {
-            struct sockaddr_in6 *s = (struct sockaddr_in6 *)&client_addr;
+            struct sockaddr_in6 *s = (struct sockaddr_in6*)&client_addr;
             ::inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
             client_port = ::ntohs(s->sin6_port);
         }
@@ -176,7 +176,7 @@ protected:
         TEC_ENTER("SocketServer::resolve_and_bind_host");
 
         // Resolve the server address.
-        TEC_TRACE("Resolving host [{}]:{}...", params_.addr, params_.port);
+        TEC_TRACE("Resolving address {}:{}...", params_.addr, params_.port);
         addrinfo hints;
         ::memset(&hints, 0, sizeof(hints));
         hints.ai_family = params_.family;
@@ -186,14 +186,16 @@ protected:
         // getaddrinfo() returns a list of address structures.
         // Try each address until we successfully bind().
         addrinfo* servinfo{NULL};
-        int ecode = ::getaddrinfo(params_.addr.c_str(), params_.port.c_str(),
+        char port_str[16];
+        ::snprintf(port_str, 15, "%d", params_.port);
+        int ecode = ::getaddrinfo(params_.addr.c_str(), port_str,
                                   &hints, &servinfo);
         if( ecode != 0 ) {
             std::string emsg{::gai_strerror(ecode)};
-            TEC_TRACE("Host resolving error: {}", emsg);
+            TEC_TRACE("Address resolving error: {}", emsg);
             return {ecode, emsg, Error::Kind::NetErr};
         }
-        TEC_TRACE("Host resolved OK.");
+        TEC_TRACE("Address resolved OK.");
 
         // If socket() or bind() fails, we close the socket
         // and try the next address.
@@ -229,7 +231,7 @@ protected:
         ::freeaddrinfo(servinfo);
 
         if (p == NULL) {
-            auto emsg = format("Failed to bind to [{}]:{}", params_.addr, params_.port);
+            auto emsg = format("Failed to bind to {}:{}", params_.addr, params_.port);
             TEC_TRACE(emsg);
             return {EAFNOSUPPORT, emsg, Error::Kind::NetErr};
         }
@@ -244,12 +246,12 @@ protected:
         TEC_ENTER("SocketServer::start_listening");
 
         if (::listen(listenfd_, params_.queue_size) == -1) {
-            auto emsg = format("Failed to listen to [{}]:{}.", params_.addr, params_.port);
+            auto emsg = format("Failed to listen to {}:{}.", params_.addr, params_.port);
             ::close(listenfd_);
             listenfd_ = EOF;
             return {errno, emsg, Error::Kind::NetErr};
         }
-        TEC_TRACE("Server listening on [{}]:{}.", params_.addr, params_.port);
+        TEC_TRACE("Server listening on {}:{}.", params_.addr, params_.port);
         return {};
     }
 
@@ -293,7 +295,7 @@ protected:
             }
 
             Socket sock = get_socket_info(clientfd, &client_addr);
-            TEC_TRACE("Accepted connection from [{}]:{}.", sock.addr, sock.port);
+            TEC_TRACE("Accepted connection from {}:{}.", sock.addr, sock.port);
 
             // Pass the client socket for further processing.
             process_socket(sock);
@@ -311,7 +313,7 @@ protected:
             on_net_data(&sock);
         }
 
-        TEC_TRACE("Closing connection with [{}]:{}...", sock.addr, sock.port);
+        TEC_TRACE("Closing connection with {}:{}...", sock.addr, sock.port);
         ::shutdown(sock.socketfd, SHUT_RDWR);
         ::close(sock.socketfd);
     }

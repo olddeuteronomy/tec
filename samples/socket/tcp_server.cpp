@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-07 01:42:16 by magnolia>
+// Time-stamp: <Last changed 2025-12-12 16:55:21 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +24,9 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 #include <csignal>
+#include <sys/socket.h>
 
+#include "tec/net/tec_socket.hpp"
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
@@ -47,6 +49,9 @@ tec::Signal sig_quit;
 
 tec::Status tcp_server() {
     tec::SocketServerParams params;
+    // To accept IPv6:
+    params.addr = tec::SocketParams::kAnyAddrIP6;
+    params.family = AF_INET6;
     auto srv{TCPServerWorker::Builder<TCPServerWorker, TCPServer>{}(params)};
 
     // Run it and check for the result.

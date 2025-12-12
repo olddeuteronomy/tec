@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-11 12:46:29 by magnolia>
+// Time-stamp: <Last changed 2025-12-12 16:27:55 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,6 +34,7 @@ SOFTWARE.
 #pragma once
 
 #include <cstdio>
+#include <netinet/in.h>
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L   // This line fixes the "storage size of ‘hints’ isn’t known" issue.
 #endif
@@ -89,7 +90,7 @@ public:
         Actor::SignalOnExit on_exit{sig_started};
 
         // Resolve the server address.
-        TEC_TRACE("Resolving address [{}]:{}...", params_.addr, params_.port);
+        TEC_TRACE("Resolving address {}:{}...", params_.addr, params_.port);
         addrinfo hints;
         ::memset(&hints, 0, sizeof(hints));
         hints.ai_family = params_.family;
@@ -99,7 +100,9 @@ public:
         // getaddrinfo() returns a list of address structures.
         // Try each address until we successfully connect().
         addrinfo* servinfo{NULL};
-        int ecode = ::getaddrinfo(params_.addr.c_str(), params_.port.c_str(),
+        char port_str[16];
+        ::snprintf(port_str, 15, "%d", params_.port);
+        int ecode = ::getaddrinfo(params_.addr.c_str(), port_str,
                                   &hints, &servinfo);
         if( ecode != 0 ) {
             std::string emsg = ::gai_strerror(ecode);
@@ -134,7 +137,7 @@ public:
         ::freeaddrinfo(servinfo);
 
         if( p == NULL ) {
-            auto emsg = format("Failed to connect to [{}]:{}", params_.addr, params_.port);
+            auto emsg = format("Failed to connect to {}:{}", params_.addr, params_.port);
             *status = {ECONNREFUSED, emsg, Error::Kind::NetErr};
             TEC_TRACE(emsg);
             return;

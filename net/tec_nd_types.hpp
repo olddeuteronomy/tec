@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-07 11:43:48 by magnolia>
+// Time-stamp: <Last changed 2025-12-11 18:48:23 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -40,6 +40,7 @@ namespace tec {
 
 
 struct NdTypes {
+
     using ID = uint16_t;
 
     using Tag =  uint16_t;
@@ -75,7 +76,6 @@ struct NdTypes {
         // Scalar sequences.
         static constexpr Tag SByte{(32 | Meta::Scalar | Meta::Sequence)};
         static constexpr Tag SChar{(33 | Meta::Scalar | Meta::Sequence)};
-        static constexpr Tag SWChar{(34 | Meta::Scalar | Meta::Sequence)};
         // Containers.
         static constexpr Tag Container{64};
         static constexpr Tag Map{65};
@@ -89,11 +89,13 @@ struct NdTypes {
         static constexpr uint32_t kMagic{0x041b00};
         static constexpr uint16_t kDefaultVersion{0x0100};
 
-        // 16 bytes.
+        // 20 bytes.
         uint32_t magic;
         uint32_t size;
         uint16_t version;
         uint16_t id;
+        int16_t  status;
+        uint16_t reserved16;
         uint32_t reserved32;
 
         Header()
@@ -101,6 +103,8 @@ struct NdTypes {
             , size{0}
             , version{kDefaultVersion}
             , id{0}
+            , status{0}
+            , reserved16{0}
             , reserved32{0}
         {}
 
@@ -130,7 +134,7 @@ struct NdTypes {
 #pragma pack(pop)
 
     inline static Count to_count(size_t count) {
-        return (count > __UINT16_MAX__) ? __UINT16_MAX__ : count;
+        return ((count > __UINT16_MAX__) ? __UINT16_MAX__ : count);
     }
 
     // Integers.
@@ -247,18 +251,9 @@ implementations (a notable exception is MSVC, which implements long
 double in the same format as double, i.e. binary64).
 
 On Windows, sizeof(long long double) == 8.
+On Linux, macOS, sizeof(long long double) == 16.
 
-On Windows and Linux, sizeof(bool) == 1.
-
- - char16_t — type for UTF-16 character representation, required to be
-   large enough to represent any UTF-16 code unit (16 bits). It has
-   the same size, signedness, and alignment as std::uint_least16_t,
-   but is a distinct type.
-
- - char32_t — type for UTF-32 character representation, required to be
-   large enough to represent any UTF-32 code unit (32 bits). It has
-   the same size, signedness, and alignment as std::uint_least32_t,
-   but is a distinct type.
+On Windows, Linux, macOS, sizeof(bool) == 1.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
