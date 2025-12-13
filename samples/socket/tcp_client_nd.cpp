@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-14 00:27:42 by magnolia>
+// Time-stamp: <Last changed 2025-12-14 02:34:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -31,8 +31,7 @@ SOFTWARE.
 #include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
 #include "tec/tec_actor_worker.hpp"
-#include "tec/net/tec_socket.hpp"
-#include "tec/net/tec_socket_client.hpp"
+#include "tec/net/tec_socket_client_nd.hpp"
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -42,7 +41,7 @@ SOFTWARE.
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 using TCPParams = tec::SocketClientParams;
-using TCPClient = tec::SocketClient<TCPParams>;
+using TCPClient = tec::SocketClientNd<TCPParams>;
 using TCPClientWorker = tec::ActorWorker<TCPParams, TCPClient>;
 
 // #define USE_DAEMON 1

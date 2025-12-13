@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-13 16:46:46 by magnolia>
+// Time-stamp: <Last changed 2025-12-14 01:06:53 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,6 +33,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <cerrno>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
@@ -78,7 +79,7 @@ struct SocketNd: public Socket {
 
 
     static Status send_nd(NetData* nd, SocketNd* sock) {
-        TEC_ENTER("SocketClientNd::send_nd");
+        TEC_ENTER("SocketNd::send_nd");
         // Validate data.
         auto status = validate_data(nd);
         if (!status) {
@@ -88,10 +89,11 @@ struct SocketNd: public Socket {
         const NetData::Header* hdr = nd->header();
         ssize_t sent = write(sock->fd, hdr, sizeof(NetData::Header));
         if (sent != sizeof(NetData::Header)) {
+            int ecode{EBADMSG};
             auto errmsg = format("{}:{} NetData::Header write error {}.",
-                                 sock->addr, sock->port, errno);
+                                 sock->addr, sock->port, ecode);
             TEC_TRACE(errmsg.c_str());
-            return {errno, errmsg, Error::Kind::NetErr};
+            return {ecode, errmsg, Error::Kind::NetErr};
         }
         // Write data to the stream.
         nd->rewind();
@@ -101,14 +103,15 @@ struct SocketNd: public Socket {
 
 
     static Status recv_nd(NetData* nd, SocketNd* sock) {
-        TEC_ENTER("SocketClientNd::recv_nd");
+        TEC_ENTER("SocketNd::recv_nd");
         // Read the header.
         ssize_t rd = read(sock->fd, nd->header(), sizeof(NetData::Header));
         if (rd != sizeof(NetData::Header)) {
+            int ecode{EBADMSG};
             auto errmsg = format("{}:{} NetData::Header read error {}.",
-                                 sock->addr, sock->port, errno);
+                                 sock->addr, sock->port, ecode);
             TEC_TRACE(errmsg.c_str());
-            return {errno, errmsg, Error::Kind::NetErr};
+            return {ecode, errmsg, Error::Kind::NetErr};
         }
         // Validate data.
         // TODO

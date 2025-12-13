@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-13 14:00:47 by magnolia>
+// Time-stamp: <Last changed 2025-12-14 00:24:05 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -172,7 +172,7 @@ public:
     }
 
 
-    Status request(const std::string* str_in, std::string* str_out) {
+    Status request_str(const std::string* str_in, std::string* str_out) {
         TEC_ENTER("SocketClient::request");
         SocketCharStreamIn request{str_in};
         SocketCharStreamOut reply{str_out};

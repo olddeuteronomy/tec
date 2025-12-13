@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-13 16:50:51 by magnolia>
+// Time-stamp: <Last changed 2025-12-14 02:33:29 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -40,6 +40,7 @@ SOFTWARE.
 #include "tec/net/tec_net_data.hpp"
 #include "tec/net/tec_socket_nd.hpp"
 #include "tec/net/tec_socket_server.hpp"
+#include "tec/tec_status.hpp"
 #include "tec/tec_trace.hpp"
 
 
@@ -51,31 +52,43 @@ public:
     using Params = TParams;
 
 public:
-    SocketServerNd(const Params& params)
+    explicit SocketServerNd(const Params& params)
         : SocketServer<Params>(params)
     {
-        this->params_.mode = SocketServerParams::kModeNetData;
+        // this->params_.mode = SocketServerParams::kModeNetData;
     }
 
     virtual ~SocketServerNd() = default;
 
 
+    virtual void reply_error(Status status, SocketNd* sock) {
+        TEC_ENTER("SocketServerNd::reply_error");
+        NetData::Header hdr;
+        hdr.status = static_cast<decltype(hdr.status)>(status.code.value_or(0));
+        write(sock->fd, &hdr, sizeof(hdr));
+    }
+
+    virtual void echo(SocketNd* sock) {
+        TEC_ENTER("SocketServerNd::echo");
+        // Echo server.
+        NetData data_in;
+        auto status = SocketNd::recv_nd(&data_in, sock);
+        if (!status) {
+            // Send error header.
+            reply_error( status, sock);
+        }
+        else {
+            // Reply back.
+            SocketNd::send_nd(&data_in, sock);
+        }
+    }
+
     void on_net_data(Socket* s) override {
         TEC_ENTER("SocketServerNd::on_net_data");
         SocketNd sock(s->fd, s->addr, s->port);
-
-        // Echo server.
-        NetData* data_in;
-        auto status = SocketNd::recv_nd(data_in, &sock);
-        if (!status) {
-            // Send error header.
-            NetData::Header hdr;
-            hdr.status = static_cast<decltype(hdr.status)>(status.code.value_or(0));
-            write(sock.fd, &hdr, sizeof(hdr));
-            return;
-        }
+        echo(&sock);
     }
 
 };
 
-}
+} // namespace tec

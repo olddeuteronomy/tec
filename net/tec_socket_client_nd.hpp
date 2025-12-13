@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-13 16:05:51 by magnolia>
+// Time-stamp: <Last changed 2025-12-14 00:31:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -58,9 +58,6 @@ namespace tec {
 
 template <typename TParams>
 class SocketClientNd: public SocketClient<TParams> {
-protected:
-
-
 public:
     using Params = TParams;
 
@@ -69,8 +66,7 @@ public:
     {
     }
 
-    virtual ~SocketClientNd() {
-    }
+    virtual ~SocketClientNd() = default;
 
 
     Status process_request(Request request, Reply reply) override {
@@ -86,16 +82,16 @@ public:
             if (req->nd == nullptr || rep->nd == nullptr) {
                 return {EFAULT, Error::Kind::Invalid};
             }
-            return send_recv_nd(req, rep);
+            return send_recv_nd(req->nd, rep->nd);
         }
 
         return SocketClient<Params>::process_request(request, reply);
     }
 
 
-    Status request(NetData* req, NetData* rep) {
+    Status request_nd(NetData* nd_in, NetData* nd_out) {
         TEC_ENTER("SocketClientNd::request");
-        return send_recv_nd(req, rep);
+        return send_recv_nd(nd_in, nd_out);
     }
 
 protected:
@@ -104,7 +100,7 @@ protected:
         TEC_ENTER("SocketClientNd::send_nd");
         // Socket helper.
         SocketNd sock{this->sockfd_, this->params_.addr, this->params_.port};
-        return SocketNd::send_null(&sock);
+        return SocketNd::send_nd(nd, &sock);
     }
 
 

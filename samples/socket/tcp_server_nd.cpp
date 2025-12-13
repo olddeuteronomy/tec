@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-14 00:27:42 by magnolia>
+// Time-stamp: <Last changed 2025-12-14 00:52:25 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,91 +23,70 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
-#include <memory>
-#include <string>
+#include <csignal>
 #include <sys/socket.h>
 
+#include "tec/net/tec_socket.hpp"
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
 #include "tec/tec_actor_worker.hpp"
-#include "tec/net/tec_socket.hpp"
-#include "tec/net/tec_socket_client.hpp"
+#include "tec/net/tec_socket_server_nd.hpp"
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                     Test BSD socket client
+*                     Simplest BSD socket server
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-using TCPParams = tec::SocketClientParams;
-using TCPClient = tec::SocketClient<TCPParams>;
-using TCPClientWorker = tec::ActorWorker<TCPParams, TCPClient>;
+using TCPParams = tec::SocketServerParams;
+using TCPServer = tec::SocketServerNd<TCPParams>;
+using TCPServerWorker = tec::ActorWorker<TCPParams, TCPServer>;
 
-// #define USE_DAEMON 1
+tec::Signal sig_quit;
 
-tec::Status tcp_client() {
-    // By default, it can connect to either IPv4 or IPv6 tec::SocketServer.
-    TCPParams params;
-    // To use IPv6 only:
-    //     params.addr = tec::SocketParams::kLocalAddrIP6;
-    //     params.family = AF_INET6;
-    // To use IPv4 only:
-    //     params.addr = tec::SocketParams::kLocalAddr;
-    //     params.family = AF_INET4;
 
-#ifdef USE_DAEMON
-    // Use Daemon interface.
-    auto cli{TCPClientWorker::Builder<TCPClientWorker, TCPClient>{}(params)};
-#else
-    // A pure client.
-    auto cli{std::make_unique<TCPClient>(params)};
-#endif
+tec::Status tcp_server() {
+    tec::SocketServerParams params;
+    // To accept IPv6:
+    // params.addr = tec::SocketParams::kAnyAddrIP6;
+    // params.family = AF_INET6;
+    params.mode = tec::SocketServerParams::kModeNetData;
+    auto srv{TCPServerWorker::Builder<TCPServerWorker, TCPServer>{}(params)};
 
     // Run it and check for the result.
-    auto status = cli->run();
+    auto status = srv->run();
     if( !status ) {
-        tec::println("tcp_client: {}", status);
+        tec::println("run(): {}", status);
         return status;
     }
 
-    // Data to process.
-    std::string str_send{"Hello world!"};
-    std::string str_recv;
+    // Wait for <Ctrl-C> pressed to terminate the server.
+    tec::println("\nPRESS <Ctrl-C> TO QUIT THE SERVER");
+    sig_quit.wait();
 
-    // Send a message.
-
-#ifdef USE_DAEMON
-    // Use Daemon interface.
-    tec::SocketCharStreamIn req{&str_send};
-    tec::SocketCharStreamOut rep{&str_recv};
-    status = cli->request(&req, &rep);
-#else
-    // Use direct call.
-    status = cli->request_str(&str_send, &str_recv);
-#endif
-
-    if( !status ) {
-        tec::println("tcp_client: {}", status);
-        return status;
-    }
-
-    tec::println("SEND:\"{}\"", str_send);
-    tec::println("RECV:\"{}\"", str_recv);
-
-    // Optionally.
-    cli->terminate();
+    // Terminate the server
+    status = srv->terminate();
     return status;
 }
 
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                             MAIN
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
 int main() {
+    // Install Ctrl-C handler.
+    std::signal(SIGINT, [](int){ sig_quit.set(); });
+
     tec::println("*** Running {} built at {}, {} with {} ***",
                  __FILE__, __DATE__, __TIME__, __TEC_COMPILER_NAME__);
 
     // Run the test.
-    auto result = tcp_client();
+    auto result = tcp_server();
 
     tec::println("\nExited with {}", result);
     return result.code.value_or(tec::Error::Code<>::Unspecified);

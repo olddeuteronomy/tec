@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-13 16:13:42 by magnolia>
+// Time-stamp: <Last changed 2025-12-14 02:31:02 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -309,7 +309,7 @@ protected:
     virtual void process_socket(Socket sock) {
         TEC_ENTER("SocketServer::process_socket");
         if(params_.mode == SocketServerParams::kModeCharStream) {
-            on_char_stream(&sock);
+            on_string(&sock);
         }
         else if(params_.mode == SocketServerParams::kModeNetData) {
             on_net_data(&sock);
@@ -321,7 +321,7 @@ protected:
     }
 
 
-    virtual void on_char_stream(Socket* sock) {
+    virtual void on_string(Socket* sock) {
         TEC_ENTER("SocketServer::on_char_stream");
         // Default implementation just echoes received data.
         Bytes data;

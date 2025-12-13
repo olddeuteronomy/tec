@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2025-11-11 16:03:51 by magnolia>
+# Time-stamp: <Last changed 2025-12-13 23:44:13 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -85,10 +85,16 @@ endif
 
 
 # Build the targets
-all: tcp_client tcp_server
+all: tcp_client tcp_server tcp_client_nd tcp_server_nd
 
 tcp_client: tcp_client.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
 tcp_server: tcp_server.cpp
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
+
+tcp_client_nd: tcp_client_nd.cpp
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
+
+tcp_server_nd: tcp_server_nd.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
