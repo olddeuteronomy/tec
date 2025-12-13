@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-12 16:26:43 by magnolia>
+// Time-stamp: <Last changed 2025-12-13 16:13:42 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -89,6 +89,8 @@ public:
             std::is_base_of_v<SocketServerParams, Params>,
             "Not derived from tec::SocketServerParams class");
     }
+
+    virtual ~SocketServer() = default;
 
 
     void start(Signal* sig_started, Status* status) override {
@@ -314,21 +316,21 @@ protected:
         }
 
         TEC_TRACE("Closing connection with {}:{}...", sock.addr, sock.port);
-        ::shutdown(sock.socketfd, SHUT_RDWR);
-        ::close(sock.socketfd);
+        ::shutdown(sock.fd, SHUT_RDWR);
+        ::close(sock.fd);
     }
 
 
-    virtual void on_char_stream(Socket* ps) {
+    virtual void on_char_stream(Socket* sock) {
         TEC_ENTER("SocketServer::on_char_stream");
         // Default implementation just echoes received data.
         Bytes data;
-        Socket::recv(data, ps, 0);
-        Socket::send(data, ps);
+        Socket::recv(data, sock, 0);
+        Socket::send(data, sock);
     }
 
 
-    virtual void on_net_data(Socket* pci) {
+    virtual void on_net_data(Socket* sock) {
     }
 
 }; // class SocketServer

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-11 18:21:45 by magnolia>
+// Time-stamp: <Last changed 2025-12-13 13:58:39 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -63,7 +63,15 @@ public:
         return data_;
     }
 
+    Bytes& bytes() {
+        return data_;
+    }
+
     Header* header() {
+        return &header_;
+    }
+
+    const Header* header()const {
         return &header_;
     }
 

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-12 16:37:47 by magnolia>
+// Time-stamp: <Last changed 2025-12-13 16:08:37 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,13 +33,13 @@ SOFTWARE.
 
 #pragma once
 
-#include <netinet/in.h>
-#include <sys/socket.h>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
 #endif
 
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <netdb.h>
 
@@ -165,17 +165,17 @@ struct SocketCharStreamOut {
 
 struct Socket {
 
-    int socketfd;
+    int fd;
     std::string addr;
     int port;
 
     Socket(int _fd, const std::string& _addr, int _port)
-        : socketfd{_fd}
+        : fd{_fd}
         , addr{_addr}
         , port{_port}
     {}
 
-    static Status recv(Bytes& data, Socket* pci, size_t length) {
+    static Status recv(Bytes& data, Socket* sock, size_t length) {
         TEC_ENTER("Socket::recv");
         // Default buffer size as defined in stdio.h (8192).
         std::array<char, BUFSIZ> buffer;
@@ -184,17 +184,17 @@ struct Socket {
         bool eof{false};
 
         // Read data from the client.
-        while ((received = read(pci->socketfd, buffer.data(), BUFSIZ)) > 0) {
+        while ((received = read(sock->fd, buffer.data(), BUFSIZ)) > 0) {
             if (length == 0) {
                 // Length is unknown -- check for null-terminated char stream.
                 if (buffer[received-1] == '\0') {
-                    TEC_TRACE("{}:{} EOF received.", pci->addr, pci->port);
+                    TEC_TRACE("{}:{} EOF received.", sock->addr, sock->port);
                     eof = true;
                  }
             }
             if (received > 0) {
                 data.write(buffer.data(), received);
-                TEC_TRACE("{}:{} --> RECV {} bytes.", pci->addr, pci->port, received);
+                TEC_TRACE("{}:{} --> RECV {} bytes.", sock->addr, sock->port, received);
                 total_received += received;
                 if (length > 0 && length == total_received) {
                     break;
@@ -206,16 +206,16 @@ struct Socket {
         }
 
         if (received == 0) {
-            TEC_TRACE("{}:{} Client closed connection.", pci->addr, pci->port);
+            TEC_TRACE("{}:{} Client closed connection.", sock->addr, sock->port);
         }
         else if (received == -1) {
-            auto errmsg = format("{}:{} socket read error {}.", pci->addr, pci->port, errno);
+            auto errmsg = format("{}:{} socket read error {}.", sock->addr, sock->port, errno);
             TEC_TRACE(errmsg);
             return {errno, errmsg, Error::Kind::NetErr};
         }
         else if (length > 0  &&  total_received != length) {
             auto errmsg = format("{}:{} socket partial read: {} bytes of {}.",
-                                 pci->addr, pci->port, total_received, length);
+                                 sock->addr, sock->port, total_received, length);
             return {EIO, errmsg, Error::Kind::NetErr};
         }
 
@@ -223,36 +223,27 @@ struct Socket {
     }
 
 
-    static Status send(Bytes& data, Socket* ps) {
+    static Status send(const Bytes& data, Socket* sock) {
         TEC_ENTER("Socket::send");
 
         // Send data to the client
-        ssize_t sent = write(ps->socketfd, data.data(), data.size());
-        TEC_TRACE("{}:{} <-- SEND {} bytes.", ps->addr, ps->port, sent);
+        ssize_t sent = write(sock->fd, data.data(), data.size());
+        TEC_TRACE("{}:{} <-- SEND {} bytes.", sock->addr, sock->port, sent);
 
         // Check error.
         if (sent < 0) {
-            auto errmsg = format("{}:{} socket write error {}.", ps->addr, ps->port, errno);
+            auto errmsg = format("{}:{} socket write error {}.", sock->addr, sock->port, errno);
             TEC_TRACE(errmsg.c_str());
             return {errno, errmsg, Error::Kind::NetErr};
         }
         else if (data.size() != static_cast<size_t>(sent)) {
             auto errmsg = format("{}:{} socket partial write: {} bytes of {}.",
-                                 ps->addr, ps->port, sent, data.size());
+                                 sock->addr, sock->port, sent, data.size());
             return {EIO, errmsg, Error::Kind::NetErr};
         }
 
         return {};
     }
-
-
-    static Status send_null(Socket* ps){
-        Bytes b;
-        char c{SocketParams::kNullString};
-        b.write(&c, sizeof(char));
-        return send(b, ps);
-    }
-
 
 }; // struct Socket
 

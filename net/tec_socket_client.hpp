@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-12 16:27:55 by magnolia>
+// Time-stamp: <Last changed 2025-12-13 14:00:47 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,8 +33,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <cstdio>
-#include <netinet/in.h>
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L   // This line fixes the "storage size of ‘hints’ isn’t known" issue.
 #endif
@@ -167,18 +165,18 @@ public:
             if( reply.has_value() ) {
                 rep = std::any_cast<SocketCharStreamOut*>(reply);
             }
-            return send_recv_chars(req, rep);
+            return send_recv_string(req, rep);
         }
 
         return {Error::Kind::NotImplemented};
     }
 
 
-    virtual Status request(const std::string* str_in, std::string* str_out) {
-        TEC_ENTER("SocketClient::request_chars");
+    Status request(const std::string* str_in, std::string* str_out) {
+        TEC_ENTER("SocketClient::request");
         SocketCharStreamIn request{str_in};
         SocketCharStreamOut reply{str_out};
-        auto status = send_recv_chars(&request, &reply);
+        auto status = send_recv_string(&request, &reply);
         if (status && (str_out != nullptr)) {
             *str_out = *reply.str;
         }
@@ -192,8 +190,8 @@ protected:
     }
 
 
-    virtual Status send_chars(const SocketCharStreamIn* request) {
-        TEC_ENTER("SocketClient::send_char");
+    virtual Status send_string(const SocketCharStreamIn* request) {
+        TEC_ENTER("SocketClient::send_string");
         if (request && request->str) {
             // `request` must be valid.
             Bytes data(*request->str);
@@ -204,8 +202,8 @@ protected:
         return {EFAULT, Error::Kind::Invalid};
     }
 
-    virtual Status recv_chars(SocketCharStreamOut* reply) {
-        TEC_ENTER("SocketClient::recv_char");
+    virtual Status recv_string(SocketCharStreamOut* reply) {
+        TEC_ENTER("SocketClient::recv_string");
         if (reply == nullptr) {
             // Notification message -- no reply required.
             return {};
@@ -220,21 +218,18 @@ protected:
         return status;
     }
 
-    virtual Status send_recv_chars(const SocketCharStreamIn* request, SocketCharStreamOut* reply) {
-        TEC_ENTER("SocketClient::send_recv_char");
-        auto status = send_chars(request);
+    virtual Status send_recv_string(const SocketCharStreamIn* request, SocketCharStreamOut* reply) {
+        TEC_ENTER("SocketClient::send_recv_string");
+        auto status = send_string(request);
         if (status) {
-            status = recv_chars(reply);
+            status = recv_string(reply);
         }
-        if (!status) {
+        else {
             terminate();
         }
         return status;
     }
 
-    virtual Status send_recv(Request req, Reply rep) {
-        return {Error::Kind::NotImplemented};
-    }
 };
 
 }
