@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-13 13:58:39 by magnolia>
+// Time-stamp: <Last changed 2025-12-16 00:43:19 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -73,6 +73,11 @@ public:
 
     const Header* header()const {
         return &header_;
+    }
+
+    void copy_from(const NetData& src) {
+        header_ = *src.header();
+        data_.copy_from(src.bytes());
     }
 
     size_t header_size() const {
@@ -338,13 +343,13 @@ public:
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     struct StreamIn {
-        NetData* nd;
+        const NetData* nd;
 
         StreamIn()
             : nd{nullptr}
             {}
 
-        StreamIn(NetData* _nd)
+        StreamIn(const NetData* _nd)
             : nd{_nd}
             {}
     };

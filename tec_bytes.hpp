@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-10 15:38:08 by magnolia>
+// Time-stamp: <Last changed 2025-12-16 00:38:35 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -170,6 +170,12 @@ public:
 
     virtual ~Bytes() = default;
 
+
+    void copy_from(const Bytes& src) {
+        rewind();
+        write(src.data(), src.size());
+    }
+
     const void* data() const {
         return buffer_.data();
     }
@@ -177,7 +183,6 @@ public:
     void* data()  {
         return buffer_.data();
     }
-
 
     std::byte* at(size_t pos) {
         return &buffer_.at(pos);

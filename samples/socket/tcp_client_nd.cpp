@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-14 02:34:46 by magnolia>
+// Time-stamp: <Last changed 2025-12-16 02:18:37 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -72,7 +72,7 @@ tec::Status tcp_client() {
     }
 
     // Data to process.
-    std::string str_send{"Hello world!"};
+    std::string str_send{"Hello world! This is a test message with size greater 20."};
     std::string str_recv;
 
     // Send a message.

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-14 00:31:43 by magnolia>
+// Time-stamp: <Last changed 2025-12-15 14:18:27 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -73,7 +73,7 @@ public:
         TEC_ENTER("SocketClientNd::process_request");
         if( request.type() == typeid(const NetData::StreamIn*) &&
             reply.type() == typeid(NetData::StreamOut*)) {
-            // Both request and reply are required.
+            // NetData: Both request and reply are required.
             if (!request.has_value() || !reply.has_value()) {
                 return {EINVAL, Error::Kind::Invalid};
             }
@@ -85,6 +85,7 @@ public:
             return send_recv_nd(req->nd, rep->nd);
         }
 
+        // Default processing.
         return SocketClient<Params>::process_request(request, reply);
     }
 
@@ -96,7 +97,7 @@ public:
 
 protected:
 
-    virtual Status send_nd(NetData* nd) {
+    virtual Status send_nd(const NetData* nd) {
         TEC_ENTER("SocketClientNd::send_nd");
         // Socket helper.
         SocketNd sock{this->sockfd_, this->params_.addr, this->params_.port};
@@ -112,7 +113,7 @@ protected:
     }
 
 
-    virtual Status send_recv_nd(NetData* nd_in, NetData* nd_out) {
+    virtual Status send_recv_nd(const NetData* nd_in, NetData* nd_out) {
         TEC_ENTER("SocketClientNd::send_recv_nd");
         auto status = send_nd(nd_in);
         if (status) {

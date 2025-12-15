@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-14 02:33:29 by magnolia>
+// Time-stamp: <Last changed 2025-12-16 01:57:22 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,16 +32,18 @@ SOFTWARE.
 
 #pragma once
 
-#include <sys/types.h>
+#include <cerrno>
+#include <functional>
+#include <sys/socket.h>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_serialize.hpp"
-#include "tec/net/tec_socket.hpp"
-#include "tec/net/tec_net_data.hpp"
-#include "tec/net/tec_socket_nd.hpp"
-#include "tec/net/tec_socket_server.hpp"
 #include "tec/tec_status.hpp"
 #include "tec/tec_trace.hpp"
+#include "tec/tec_serialize.hpp"
+#include "tec/net/tec_net_data.hpp"
+#include "tec/net/tec_socket.hpp"
+#include "tec/net/tec_socket_nd.hpp"
+#include "tec/net/tec_socket_server.hpp"
 
 
 namespace tec {
@@ -50,43 +52,135 @@ template <typename TParams>
 class SocketServerNd: public SocketServer<TParams> {
 public:
     using Params = TParams;
+    using Lock = std::lock_guard<std::mutex>;
+    using ID = NetData::ID;
+    using ServerNd = SocketServerNd<Params>;
+
+    struct DataInOut {
+        Status* status;
+        SocketNd* sock;
+        NetData* nd_in;
+        NetData* nd_out;
+    };
+
+    using HandlerFunc = std::function<void (ServerNd*, DataInOut)>;
+
+private:
+
+    struct Slot{
+        ServerNd* server;
+        HandlerFunc handler;
+
+        explicit Slot(ServerNd* _server, HandlerFunc _handler)
+            : server{_server}
+            , handler{_handler}
+        {}
+        ~Slot() = default;
+    };
+
+
+    std::unordered_map<ID, std::unique_ptr<Slot>> slots_;
+    std::mutex mtx_slots_;
 
 public:
+
     explicit SocketServerNd(const Params& params)
         : SocketServer<Params>(params)
     {
-        // this->params_.mode = SocketServerParams::kModeNetData;
+        // Register echo request handler (ID=0).
+        this->template register_handler<SocketServerNd>(
+            this, 0, &SocketServerNd::echo);
     }
 
     virtual ~SocketServerNd() = default;
 
 
-    virtual void reply_error(Status status, SocketNd* sock) {
-        TEC_ENTER("SocketServerNd::reply_error");
-        NetData::Header hdr;
-        hdr.status = static_cast<decltype(hdr.status)>(status.code.value_or(0));
-        write(sock->fd, &hdr, sizeof(hdr));
+    template <typename Derived>
+    void register_handler(Derived* server, ID id, void (Derived::*handler)(DataInOut dio)) {
+        Lock lk{mtx_slots_};
+        TEC_ENTER("SocketServerNd::register_handler");
+        // Ensure Derived is actually derived from ServerNd.
+        static_assert(std::is_base_of_v<ServerNd, Derived>,
+                      "Derived must inherit from tec::SocketServerNd");
+
+        // Remove existing handler.
+        if (auto slot = slots_.find(id); slot != slots_.end()) {
+            slots_.erase(id);
+        }
+
+        // Set the slot.
+        slots_[id] = std::make_unique<Slot>(
+            server,
+            [handler](ServerNd* server, DataInOut dio) {
+                // Safely downcast to Derived.
+                auto derived = dynamic_cast<Derived*>(server);
+                (derived->*handler)(dio);
+            });
+        TEC_TRACE("NetData handler ID={} registered.", id);
     }
 
-    virtual void echo(SocketNd* sock) {
-        TEC_ENTER("SocketServerNd::echo");
-        // Echo server.
-        NetData data_in;
-        auto status = SocketNd::recv_nd(&data_in, sock);
-        if (!status) {
-            // Send error header.
-            reply_error( status, sock);
+protected:
+
+    virtual Status dispatch(ID id, DataInOut dio) {
+        TEC_ENTER("SocketServerNd::dispatch");
+        Status status;
+        bool found{false};
+        if (auto slot = slots_.find(id); slot != slots_.end()) {
+            found = true;
+            slot->second->handler(slot->second->server, dio);
+        }
+        if (!found) {
+            status = {ENOTSUP, Error::Kind::NotImplemented};
+            TEC_TRACE("Handler for ID={} not found: {}.", id, status);
         }
         else {
-            // Reply back.
-            SocketNd::send_nd(&data_in, sock);
+            status = *dio.status;
+            TEC_TRACE("Dispatched with {}.", status);
         }
+        return status;
     }
+
+
+    virtual void reply_error(Status status) {
+        TEC_ENTER("SocketServerNd::reply_error");
+        NetData nd;
+        NetData::Header* hdr = nd.header();
+        hdr->status = static_cast<decltype(hdr->status)>(status.code.value_or(0xffff));
+        TEC_TRACE("Replied {}", status);
+    }
+
 
     void on_net_data(Socket* s) override {
         TEC_ENTER("SocketServerNd::on_net_data");
         SocketNd sock(s->fd, s->addr, s->port);
-        echo(&sock);
+
+        NetData nd_in;
+        Status status = SocketNd::recv_nd(&nd_in, &sock);
+        if (status) {
+            NetData nd_out;
+            DataInOut dio{&status, &sock, &nd_in, &nd_out};
+            status = dispatch(nd_in.header()->id, dio);
+            if (status) {
+                status = SocketNd::send_nd(&nd_out, &sock);
+            }
+        }
+        if (!status) {
+            reply_error(status);
+        }
+    }
+
+
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     *                       Default handlers
+     *
+     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+    virtual void echo(DataInOut dio) {
+        TEC_ENTER("SocketServerNd::echo");
+        // Copy input to output.
+        dio.nd_out->copy_from(*dio.nd_in);
+        *dio.status = {};
     }
 
 };

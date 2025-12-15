@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-14 01:06:53 by magnolia>
+// Time-stamp: <Last changed 2025-12-16 02:17:30 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -63,42 +63,23 @@ struct SocketNd: public Socket {
     {}
 
 
-    static Status validate_data(NetData* nd) {
-        const NetData::Header* hdr = nd->header();
-        if (!hdr->is_valid() || (hdr->status != 0)) {
-            return {EBADMSG, "Invalid NetData", Error::Kind::Invalid};
-        }
-        else if (hdr->size == 0) {
-            return {EMSGSIZE, "NetData is empty", Error::Kind::Invalid};
-        }
-        else if (hdr->id == 0) {
-            return {EINVAL, "No root NetData element", Error::Kind::Invalid};
-        }
-        return {};
-    }
-
-
-    static Status send_nd(NetData* nd, SocketNd* sock) {
+    static Status send_nd(const NetData* nd, SocketNd* sock) {
         TEC_ENTER("SocketNd::send_nd");
-        // Validate data.
-        auto status = validate_data(nd);
-        if (!status) {
-            return status;
-        }
         // Write header to the stream.
         const NetData::Header* hdr = nd->header();
         ssize_t sent = write(sock->fd, hdr, sizeof(NetData::Header));
         if (sent != sizeof(NetData::Header)) {
-            int ecode{EBADMSG};
-            auto errmsg = format("{}:{} NetData::Header write error {}.",
+            int ecode{EIO};
+            auto errmsg = format("{}:{} NetData::Header write error.",
                                  sock->addr, sock->port, ecode);
             TEC_TRACE(errmsg.c_str());
             return {ecode, errmsg, Error::Kind::NetErr};
         }
         // Write data to the stream.
-        nd->rewind();
-        status = Socket::send(nd->bytes(), sock);
-        return status;
+        if (hdr->size > 0) {
+            return Socket::send(nd->bytes(), sock);
+        }
+        return {};
     }
 
 
@@ -107,21 +88,26 @@ struct SocketNd: public Socket {
         // Read the header.
         ssize_t rd = read(sock->fd, nd->header(), sizeof(NetData::Header));
         if (rd != sizeof(NetData::Header)) {
-            int ecode{EBADMSG};
-            auto errmsg = format("{}:{} NetData::Header read error {}.",
-                                 sock->addr, sock->port, ecode);
+            int ecode{EIO};
+            auto errmsg = format("{}:{} NetData::Header read error.",
+                                 sock->addr, sock->port);
             TEC_TRACE(errmsg.c_str());
             return {ecode, errmsg, Error::Kind::NetErr};
         }
         // Validate data.
-        // TODO
         if (!nd->header()->is_valid()) {
-            return {};
+            int ecode{EBADMSG};
+            auto errmsg = format("{}:{} NetData::Header is invalid.",
+                                 sock->addr, sock->port);
+            TEC_TRACE(errmsg.c_str());
+            return {ecode, errmsg, Error::Kind::Invalid};
+
         }
         // Read data.
-        nd->rewind();
-        auto status = Socket::recv(nd->bytes(), sock, nd->header()->size);
-        return status;
+        if (nd->size() > 0) {
+            return Socket::recv(nd->bytes(), sock, nd->header()->size);
+        }
+        return {};
     }
 };
 

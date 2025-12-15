@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-13 16:08:37 by magnolia>
+// Time-stamp: <Last changed 2025-12-16 02:08:47 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -206,7 +206,7 @@ struct Socket {
         }
 
         if (received == 0) {
-            TEC_TRACE("{}:{} Client closed connection.", sock->addr, sock->port);
+            TEC_TRACE("{}:{} Peer closed connection.", sock->addr, sock->port);
         }
         else if (received == -1) {
             auto errmsg = format("{}:{} socket read error {}.", sock->addr, sock->port, errno);
@@ -223,11 +223,11 @@ struct Socket {
     }
 
 
-    static Status send(const Bytes& data, Socket* sock) {
+    static Status send(const Bytes& bytes, Socket* sock) {
         TEC_ENTER("Socket::send");
 
         // Send data to the client
-        ssize_t sent = write(sock->fd, data.data(), data.size());
+        ssize_t sent = write(sock->fd, bytes.data(), bytes.size());
         TEC_TRACE("{}:{} <-- SEND {} bytes.", sock->addr, sock->port, sent);
 
         // Check error.
@@ -236,9 +236,9 @@ struct Socket {
             TEC_TRACE(errmsg.c_str());
             return {errno, errmsg, Error::Kind::NetErr};
         }
-        else if (data.size() != static_cast<size_t>(sent)) {
+        else if (bytes.size() != static_cast<size_t>(sent)) {
             auto errmsg = format("{}:{} socket partial write: {} bytes of {}.",
-                                 sock->addr, sock->port, sent, data.size());
+                                 sock->addr, sock->port, sent, bytes.size());
             return {EIO, errmsg, Error::Kind::NetErr};
         }
 
