@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-16 00:38:35 by magnolia>
+// Time-stamp: <Last changed 2025-12-17 01:37:01 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,7 +33,6 @@ SOFTWARE.
 #pragma once
 
 #include <cstddef>
-#include <array>
 #include <string>
 #include <vector>
 #include <sstream>
@@ -45,6 +44,12 @@ SOFTWARE.
 
 
 namespace tec {
+
+
+struct _Char2 {
+    char c0;
+    char c1;
+};
 
 /**
  * @brief Converts a byte to a 2-character representation suitable for hex dumps.
@@ -78,7 +83,7 @@ namespace tec {
  *
  * @see as_hex()
  */
-inline constexpr std::array<char, 2> to_hex_chars(std::byte value) noexcept {
+inline constexpr _Char2 to_hex_chars(std::byte value) noexcept {
     constexpr char table[] = "0123456789ABCDEF";
     int i = std::to_integer<int>(value);
     if(0x20 < i && i < 0x7F) {
@@ -87,7 +92,7 @@ inline constexpr std::array<char, 2> to_hex_chars(std::byte value) noexcept {
     }
     else {
         // Non-printable.
-        return { table[i >> 4], table[(i & 0x0F)] };
+        return { table[(i >> 4)], table[i & 0x0F] };
     }
 }
 
@@ -360,10 +365,12 @@ public:
      */
     std::string as_hex() const {
         std::ostringstream os;
-        auto ptr = buffer_.data();
-        for(size_t n = 0 ; n < size() ; ++n, ++ptr) {
-           auto ch = to_hex_chars(*ptr);
-           os << ch[0] << ch[1];
+        if (size() > 0) {
+            auto ptr = buffer_.data();
+            for(size_t n = 0 ; n < size() ; ++n, ++ptr) {
+                auto ch = to_hex_chars(*ptr);
+                os << ch.c0 << ch.c1;
+            }
         }
         return os.str();
     }

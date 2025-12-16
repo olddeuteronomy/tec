@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-16 02:17:30 by magnolia>
+// Time-stamp: <Last changed 2025-12-16 22:35:54 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -107,6 +107,7 @@ struct SocketNd: public Socket {
         if (nd->size() > 0) {
             return Socket::recv(nd->bytes(), sock, nd->header()->size);
         }
+        nd->rewind();
         return {};
     }
 };

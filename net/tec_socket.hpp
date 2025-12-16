@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-16 02:08:47 by magnolia>
+// Time-stamp: <Last changed 2025-12-17 00:15:31 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -43,6 +43,7 @@ SOFTWARE.
 #include <unistd.h>
 #include <netdb.h>
 
+#include <array>
 #include <string>
 
 #include "tec/tec_def.hpp"  // IWYU pragma: keep
@@ -227,21 +228,26 @@ struct Socket {
         TEC_ENTER("Socket::send");
 
         // Send data to the client
-        ssize_t sent = write(sock->fd, bytes.data(), bytes.size());
-        TEC_TRACE("{}:{} <-- SEND {} bytes.", sock->addr, sock->port, sent);
+        if (bytes.size() > 0) {
 
-        // Check error.
-        if (sent < 0) {
-            auto errmsg = format("{}:{} socket write error {}.", sock->addr, sock->port, errno);
-            TEC_TRACE(errmsg.c_str());
-            return {errno, errmsg, Error::Kind::NetErr};
-        }
-        else if (bytes.size() != static_cast<size_t>(sent)) {
-            auto errmsg = format("{}:{} socket partial write: {} bytes of {}.",
-                                 sock->addr, sock->port, sent, bytes.size());
-            return {EIO, errmsg, Error::Kind::NetErr};
-        }
+            // FIXME valgrind gcc/clang -O0 -g: "Syscall param write(buf) points to uninitialised byte(s)"
+            // ssize_t sent = write(sock->fd, bytes.data(), bytes.size());
+            ssize_t sent = write(sock->fd, bytes.at(0), bytes.size());
+            TEC_TRACE("{}:{} <-- SEND {} bytes.", sock->addr, sock->port, sent);
 
+            // Check error.
+            if (sent < 0) {
+                auto errmsg = format("{}:{} socket write error {}.", sock->addr, sock->port, errno);
+                TEC_TRACE(errmsg.c_str());
+                return {errno, errmsg, Error::Kind::NetErr};
+            }
+            else if (bytes.size() != static_cast<size_t>(sent)) {
+                auto errmsg = format("{}:{} socket partial write: {} bytes of {}.",
+                                     sock->addr, sock->port, sent, bytes.size());
+                return {EIO, errmsg, Error::Kind::NetErr};
+            }
+
+        }
         return {};
     }
 

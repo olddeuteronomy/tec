@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-16 02:18:37 by magnolia>
+// Time-stamp: <Last changed 2025-12-17 01:32:33 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -29,9 +29,13 @@ SOFTWARE.
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
+#include "tec/tec_dump.hpp"
 #include "tec/tec_status.hpp"
 #include "tec/tec_actor_worker.hpp"
+#include "tec/net/tec_net_data.hpp"
 #include "tec/net/tec_socket_client_nd.hpp"
+
+#include "test_data.hpp"
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,7 +48,32 @@ using TCPParams = tec::SocketClientParams;
 using TCPClient = tec::SocketClientNd<TCPParams>;
 using TCPClientWorker = tec::ActorWorker<TCPParams, TCPClient>;
 
-// #define USE_DAEMON 1
+
+void print(Payload& p) {
+    std::cout << std::string(40, '=') << "\n";
+    std::cout << p << "\n";
+    std::cout << std::string(40, '-') << "\n";
+}
+
+void print(tec::NetData& nd) {
+    auto hdr = nd.header();
+    std::cout
+        << "\nMagic:   " << std::hex << hdr->magic
+        << "\nVersion: " << hdr->version << std::dec
+        << "\nID:      " << hdr->id
+        << "\nSize:    " << hdr->size
+        << "\n"
+        ;
+
+    // If compiled with `g++ -O2` v.13.3, valgrind reports
+    // "Use of uninitialised value of size 8".
+    // `clang` is OK.
+    nd.rewind();
+    std::cout << tec::Dump::dump_as_table(nd.bytes()) << "\n";
+
+}
+
+#define USE_DAEMON 1
 
 tec::Status tcp_client() {
     // By default, it can connect to either IPv4 or IPv6 tec::SocketServer.
@@ -55,6 +84,27 @@ tec::Status tcp_client() {
     // To use IPv4 only:
     //     params.addr = tec::SocketParams::kLocalAddr;
     //     params.family = AF_INET4;
+
+    // Data to process.
+    const char hello[] = "Hello\x01\x02World\xFF\x00";
+    std::unordered_map<int, Person> persons = {
+        {1256, {31, "Mary", "Smith"}},
+        {78, {39, "Harry", "Long"}},
+        {375, {67, "Kevin", "Longsdale"}},
+    };
+
+    Payload pld;
+    pld.list = {1, 2, 3, 4};
+    pld.i32 = 32;
+    pld.u64 = 1767623391515;
+    pld.str = "This is a UTF-8 string 😀";
+    pld.f32 = 3.14f;
+    pld.d64 = 2.78;
+    pld.p = {61, "John", "Dow"};
+    pld.d128 = 1.123456e102;
+    pld.bs = {hello, strlen(hello)};
+    pld.b = true;
+    pld.map = persons;
 
 #ifdef USE_DAEMON
     // Use Daemon interface.
@@ -72,19 +122,20 @@ tec::Status tcp_client() {
     }
 
     // Data to process.
-    std::string str_send{"Hello world! This is a test message with size greater 20."};
-    std::string str_recv;
+    tec::NetData nd_in; // Request.
+    nd_in << pld;
 
-    // Send a message.
+    tec::NetData nd_out; // Reply.
 
+    // Send a request.
 #ifdef USE_DAEMON
     // Use Daemon interface.
-    tec::SocketCharStreamIn req{&str_send};
-    tec::SocketCharStreamOut rep{&str_recv};
+    tec::NetData::StreamIn req{&nd_in};
+    tec::NetData::StreamOut rep{&nd_out};
     status = cli->request(&req, &rep);
 #else
     // Use direct call.
-    status = cli->request_str(&str_send, &str_recv);
+    status = cli->request_nd(&nd_in, &nd_out);
 #endif
 
     if( !status ) {
@@ -92,11 +143,21 @@ tec::Status tcp_client() {
         return status;
     }
 
-    tec::println("SEND:\"{}\"", str_send);
-    tec::println("RECV:\"{}\"", str_recv);
+    // Restore reply.
+    Payload pld_out;
+    nd_out >> pld_out;
 
     // Optionally.
     cli->terminate();
+
+    // Print results.
+    print(nd_in);
+    print(pld);
+
+    print(nd_out);
+    print(pld_out);
+
+
     return status;
 }
 

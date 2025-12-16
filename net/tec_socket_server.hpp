@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-14 02:31:02 by magnolia>
+// Time-stamp: <Last changed 2025-12-17 01:17:19 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,6 +33,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstring>
+#include <netinet/in.h>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
