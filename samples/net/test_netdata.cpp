@@ -191,10 +191,10 @@ void print_payload(const Payload& pld, const tec::NetData& nd) {
         << "Magic:   " << std::hex << hdr->magic << "\n"
         << "Version: " << hdr->version << std::dec << "\n"
         << "ID:      " << hdr->id << "\n"
-        << "Size:    " << hdr->size << "\n"
+        << "Size:    " << hdr->size
         << "\n"
         ;
-    // std::cout << tec::Dump::dump_as_table(nd.bytes().as_hex()) << "\n";
+    std::cout << tec::Dump::dump_as_table(nd.bytes().as_hex()) << "\n";
 }
 
 void save_payload(const Payload& pld, tec::NetData& nd) {

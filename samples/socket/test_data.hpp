@@ -9,6 +9,7 @@
 #include <list>
 #include <unordered_map>
 
+#include "tec/tec_memfile.hpp"
 #include "tec/tec_serialize.hpp"
 #include "tec/tec_json.hpp"
 #include "tec/net/tec_net_data.hpp"
@@ -88,7 +89,7 @@ struct Payload: tec::NdRoot {
     double d64;
     Person p;
     long double d128;
-    tec::Bytes bs;
+    tec::Blob bs;
     bool b;
     std::unordered_map<int, Person> map;
 

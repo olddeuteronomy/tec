@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-16 22:35:54 by magnolia>
+// Time-stamp: <Last changed 2025-12-20 00:59:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -87,24 +87,28 @@ struct SocketNd: public Socket {
         TEC_ENTER("SocketNd::recv_nd");
         // Read the header.
         ssize_t rd = read(sock->fd, nd->header(), sizeof(NetData::Header));
-        if (rd != sizeof(NetData::Header)) {
-            int ecode{EIO};
+        if (rd == 0) {
+            auto errmsg = format("{}:{} Peer closed the connection.",
+                                 sock->addr, sock->port);
+            TEC_TRACE(errmsg.c_str());
+            return {EIO, errmsg, Error::Kind::NetErr};
+        }
+        else if (rd != sizeof(NetData::Header)) {
             auto errmsg = format("{}:{} NetData::Header read error.",
                                  sock->addr, sock->port);
             TEC_TRACE(errmsg.c_str());
-            return {ecode, errmsg, Error::Kind::NetErr};
+            return {EBADMSG, errmsg, Error::Kind::NetErr};
         }
         // Validate data.
-        if (!nd->header()->is_valid()) {
-            int ecode{EBADMSG};
+        else if (!nd->header()->is_valid()) {
             auto errmsg = format("{}:{} NetData::Header is invalid.",
                                  sock->addr, sock->port);
             TEC_TRACE(errmsg.c_str());
-            return {ecode, errmsg, Error::Kind::Invalid};
+            return {EBADMSG, errmsg, Error::Kind::Invalid};
 
         }
         // Read data.
-        if (nd->size() > 0) {
+        else if (nd->header()->size > 0) {
             return Socket::recv(nd->bytes(), sock, nd->header()->size);
         }
         nd->rewind();

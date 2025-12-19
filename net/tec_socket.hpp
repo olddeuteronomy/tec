@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-17 00:15:31 by magnolia>
+// Time-stamp: <Last changed 2025-12-20 00:46:25 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -49,7 +49,7 @@ SOFTWARE.
 #include "tec/tec_def.hpp"  // IWYU pragma: keep
 #include "tec/tec_trace.hpp"
 #include "tec/tec_status.hpp"
-#include "tec/tec_bytes.hpp"
+#include "tec/tec_memfile.hpp"
 
 
 namespace tec {
@@ -176,7 +176,7 @@ struct Socket {
         , port{_port}
     {}
 
-    static Status recv(Bytes& data, Socket* sock, size_t length) {
+    static Status recv(MemFile& data, Socket* sock, size_t length) {
         TEC_ENTER("Socket::recv");
         // Default buffer size as defined in stdio.h (8192).
         std::array<char, BUFSIZ> buffer;
@@ -207,7 +207,9 @@ struct Socket {
         }
 
         if (received == 0) {
-            TEC_TRACE("{}:{} Peer closed connection.", sock->addr, sock->port);
+            auto errmsg = format("{}:{} Peer closed the connection.", sock->addr, sock->port);
+            TEC_TRACE(errmsg);
+            return {EIO, errmsg, Error::Kind::NetErr};
         }
         else if (received == -1) {
             auto errmsg = format("{}:{} socket read error {}.", sock->addr, sock->port, errno);
@@ -217,6 +219,7 @@ struct Socket {
         else if (length > 0  &&  total_received != length) {
             auto errmsg = format("{}:{} socket partial read: {} bytes of {}.",
                                  sock->addr, sock->port, total_received, length);
+            TEC_TRACE(errmsg);
             return {EIO, errmsg, Error::Kind::NetErr};
         }
 
@@ -224,7 +227,7 @@ struct Socket {
     }
 
 
-    static Status send(const Bytes& bytes, Socket* sock) {
+    static Status send(const MemFile& bytes, Socket* sock) {
         TEC_ENTER("Socket::send");
 
         // Send data to the client
@@ -232,7 +235,7 @@ struct Socket {
 
             // FIXME valgrind gcc/clang -O0 -g: "Syscall param write(buf) points to uninitialised byte(s)"
             // ssize_t sent = write(sock->fd, bytes.data(), bytes.size());
-            ssize_t sent = write(sock->fd, bytes.at(0), bytes.size());
+            ssize_t sent = write(sock->fd, bytes.ptr(0), bytes.size());
             TEC_TRACE("{}:{} <-- SEND {} bytes.", sock->addr, sock->port, sent);
 
             // Check error.

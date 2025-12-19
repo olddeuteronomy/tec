@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-19 16:08:42 by magnolia>
+// Time-stamp: <Last changed 2025-12-19 21:38:17 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -51,7 +51,7 @@ class NetData: public NdTypes {
 
 protected:
     Header header_;
-    Blob data_;
+    MemFile data_;
 
 public:
     NetData() {

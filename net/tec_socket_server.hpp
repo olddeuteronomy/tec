@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-17 01:17:19 by magnolia>
+// Time-stamp: <Last changed 2025-12-19 23:50:02 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -58,7 +58,7 @@ SOFTWARE.
 #include "tec/tec_signal.hpp"
 #include "tec/tec_trace.hpp"
 #include "tec/tec_status.hpp"
-#include "tec/tec_bytes.hpp"
+#include "tec/tec_memfile.hpp"
 #include "tec/tec_actor.hpp"
 #include "tec/net/tec_socket.hpp"
 
@@ -248,7 +248,6 @@ protected:
 
     virtual Status start_listening() {
         TEC_ENTER("SocketServer::start_listening");
-
         if (::listen(listenfd_, params_.queue_size) == -1) {
             auto emsg = format("Failed to listen to {}:{}.", params_.addr, params_.port);
             ::close(listenfd_);
@@ -262,7 +261,6 @@ protected:
 
     virtual Status accept_connection(int* clientfd, sockaddr_storage* client_addr) {
         TEC_ENTER("SocketServer::accept_connection");
-
         // Wait for incoming connection.
         socklen_t sin_size = sizeof(sockaddr_storage);
         *clientfd = ::accept(listenfd_,
@@ -280,7 +278,6 @@ protected:
             TEC_TRACE(err_msg);
             return {errno, err_msg, Error::Kind::NetErr};
         }
-
         return {};
     }
 
@@ -293,6 +290,7 @@ protected:
             int clientfd{-1};
 
             sockaddr_storage client_addr;
+            // ::memset(&client_addr, 0, sizeof(sockaddr_storage));
             TEC_TRACE("Waiting for incoming connection...");
             if (!accept_connection(&clientfd, &client_addr)) {
                 continue;
@@ -326,7 +324,7 @@ protected:
     virtual void on_string(Socket* sock) {
         TEC_ENTER("SocketServer::on_char_stream");
         // Default implementation just echoes received data.
-        Bytes data;
+        Blob data;
         Socket::recv(data, sock, 0);
         Socket::send(data, sock);
     }

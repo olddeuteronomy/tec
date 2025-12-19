@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-17 01:32:33 by magnolia>
+// Time-stamp: <Last changed 2025-12-20 01:08:13 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -65,15 +65,14 @@ void print(tec::NetData& nd) {
         << "\n"
         ;
 
-    // If compiled with `g++ -O2` v.13.3, valgrind reports
+    // If compiled with `g++ -O2` v.13.3, valgrind v.3.22 may report
     // "Use of uninitialised value of size 8".
-    // `clang` is OK.
     nd.rewind();
-    std::cout << tec::Dump::dump_as_table(nd.bytes()) << "\n";
+    std::cout << tec::Dump::dump_as_table(nd.bytes().as_hex()) << "\n";
 
 }
 
-#define USE_DAEMON 1
+// #define USE_DAEMON 1
 
 tec::Status tcp_client() {
     // By default, it can connect to either IPv4 or IPv6 tec::SocketServer.

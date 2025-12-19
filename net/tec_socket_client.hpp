@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-14 00:24:05 by magnolia>
+// Time-stamp: <Last changed 2025-12-20 00:33:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,6 +33,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "tec/tec_memfile.hpp"
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L   // This line fixes the "storage size of ‘hints’ isn’t known" issue.
 #endif
@@ -50,6 +51,7 @@ SOFTWARE.
 #include "tec/tec_status.hpp"
 #include "tec/tec_message.hpp"
 #include "tec/tec_actor.hpp"
+#include "tec/tec_memfile.hpp"
 #include "tec/net/tec_socket.hpp"
 
 
@@ -194,7 +196,7 @@ protected:
         TEC_ENTER("SocketClient::send_string");
         if (request && request->str) {
             // `request` must be valid.
-            Bytes data(*request->str);
+            MemFile data(*request->str);
             Socket sock{sockfd_, params_.addr, params_.port};
             auto status = Socket::send(data, &sock);
             return status;
@@ -211,10 +213,12 @@ protected:
         if (reply->str == nullptr) {
             return {EFAULT, Error::Kind::Invalid};
         }
-        Bytes data;
+        MemFile data;
         Socket sock{sockfd_, params_.addr, params_.port};
         auto status = Socket::recv(data, &sock, 0);
-        *reply->str = static_cast<const char*>(data.data());
+        if (status) {
+            *reply->str = static_cast<const char*>(data.data());
+        }
         return status;
     }
 

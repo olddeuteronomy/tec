@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-14 00:52:25 by magnolia>
+// Time-stamp: <Last changed 2025-12-19 23:14:37 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -26,11 +26,11 @@ SOFTWARE.
 #include <csignal>
 #include <sys/socket.h>
 
-#include "tec/net/tec_socket.hpp"
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
 #include "tec/tec_actor_worker.hpp"
+#include "tec/net/tec_socket.hpp"
 #include "tec/net/tec_socket_server_nd.hpp"
 
 
