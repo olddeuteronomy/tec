@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-03 16:14:35 by magnolia>
+// Time-stamp: <Last changed 2025-12-18 15:30:21 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,23 +25,28 @@ SOFTWARE.
 
 #pragma once
 
+/**
+ * @file tec_dump.hpp
+ * @brief A byte buffer class with stream-like read/write semantics.
+ * @author The Emacs Cat
+ * @date 2025-12-17
+ */
+
 #include <cstddef>
 #include <iostream>
 #include <iomanip>
 #include <cctype>
 #include <ostream>
-
-#include "tec/tec_bytes.hpp"
+#include <string>
 
 
 namespace tec {
 
 struct Dump {
 
-    static std::string dump_as_table(const Bytes& src) {
+    static std::string dump_as_table(const std::string& s) {
         constexpr size_t bytes_per_line = 32;
         constexpr size_t chars_per_line = 2 * bytes_per_line;
-        std::string s{src.as_hex()};
         std::ostringstream os;
         // Header: decimal column numbers, 2 digits, padded with 0
         os << "offset|";

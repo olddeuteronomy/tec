@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-06 13:20:34 by magnolia>
+// Time-stamp: <Last changed 2025-12-19 15:32:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -36,7 +36,7 @@ SOFTWARE.
 #include <sstream>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_bytes.hpp"
+#include "tec/tec_memfile.hpp"
 #include "tec/tec_container.hpp"
 #include "tec/tec_serialize.hpp"
 
@@ -55,7 +55,7 @@ namespace tec {
  * Supports:
  * - Fundamental types (`int`, `float`, `bool`, etc.)
  * - `std::string`
- * - `tec::Bytes` (as hex string)
+ * - `tec::Blob` (as hex string)
  * - Any type satisfying `is_container_v<T>` → JSON array
  * - Any type satisfying `is_map_v<T>` → JSON object
  * - Any type derived from `tec::Serializable` → nested object via `to_json()`
@@ -101,13 +101,13 @@ struct Json {
     }
 
     /**
-     * @brief Serialize a Bytes object as a hex-encoded JSON string.
+     * @brief Serialize a Blob object as a hex-encoded JSON string.
      *
      * @param val  The byte container
      * @param name Optional JSON key name
      * @return JSON string like "deadbeef"
      */
-    static std::string json(const Bytes& val, const char* name = nullptr) {
+    static std::string json(const Blob& val, const char* name = nullptr) {
         std::ostringstream os;
         print_name(os, name);
         os <<  "\"" << val.as_hex() << "\"";
@@ -121,10 +121,12 @@ struct Json {
      * @param name Optional JSON key name
      * @return JSON boolean literal
      */
-    static std::string json(const bool& val, const char* name = nullptr) {
+    static std::string json_bool(long val, const char* name = nullptr) {
+        constexpr static char t[]{"true"};
+        constexpr static char f[]{"false"};
         std::ostringstream os;
         print_name(os, name);
-        os << (val ? "true" : "false");
+        os << (val ? t : f);
         return os.str();
     }
 
@@ -249,6 +251,11 @@ struct Json {
         else if constexpr (is_container_v<T>) {
             return json_container(val, name);
         }
+        else if constexpr (std::is_same_v<T, bool>) {
+            // To prevent a silly valgrind 3.22 warning "Use of unititialized memory".
+            long v = val & 0xF;
+            return json_bool(v, name);
+        }
         else {
             // Any scalar
             print_name(os, name);
@@ -256,6 +263,7 @@ struct Json {
         }
         return os.str();
     }
+
 
     /**
      * @brief Functor interface — serialize with explicit name.
@@ -303,7 +311,7 @@ struct Person: tec::Serializable {
     std::string surname;
 
     friend std::ostream& operator << (std::ostream& os, const Person& p) {
-        os << tec::Json{}(p);
+        os << json{}(p);
         return os;
     }
 

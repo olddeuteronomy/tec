@@ -1,71 +1,80 @@
 
 #include <iostream>
 
-#include "tec/tec_bytes.hpp"
+#include "tec/tec_dump.hpp"
+#include "tec/tec_memfile.hpp"
 
 
-void print_buffer(const tec::Bytes& buf) {
+
+void print_buffer(int n, const tec::Blob& buf) {
     std::cout
-        << "Block=" << buf.block_size() << " "
-        << "Capacity=" << buf.capacity() << " "
-        << "Size=" << buf.size() << " "
-        << "Pos=" << buf.tell()
-        << "\n";
+        << "\n"
+        << n << ") "
+        << std::string(70, '=')
+        << "\n"
+        << "Blk=" << buf.block_size() << "\n"
+        << "Cap=" << buf.capacity() << "\n"
+        << "Siz=" << buf.size() << "\n"
+        << "Pos=" << buf.tell() << "\n"
+        << tec::Dump::dump_as_table(buf.as_hex())
+        << "\n"
+        ;
 }
 
 
 int main() {
-    tec::Bytes buf(4);
+    tec::Blob buf(4);
+    // tec::Blob buf;
 
     // 1)
-    print_buffer(buf);
+    print_buffer(1, buf);
 
     // 2)
     unsigned int32{1234};
     buf.write(&int32, sizeof(unsigned));
-    print_buffer(buf);
+    print_buffer(2, buf);
 
-    // 4)
+    // 3)
     const char str[] = "Hello, world!";
     buf.write(str, strlen(str));
-    print_buffer(buf);
+    print_buffer(3, buf);
+
+    // 4)
+    buf.rewind();
+    print_buffer(4, buf);
 
     // 5)
-    buf.rewind();
-    print_buffer(buf);
-
-    // 6)
     unsigned int32a{0};
     buf.read(&int32a, sizeof(unsigned));
     std::cout << int32a << "\n";
-    print_buffer(buf);
+    print_buffer(5, buf);
 
-    // 7)
+    // 6)
     int len = strlen(str);
     char s[BUFSIZ];
     buf.read(s, len);
     s[len] = '\0';
     std::cout << s << "\n";
-    print_buffer(buf);
+    print_buffer(6, buf);
 
-    // 8)
+    // 7)
     buf.seek(0, SEEK_SET);
-    print_buffer(buf);
+    print_buffer(7, buf);
     unsigned int32b{0};
     buf.read(&int32b, sizeof(unsigned));
     std::cout << int32b << "\n";
-    print_buffer(buf);
+    print_buffer(7, buf);
 
-    // 9)
+    // 8)
     buf.seek(0, SEEK_END);
-    print_buffer(buf);
+    print_buffer(8, buf);
     buf.seek(-13, SEEK_CUR);
-    print_buffer(buf);
+    print_buffer(8, buf);
     char s2[BUFSIZ];
     buf.read(s2, len);
     s2[len] = '\0';
     std::cout << s2 << "\n";
-    print_buffer(buf);
+    print_buffer(8, buf);
 
     return 0;
 }

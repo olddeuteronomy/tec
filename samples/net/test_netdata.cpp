@@ -110,7 +110,7 @@ struct Payload: tec::NdRoot {
     double d64;
     Person p;
     long double d128;
-    tec::Bytes bs;
+    tec::Blob bs;
     bool b;
     std::unordered_map<int, Person> map;
 
@@ -184,13 +184,24 @@ struct Payload: tec::NdRoot {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+void print_payload(const Payload& pld, const tec::NetData& nd) {
+    std::cout << pld << "\n";
+    auto hdr = nd.header();
+    std::cout
+        << "Magic:   " << std::hex << hdr->magic << "\n"
+        << "Version: " << hdr->version << std::dec << "\n"
+        << "ID:      " << hdr->id << "\n"
+        << "Size:    " << hdr->size << "\n"
+        << "\n"
+        ;
+    // std::cout << tec::Dump::dump_as_table(nd.bytes().as_hex()) << "\n";
+}
+
 void save_payload(const Payload& pld, tec::NetData& nd) {
     nd << pld;
 
     std::cout << "\n-------- STORE --------\n";
-    std::cout << pld << "\n";
-    std::cout << std::string(23, '-') << "\nsize=" << nd.size() << "\n";
-
+    print_payload(pld, nd);
 }
 
 void restore_payload(tec::NetData& nd) {
@@ -199,22 +210,7 @@ void restore_payload(tec::NetData& nd) {
     nd >> pld;
 
     std::cout << "\n-------- LOAD ---------\n";
-    std::cout << pld << "\n";
-
-    // Header
-    auto hdr = nd.header();
-    std::cout
-        << "\nMagic:   " << std::hex << hdr->magic
-        << "\nVersion: " << hdr->version << std::dec
-        << "\nID:      " << hdr->id
-        << "\nSize:    " << hdr->size
-        << "\n"
-        ;
-
-    // If compiled with `g++ -O2` v.13.3, valgrind reports
-    // "Use of uninitialised value of size 8".
-    // `clang` is OK.
-    std::cout << tec::Dump::dump_as_table(nd.bytes()) << "\n";
+    print_payload(pld, nd);
 }
 
 

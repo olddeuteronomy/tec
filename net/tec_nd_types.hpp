@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-11 18:48:23 by magnolia>
+// Time-stamp: <Last changed 2025-12-18 15:18:20 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -31,7 +31,7 @@ SOFTWARE.
 #include <type_traits>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_bytes.hpp"
+#include "tec/tec_memfile.hpp"
 #include "tec/tec_container.hpp"
 #include "tec/tec_serialize.hpp"
 
@@ -49,7 +49,6 @@ struct NdTypes {
 
     using Bool = uint8_t;
     using String = std::string;
-    using Blob = Bytes;
 
     struct Meta {
         // First 8 bits 0..7 (<=255) are reserved to hold an element type.
@@ -133,7 +132,7 @@ struct NdTypes {
     };
 #pragma pack(pop)
 
-    inline static Count to_count(size_t count) {
+    inline constexpr Count to_count(size_t count) {
         return ((count > __UINT16_MAX__) ? __UINT16_MAX__ : count);
     }
 
@@ -176,11 +175,11 @@ struct NdTypes {
         { return {Tags::F128 | Meta::Signed, 16}; }
 
     // Sequence: string.
-    ElemHeader get_seq_info(const String& s)
-        { return {Tags::SChar, static_cast<Size>(s.size())}; }
+    ElemHeader get_seq_info(const String& str)
+        { return {Tags::SChar, static_cast<Size>(str.size())}; }
     // Sequence: Bytes.
-    ElemHeader get_seq_info(const Bytes& s)
-        { return {Tags::SByte, static_cast<Size>(s.size())}; }
+    ElemHeader get_seq_info(const Blob& bytes)
+        { return {Tags::SByte, static_cast<Size>(bytes.size())}; }
 
     // Flat container.
     template <typename TContainer>
@@ -208,7 +207,7 @@ struct NdTypes {
         }
         else if constexpr (
             std::is_same_v<T, String> ||
-            std::is_same_v<T, Bytes>
+            std::is_same_v<T, Blob>
             ) {
             return get_seq_info(val);
         }

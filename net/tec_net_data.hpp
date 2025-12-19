@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-16 22:24:46 by magnolia>
+// Time-stamp: <Last changed 2025-12-19 16:08:42 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -38,7 +38,7 @@ SOFTWARE.
 #include <type_traits>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
-#include "tec/tec_bytes.hpp"
+#include "tec/tec_memfile.hpp"
 #include "tec/tec_container.hpp"
 #include "tec/tec_serialize.hpp"
 #include "tec/net/tec_nd_types.hpp"
@@ -51,7 +51,7 @@ class NetData: public NdTypes {
 
 protected:
     Header header_;
-    Bytes data_;
+    Blob data_;
 
 public:
     NetData() {
@@ -59,11 +59,11 @@ public:
 
     virtual ~NetData() = default;
 
-    const Bytes& bytes() const {
+    const Blob& bytes() const {
         return data_;
     }
 
-    Bytes& bytes() {
+    Blob& bytes() {
         return data_;
     }
 
@@ -140,7 +140,7 @@ protected:
     template <typename TMap>
     size_t write_map(ElemHeader* hdr, const TMap& map) {
         if constexpr (is_map_v<TMap>) {
-            ElemHeader* hdr_ptr = (ElemHeader*)data_.at(data_.tell());
+            ElemHeader* hdr_ptr = (ElemHeader*)data_.ptr(data_.tell());
             data_.write(hdr, sizeof(ElemHeader));
             size_t cur_pos = data_.tell();
             // Write all elements of a container.
@@ -158,7 +158,7 @@ protected:
     template <typename TContainer>
     size_t write_container(ElemHeader* hdr, const TContainer& container) {
         if constexpr (is_container_v<TContainer>) {
-            ElemHeader* hdr_ptr = (ElemHeader*)data_.at(data_.tell());
+            ElemHeader* hdr_ptr = (ElemHeader*)data_.ptr(data_.tell());
             data_.write(hdr, sizeof(ElemHeader));
             size_t cur_pos = data_.tell();
             // Write all elements of a container.
@@ -179,7 +179,7 @@ protected:
             if constexpr (is_root_v<TObject>) {
                     header_.id = obj.id();
             }
-            ElemHeader* hdr_ptr = (ElemHeader*)data_.at(data_.tell());
+            ElemHeader* hdr_ptr = (ElemHeader*)data_.ptr(data_.tell());
             data_.write(hdr, sizeof(ElemHeader));
             size_t cur_pos = data_.tell();
             // Write an object
@@ -211,13 +211,15 @@ protected:
 
     virtual size_t write_sequence(ElemHeader* hdr, const void* p) {
         data_.write(hdr, sizeof(ElemHeader));
-        if( hdr->tag == Tags::SChar ) {
-            const std::string* s = static_cast<const std::string*>(p);
-            data_.write(s->data(), hdr->size);
-        }
-        else if( hdr->tag == Tags::SByte ) {
-            const Bytes* bs = static_cast<const Bytes*>(p);
-            data_.write(bs->data(), hdr->size);
+        if (hdr->size) {
+            if( hdr->tag == Tags::SChar ) {
+                const std::string* s = static_cast<const std::string*>(p);
+                data_.write(s->data(), hdr->size);
+            }
+            else if( hdr->tag == Tags::SByte ) {
+                const Blob* bs = static_cast<const Blob*>(p);
+                data_.write(bs->data(), hdr->size);
+            }
         }
         return hdr->size;
     }
@@ -242,7 +244,7 @@ public:
         }
         // Map.
         else if constexpr(is_map_v<T>) {
-            if(hdr.tag == Tags::Map) {
+            if (hdr.tag == Tags::Map) {
                 read_map(&hdr, val);
             }
         }
@@ -251,7 +253,7 @@ public:
             is_container_v<T>  &&
             !std::is_same_v<T, String>
             ) {
-            if(hdr.tag == Tags::Container) {
+            if (hdr.tag == Tags::Container) {
                 read_container(&hdr, val);
             }
         }
@@ -322,15 +324,20 @@ protected:
     }
 
     virtual void read_sequence(const ElemHeader* hdr, void* dst) {
-        if( hdr->tag == Tags::SChar ) {
-            std::string* str = static_cast<std::string*>(dst);
-            str->resize(hdr->size);
-            data_.read(str->data(), hdr->size);
-        }
-        else if( hdr->tag == Tags::SByte ) {
-            Bytes* bytes = static_cast<Bytes*>(dst);
-            bytes->resize(hdr->size);
-            data_.read(bytes->data(), hdr->size);
+        if (hdr->size) {
+            if( hdr->tag == Tags::SChar ) {
+                std::string* str = static_cast<String*>(dst);
+                str->resize(hdr->size);
+                // FIXME
+                // data_.read(str->data(), hdr->size);
+                data_.read(&str->at(0), hdr->size);
+            }
+            else if( hdr->tag == Tags::SByte ) {
+                Blob* bytes = static_cast<Blob*>(dst);
+                bytes->resize(hdr->size);
+                // FIXME
+                data_.read(bytes->data(), hdr->size);
+            }
         }
     }
 
