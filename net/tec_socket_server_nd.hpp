@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-16 01:57:22 by magnolia>
+// Time-stamp: <Last changed 2025-12-20 12:15:47 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -163,6 +163,10 @@ protected:
             if (status) {
                 status = SocketNd::send_nd(&nd_out, &sock);
             }
+        }
+        else if (status.code == EBADMSG) {
+            // Not a NetData header -- switch to raw char stream processing.
+            SocketServer<Params>::on_string(s);
         }
         if (!status) {
             reply_error(status);

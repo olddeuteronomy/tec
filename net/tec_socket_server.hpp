@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-19 23:50:02 by magnolia>
+// Time-stamp: <Last changed 2025-12-20 12:14:30 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -159,16 +159,18 @@ protected:
 
 
     virtual Socket get_socket_info(int client_fd, sockaddr_storage* client_addr) {
-        // Get client IP and port
+        // Get socket address and port for IP protocol.
         char client_ip[INET6_ADDRSTRLEN];
+        client_ip[0] = '\0';
         int client_port{0};
         if (client_addr->ss_family == AF_INET) {
             struct sockaddr_in *s = (struct sockaddr_in*)&client_addr;
-            ::inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
+            ::inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof(client_ip));
             client_port = ::ntohs(s->sin_port);
-        } else {
+        }
+        else if (client_addr->ss_family == AF_INET6) {
             struct sockaddr_in6 *s = (struct sockaddr_in6*)&client_addr;
-            ::inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
+            ::inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof(client_ip));
             client_port = ::ntohs(s->sin6_port);
         }
 
@@ -324,7 +326,7 @@ protected:
     virtual void on_string(Socket* sock) {
         TEC_ENTER("SocketServer::on_char_stream");
         // Default implementation just echoes received data.
-        Blob data;
+        MemFile data;
         Socket::recv(data, sock, 0);
         Socket::send(data, sock);
     }

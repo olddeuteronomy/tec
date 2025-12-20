@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-20 00:33:43 by magnolia>
+// Time-stamp: <Last changed 2025-12-20 12:18:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -197,7 +197,7 @@ protected:
         if (request && request->str) {
             // `request` must be valid.
             MemFile data(*request->str);
-            Socket sock{sockfd_, params_.addr, params_.port};
+            Socket sock{sockfd_, params_.addr.c_str(), params_.port};
             auto status = Socket::send(data, &sock);
             return status;
         }
@@ -214,7 +214,7 @@ protected:
             return {EFAULT, Error::Kind::Invalid};
         }
         MemFile data;
-        Socket sock{sockfd_, params_.addr, params_.port};
+        Socket sock{sockfd_, params_.addr.c_str(), params_.port};
         auto status = Socket::recv(data, &sock, 0);
         if (status) {
             *reply->str = static_cast<const char*>(data.data());

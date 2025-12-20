@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-20 00:46:25 by magnolia>
+// Time-stamp: <Last changed 2025-12-20 11:44:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,6 +33,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstring>
+#include <sys/types.h>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
@@ -167,14 +169,16 @@ struct SocketCharStreamOut {
 struct Socket {
 
     int fd;
-    std::string addr;
+    char addr[INET6_ADDRSTRLEN];
     int port;
 
-    Socket(int _fd, const std::string& _addr, int _port)
+    Socket(int _fd, const char* _addr, int _port)
         : fd{_fd}
-        , addr{_addr}
         , port{_port}
-    {}
+    {
+        std::strncpy(addr, _addr, INET6_ADDRSTRLEN);
+        addr[INET6_ADDRSTRLEN-1] = '\0';
+    }
 
     static Status recv(MemFile& data, Socket* sock, size_t length) {
         TEC_ENTER("Socket::recv");
@@ -229,14 +233,13 @@ struct Socket {
 
     static Status send(const MemFile& bytes, Socket* sock) {
         TEC_ENTER("Socket::send");
+        ssize_t sent{0};
 
         // Send data to the client
         if (bytes.size() > 0) {
 
-            // FIXME valgrind gcc/clang -O0 -g: "Syscall param write(buf) points to uninitialised byte(s)"
-            // ssize_t sent = write(sock->fd, bytes.data(), bytes.size());
-            ssize_t sent = write(sock->fd, bytes.ptr(0), bytes.size());
-            TEC_TRACE("{}:{} <-- SEND {} bytes.", sock->addr, sock->port, sent);
+            // NOTE: valgrind gcc/clang -O0 -g: "Syscall param write(buf) points to uninitialised byte(s)"
+            sent = write(sock->fd, bytes.ptr(0), bytes.size());
 
             // Check error.
             if (sent < 0) {
@@ -251,6 +254,7 @@ struct Socket {
             }
 
         }
+        TEC_TRACE("{}:{} <-- SEND {} bytes.", sock->addr, sock->port, sent);
         return {};
     }
 
