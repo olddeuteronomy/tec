@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-22 00:25:53 by magnolia>
+// Time-stamp: <Last changed 2025-12-20 11:24:25 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -49,19 +49,19 @@ using TCPClient = tec::SocketClientNd<TCPParams>;
 using TCPClientWorker = tec::ActorWorker<TCPParams, TCPClient>;
 
 
-template <typename T>
-void print(const T& p, tec::NetData& nd) {
+void print(Payload& p) {
     std::cout << std::string(40, '=') << "\n";
     std::cout << p << "\n";
     std::cout << std::string(40, '-') << "\n";
+}
 
+void print(tec::NetData& nd) {
     auto hdr = nd.header();
     std::cout
         << "\nMagic:   " << std::hex << hdr->magic
         << "\nVersion: " << hdr->version << std::dec
         << "\nID:      " << hdr->id
         << "\nSize:    " << hdr->size
-        << "\nStatus:  " << hdr->status
         << "\n"
         ;
 
@@ -69,8 +69,8 @@ void print(const T& p, tec::NetData& nd) {
     // "Use of uninitialised value of size 8" false positive warning.
     nd.rewind();
     std::cout << tec::Dump::dump_as_table(nd.bytes().as_hex()) << "\n";
-}
 
+}
 
 // #define USE_DAEMON 1
 
@@ -85,8 +85,25 @@ tec::Status tcp_client() {
     //     params.family = AF_INET4;
 
     // Data to process.
-    GetPersonsIn persons_in;
-    GetPersonsOut persons_out;
+    const char hello[] = "Hello\x01\x02World\xFF\x00";
+    std::unordered_map<int, Person> persons = {
+        {1256, {31, "Mary", "Smith"}},
+        {78, {39, "Harry", "Long"}},
+        {375, {67, "Kevin", "Longsdale"}},
+    };
+
+    Payload pld;
+    pld.list = {1, 2, 3, 4};
+    pld.i32 = 32;
+    pld.u64 = 1767623391515;
+    pld.str = "This is a UTF-8 string 😀";
+    pld.f32 = 3.14f;
+    pld.d64 = 2.78;
+    pld.p = {61, "John", "Dow"};
+    pld.d128 = 1.123456e102;
+    pld.bs = {hello, strlen(hello)};
+    pld.b = true;
+    pld.map = persons;
 
 #ifdef USE_DAEMON
     // Use Daemon interface.
@@ -103,13 +120,11 @@ tec::Status tcp_client() {
         return status;
     }
 
-     // Request.
-    tec::NetData nd_in;
-    nd_in << persons_in;
-    print(persons_in, nd_in);
+    // Data to process.
+    tec::NetData nd_in; // Request.
+    nd_in << pld;
 
-    // Reply.
-    tec::NetData nd_out;
+    tec::NetData nd_out; // Reply.
 
     // Send a request.
 #ifdef USE_DAEMON
@@ -128,13 +143,19 @@ tec::Status tcp_client() {
     }
 
     // Restore reply.
-    nd_out >> persons_out;
+    Payload pld_out;
+    nd_out >> pld_out;
 
     // Optionally.
     cli->terminate();
 
-    // Print result.
-    print(persons_out, nd_out);
+    // Print results.
+    print(nd_in);
+    print(pld);
+
+    print(nd_out);
+    print(pld_out);
+
 
     return status;
 }

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-20 12:20:07 by magnolia>
+// Time-stamp: <Last changed 2025-12-21 11:40:21 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,7 +25,7 @@ SOFTWARE.
 
 /**
  * @file tec_socket.hpp
- * @brief Generic BSD socket parameters and helpers.
+ * @brief NetData BSD socket operations.
  * @note For BSD, macOS, Linux.
  * @author The Emacs Cat
  * @date 2025-11-10
@@ -33,7 +33,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <cerrno>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
@@ -44,7 +43,7 @@ SOFTWARE.
 #include <unistd.h>
 #include <netdb.h>
 
-#include <string>
+#include <cerrno>
 
 #include "tec/tec_def.hpp"  // IWYU pragma: keep
 #include "tec/tec_trace.hpp"
@@ -58,23 +57,33 @@ namespace tec {
 
 struct SocketNd: public Socket {
 
-    SocketNd(int _fd, const char*  _addr, int _port)
+    SocketNd(int _fd, const char* _addr, int _port)
         : Socket(_fd, _addr, _port)
     {}
 
 
     static Status send_nd(const NetData* nd, SocketNd* sock) {
         TEC_ENTER("SocketNd::send_nd");
-        // Write header to the stream.
+        //
+        // Write the NetData header to the stream.
+        //
         const NetData::Header* hdr = nd->header();
         ssize_t sent = write(sock->fd, hdr, sizeof(NetData::Header));
-        if (sent != sizeof(NetData::Header)) {
-            auto errmsg = format("{}:{} NetData::Header write error.",
+        if (sent == 0) {
+            auto errmsg = format("{}:{} Peer closed the connection.",
                                  sock->addr, sock->port);
-            TEC_TRACE(errmsg.c_str());
+            TEC_TRACE(errmsg);
             return {EIO, errmsg, Error::Kind::NetErr};
         }
+        else if (sent != sizeof(NetData::Header)) {
+            auto errmsg = format("{}:{} NetData::Header write error.",
+                                 sock->addr, sock->port);
+            TEC_TRACE(errmsg);
+            return {EIO, errmsg, Error::Kind::NetErr};
+        }
+        //
         // Write data to the stream.
+        //
         if (hdr->size > 0) {
             return Socket::send(nd->bytes(), sock);
         }
@@ -86,37 +95,40 @@ struct SocketNd: public Socket {
         TEC_ENTER("SocketNd::recv_nd");
         Status status;
         NetData::Header* hdr = nd->header();
+        //
         // Read the header.
-        // ssize_t rd = read(sock->fd, nd->header(), sizeof(NetData::Header));
-
+        //
         // The MSG_PEEK flag causes the receive operation to return data
         // from the beginning of the receive queue without removing that data from the queue.
         // Thus, a subsequent receive call will return the same data.
+        //
         ssize_t rd = ::recv(sock->fd, hdr, sizeof(NetData::Header),
                             MSG_PEEK);
         if (rd == 0) {
             auto errmsg = format("{}:{} Peer closed the connection.",
                                  sock->addr, sock->port);
-            TEC_TRACE(errmsg.c_str());
+            TEC_TRACE(errmsg);
             return {EIO, errmsg, Error::Kind::NetErr};
         }
         else if (rd != sizeof(NetData::Header)) {
             auto errmsg = format("{}:{} NetData::Header read error.",
                                  sock->addr, sock->port);
-            TEC_TRACE(errmsg.c_str());
-            return {EBADMSG, errmsg, Error::Kind::NetErr};
+            TEC_TRACE(errmsg);
+            return {EBADMSG, errmsg, Error::Kind::Invalid};
         }
         // Validate the header.
         else if (!hdr->is_valid()) {
             auto errmsg = format("{}:{} NetData::Header is invalid.",
                                  sock->addr, sock->port);
-            TEC_TRACE(errmsg.c_str());
+            TEC_TRACE(errmsg);
             return {EBADMSG, errmsg, Error::Kind::Invalid};
 
         }
         // Re-read the header from the message queue.
         read(sock->fd, hdr, sizeof(NetData::Header));
+        //
         // Read data.
+        //
         if (hdr->size > 0) {
             status = Socket::recv(nd->bytes(), sock, hdr->size);
         }

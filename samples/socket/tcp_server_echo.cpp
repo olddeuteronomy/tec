@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-22 01:59:17 by magnolia>
+// Time-stamp: <Last changed 2025-12-19 23:14:37 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,71 +24,25 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 #include <csignal>
-// #include <sys/socket.h>
+#include <sys/socket.h>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
-#include "tec/tec_trace.hpp"
 #include "tec/tec_actor_worker.hpp"
-#include "tec/net/tec_net_data.hpp"
+#include "tec/net/tec_socket.hpp"
 #include "tec/net/tec_socket_server_nd.hpp"
-
-#include "tec/samples/socket/test_data.hpp"
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                     BSD socket NetData server
+*                     Simplest BSD socket server
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 using TCPParams = tec::SocketServerParams;
 using TCPServer = tec::SocketServerNd<TCPParams>;
-
-using DataInOut = TCPServer::DataInOut;
-
-class MyServer: public TCPServer {
-public:
-    MyServer(const TCPParams& params)
-        : TCPServer(params)
-    {
-        register_handler(this, 1, &MyServer::on_persons);
-    }
-
-
-    virtual void on_persons(DataInOut dio) {
-        TEC_ENTER("MyServer::on_persons");
-        //
-        // Get request. (Not used in this sample.)
-        //
-        GetPersonsIn request;
-        *dio.nd_in >> request;
-        //
-        // Generate reply...
-        //
-        GetPersonsOut reply;
-        reply.persons.push_back({67, "John", "Dow"});
-        reply.persons.push_back({52, "John", "Applegate"});
-        reply.persons.push_back({29, "Lucy", "Skywalker"});
-        reply.persons.push_back({20, "Harry", "Long"});
-        //
-        // ... and send it back to a client.
-        //
-        *dio.nd_out << reply;
-    }
-
-};
-
-using TCPServerWorker = tec::ActorWorker<TCPParams, MyServer>;
-
-
-/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
-*                            TEST
-*
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-
+using TCPServerWorker = tec::ActorWorker<TCPParams, TCPServer>;
 
 tec::Signal sig_quit;
 
@@ -99,7 +53,7 @@ tec::Status tcp_server() {
     // params.addr = tec::SocketParams::kAnyAddrIP6;
     // params.family = AF_INET6;
     params.mode = tec::SocketServerParams::kModeNetData;
-    auto srv{TCPServerWorker::Builder<TCPServerWorker, MyServer>{}(params)};
+    auto srv{TCPServerWorker::Builder<TCPServerWorker, TCPServer>{}(params)};
 
     // Run it and check for the result.
     auto status = srv->run();

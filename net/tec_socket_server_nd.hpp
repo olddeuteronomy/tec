@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-20 12:15:47 by magnolia>
+// Time-stamp: <Last changed 2025-12-22 00:08:27 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -37,6 +37,7 @@ SOFTWARE.
 #include <sys/socket.h>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
 #include "tec/tec_trace.hpp"
 #include "tec/tec_serialize.hpp"
@@ -47,6 +48,7 @@ SOFTWARE.
 
 
 namespace tec {
+
 
 template <typename TParams>
 class SocketServerNd: public SocketServer<TParams> {
@@ -130,8 +132,9 @@ protected:
             slot->second->handler(slot->second->server, dio);
         }
         if (!found) {
-            status = {ENOTSUP, Error::Kind::NotImplemented};
-            TEC_TRACE("Handler for ID={} not found: {}.", id, status);
+            auto errmsg = format("Handler for ID={} not found.", id);
+            status = {ENOTSUP, errmsg, Error::Kind::NotImplemented};
+            TEC_TRACE("{}", status);
         }
         else {
             status = *dio.status;
@@ -141,22 +144,28 @@ protected:
     }
 
 
-    virtual void reply_error(Status status) {
+    virtual void reply_error(Status status, NetData::ID request_id, SocketNd* sock) {
         TEC_ENTER("SocketServerNd::reply_error");
         NetData nd;
-        NetData::Header* hdr = nd.header();
-        hdr->status = static_cast<decltype(hdr->status)>(status.code.value_or(0xffff));
-        TEC_TRACE("Replied {}", status);
+        nd.header()->id = request_id;
+        nd.header()->status = static_cast<decltype(nd.header()->status)>(status.code.value_or(0xffff));
+        SocketNd::send_nd(&nd, sock);
+        TEC_TRACE("Replied with errcode={}.", nd.header()->status);
     }
 
 
     void on_net_data(Socket* s) override {
         TEC_ENTER("SocketServerNd::on_net_data");
         SocketNd sock(s->fd, s->addr, s->port);
-
         NetData nd_in;
+        //
+        // Read input NetData.
+        //
         Status status = SocketNd::recv_nd(&nd_in, &sock);
         if (status) {
+            //
+            // Process NetData.
+            //
             NetData nd_out;
             DataInOut dio{&status, &sock, &nd_in, &nd_out};
             status = dispatch(nd_in.header()->id, dio);
@@ -165,11 +174,17 @@ protected:
             }
         }
         else if (status.code == EBADMSG) {
+            //
             // Not a NetData header -- switch to raw char stream processing.
+            //
             SocketServer<Params>::on_string(s);
+            return;
         }
+        //
+        // Send an error to the client if not OK.
+        //
         if (!status) {
-            reply_error(status);
+            reply_error(status, nd_in.header()->id, &sock);
         }
     }
 
@@ -182,7 +197,9 @@ protected:
 
     virtual void echo(DataInOut dio) {
         TEC_ENTER("SocketServerNd::echo");
+        //
         // Copy input to output.
+        //
         dio.nd_out->copy_from(*dio.nd_in);
         *dio.status = {};
     }

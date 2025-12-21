@@ -155,3 +155,86 @@ struct Payload: tec::NdRoot {
     }
 };
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                            GetPersons
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+struct GetPersonsIn: public tec::NdRoot {
+    using json = tec::Json;
+    static constexpr auto sep{tec::Json::sep};
+
+    int max_count;
+
+    GetPersonsIn()
+        : tec::NdRoot(1)  // Request ID=1
+        , max_count{0}       // All records.
+        {}
+
+    tec::NetData& store(tec::NetData& nd) const override {
+        nd
+            << max_count
+            ;
+        return nd;
+    }
+
+    tec::NetData& load(tec::NetData& nd) override {
+        nd
+            >> max_count
+            ;
+        return nd;
+    }
+
+    friend std::ostream& operator << (std::ostream& os, const GetPersonsIn& p) {
+        os << json{}(p);
+        return os;
+    }
+
+    std::string to_json() const override {
+        std::ostringstream os;
+        os
+            << json{}(max_count, "max_count")
+            ;
+        return os.str();
+    }
+};
+
+
+struct GetPersonsOut: public tec::NdRoot {
+    using json = tec::Json;
+    static constexpr auto sep{tec::Json::sep};
+
+    std::list<Person> persons;
+
+    GetPersonsOut()
+        : tec::NdRoot(1)
+    {}
+
+     tec::NetData& store(tec::NetData& nd) const override {
+        nd
+            << persons
+            ;
+        return nd;
+    }
+
+    tec::NetData& load(tec::NetData& nd) override {
+        nd
+            >> persons
+            ;
+        return nd;
+    }
+
+    friend std::ostream& operator << (std::ostream& os, const GetPersonsOut& p) {
+        os << json{}(p);
+        return os;
+    }
+
+    std::string to_json() const override {
+        std::ostringstream os;
+        os
+            << json{}(persons, "persons")
+            ;
+        return os.str();
+    }
+};
