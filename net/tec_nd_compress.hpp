@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-24 16:06:57 by magnolia>
+// Time-stamp: <Last changed 2025-12-25 01:44:30 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -35,11 +35,13 @@ SOFTWARE.
 #include <cerrno>
 #include <cstdint>
 
+#if defined (_TEC_USE_ZLIB)
 #include <zlib.h>
+#endif
 
-#include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_def.hpp"   // IWYU pragma: keep
+#include "tec/tec_trace.hpp" // IWYU pragma: keep
 #include "tec/tec_status.hpp"
-#include "tec/tec_trace.hpp"
 #include "tec/net/tec_compression.hpp"
 #include "tec/net/tec_net_data.hpp"
 
@@ -66,18 +68,54 @@ public:
         , level_{_level}
     {}
 
-    // Compress NetData inplace.
+
     virtual Status compress(NetData& nd) const {
+#if defined (ZLIB_VERSION)
+        if (type_ == CompressionParams::kCompressionZlib) {
+            return compress_zlib(nd);
+        }
+#endif
+        // No compression required.
+        return {};
+    }
+
+
+    virtual Status uncompress(NetData& nd) const {
+        int compression = nd.header()->get_compression();
+        if (compression == CompressionParams::kNoCompression) {
+            // Nothing to do.
+            return {};
+        }
+#if defined (ZLIB_VERSION)
+        if (compression == CompressionParams::kCompressionZlib) {
+            return uncompress_zlib(nd);
+        }
+#endif
+        return {ENOTSUP, Error::Kind::Unsupported};
+    }
+
+protected:
+
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     *                        ZLIB compression
+     *
+     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+#if defined (ZLIB_VERSION)
+
+    // Compress NetData inplace.
+    virtual Status compress_zlib(NetData& nd) const {
         TEC_ENTER("NdCompress::compress");
-        NetData::Header hdr = *nd.header();
-        if (type_ == CompressionParams::kNoCompression  ||  hdr.size < kMinSize) {
-            // No compression required.
+        if (nd.header()->size < kMinSize) {
+            // Data too small -- no compression required.
             nd.header()->set_compression(CompressionParams::kNoCompression);
             return {};
         }
         //
         // Calculate output size.
         //
+        NetData::Header hdr = *nd.header();
         auto size_compressed = ::compressBound(hdr.size);
         if (size_compressed == 0) {
             return{EINVAL, Error::Kind::RuntimeErr};
@@ -116,7 +154,7 @@ public:
 
 
     // Uncompress NetData inplace.
-    virtual Status uncompress(NetData& nd) const {
+    virtual Status uncompress_zlib(NetData& nd) const {
         TEC_ENTER("NdCompress::uncompress");
         NetData::Header hdr = *nd.header();
         if (hdr.get_compression() == CompressionParams::kNoCompression  ||  hdr.size_uncompressed == 0) {
@@ -151,6 +189,8 @@ public:
         TEC_TRACE("Upcompressed to {} bytes.", dest_len);
         return {};
     }
+
+#endif // defined(ZLIB_VERSION)
 };
 
 } // namespace tec

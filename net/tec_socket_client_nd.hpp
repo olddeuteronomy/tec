@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-24 16:02:31 by magnolia>
+// Time-stamp: <Last changed 2025-12-25 00:26:59 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -116,14 +116,42 @@ protected:
         return status;
     }
 
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     *                    Pre- and postprocessing
+     *
+     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+    virtual Status compress(NetData* nd) {
+        NdCompress cmpr(this->params_.compression, this->params_.compression_level);
+        return cmpr.compress(*nd);
+    }
+
+    virtual Status uncompress(NetData* nd) {
+        NdCompress cmpr(this->params_.compression, this->params_.compression_level);
+        return cmpr.uncompress(*nd);
+    }
+
+    virtual Status preprocess(NetData* nd) {
+        return compress(nd);
+    }
+
+    virtual Status postprocess(NetData* nd) {
+        return uncompress(nd);
+    }
+
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     *                        Data send/receive
+     *
+     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     virtual Status send_recv_nd(NetData* nd_in, NetData* nd_out) {
         TEC_ENTER("SocketClientNd::send_recv_nd");
-        NdCompress compressor(this->params_.compression, this->params_.compression_level);
         //
-        // Compress input inplace.
+        // Preprocess the input.
         //
-        auto status = compressor.compress(*nd_in);
+        auto status = preprocess(nd_in);
         if (status) {
             //
             // Send a request.
@@ -131,21 +159,19 @@ protected:
             status = send_nd(nd_in);
             if (status) {
                 //
-                // Read a reply.
+                // Receive a reply.
                 //
                 status = recv_nd(nd_out);
-                if (status) {
-                    //
-                    // Uncompress the reply.
-                    //
-                    status = compressor.uncompress(*nd_out);
-                }
+
             }
         }
         //
-        // Check the status.
+        // Postprocess the output.
         //
-        if (!status) {
+        if (status) {
+            status = postprocess(nd_out);
+        }
+        else {
             this->terminate();
         }
         return status;

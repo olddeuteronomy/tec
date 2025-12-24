@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2025-12-24 15:51:12 by magnolia>
+# Time-stamp: <Last changed 2025-12-25 00:40:34 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -76,6 +76,13 @@ ifdef CLANG
 endif
 endif
 
+# Extra libraries
+LIBS =
+ifdef ZLIB
+	LIBS += -lz
+	DEFS += -D_TEC_USE_ZLIB
+endif
+
 # Create output directory if needed
 ifeq ($(detected_OS),Windows)
 $(shell if not exist $(OUTDIR) (${MKDIR_P} $(OUTDIR)))
@@ -94,7 +101,7 @@ tcp_server: tcp_server.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
 tcp_client_nd: tcp_client_nd.cpp
-	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -lz -o $(OUTDIR)/$@$(TARGET_SUFFIX)
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ $(LIBS) -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
 tcp_server_nd: tcp_server_nd.cpp
-	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -lz -o $(OUTDIR)/$@$(TARGET_SUFFIX)
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ $(LIBS) -o $(OUTDIR)/$@$(TARGET_SUFFIX)

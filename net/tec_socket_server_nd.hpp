@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-24 15:40:41 by magnolia>
+// Time-stamp: <Last changed 2025-12-25 00:59:35 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -104,10 +104,6 @@ public:
         // Ensure Derived is actually derived from ServerNd.
         static_assert(std::is_base_of_v<ServerNd, Derived>,
                       "Derived must inherit from tec::SocketServerNd");
-        if (id == 0) {
-            // Default echo handler is registered already.
-            return;
-        }
         // Remove existing handler.
         if (auto slot = slots_.find(id); slot != slots_.end()) {
             slots_.erase(id);
