@@ -34,6 +34,7 @@ SOFTWARE.
 #include "tec/tec_serialize.hpp"
 #include "tec/tec_json.hpp"
 #include "tec/net/tec_net_data.hpp"
+#include "tec/net/tec_nd_compress.hpp"
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -191,7 +192,9 @@ void print_payload(const Payload& pld, const tec::NetData& nd) {
         << "Magic:   " << std::hex << hdr->magic << "\n"
         << "Version: " << hdr->version << std::dec << "\n"
         << "ID:      " << hdr->id << "\n"
-        << "Size:    " << hdr->size
+        << "Size:    " << hdr->size << "\n"
+        << "Orig:    " << hdr->size_uncompressed << "\n"
+        << "Bytes:   " << nd.bytes().size() << "\n"
         << "\n"
         ;
     std::cout << tec::Dump::dump_as_table(nd.bytes().as_hex()) << "\n";
@@ -202,10 +205,22 @@ void save_payload(const Payload& pld, tec::NetData& nd) {
 
     std::cout << "\n-------- STORE --------\n";
     print_payload(pld, nd);
+
+    // Compression
+    tec::NdCompress comp(tec::NetData::Header::kCompressionZlib);
+    auto status = comp.compress(nd);
+    print_payload(pld, nd);
+
+    // status = comp.uncompress(nd);
+    // print_payload(pld, nd);
 }
 
 void restore_payload(tec::NetData& nd) {
     Payload pld;
+
+    tec::NdCompress comp;
+    comp.uncompress(nd);
+
     nd.rewind();
     nd >> pld;
 

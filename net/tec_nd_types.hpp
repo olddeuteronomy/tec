@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-18 15:18:20 by magnolia>
+// Time-stamp: <Last changed 2025-12-24 00:09:40 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -27,6 +27,8 @@ SOFTWARE.
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <string>
 #include <type_traits>
 
@@ -73,29 +75,42 @@ struct NdTypes {
         static constexpr Tag F64{(7 | Meta::Scalar | Meta::Float)};
         static constexpr Tag F128{(8 | Meta::Scalar | Meta::Float)};
         // Scalar sequences.
-        static constexpr Tag SByte{(32 | Meta::Scalar | Meta::Sequence)};
-        static constexpr Tag SChar{(33 | Meta::Scalar | Meta::Sequence)};
+        static constexpr Tag SByte{('B' | Meta::Scalar | Meta::Sequence)};
+        static constexpr Tag SChar{('A' | Meta::Scalar | Meta::Sequence)};
         // Containers.
-        static constexpr Tag Container{64};
-        static constexpr Tag Map{65};
+        static constexpr Tag Container{'C'}; // 67
+        static constexpr Tag Map{'M'}; // 77
 
         // Serizalizable object.
-        static constexpr Tag Object{80};
+        static constexpr Tag Object{'O'}; // 79
     };
 
 #pragma pack(push, 1)
     struct Header {
-        static constexpr uint32_t kMagic{0x041b00};
+        static constexpr uint32_t kMagic{0x00041b00};
         static constexpr uint16_t kDefaultVersion{0x0100};
 
-        // 20 bytes.
+        // Compression type, 4 bits [0..3], 0..15
+        static constexpr int kNoCompression{0};
+        static constexpr int kCompressionZlib{1};
+
+        static constexpr int kDefaultCompression{kNoCompression};
+
+        // Compression level, 4 bits [4..7], 0..9
+        static constexpr int kCompressionLevelMin{0};
+        static constexpr int kCompressionLevelMax{9};
+
+        static constexpr int kDefaultCompressionLevel{4};
+
+        // 24 bytes.
         uint32_t magic;
         uint32_t size;
         uint16_t version;
         uint16_t id;
         int16_t  status;
-        uint16_t reserved16;
-        uint32_t reserved32;
+        uint16_t compression_flags;
+        uint32_t size_uncompressed;
+        uint32_t reserved;
 
         Header()
             : magic(kMagic)
@@ -103,12 +118,28 @@ struct NdTypes {
             , version{kDefaultVersion}
             , id{0}
             , status{0}
-            , reserved16{0}
-            , reserved32{0}
+            , compression_flags{kNoCompression}
+            , size_uncompressed{0}
+            , reserved{0}
         {}
 
-        inline bool is_valid() const {
-            return magic == kMagic;
+        inline constexpr bool is_valid() const {
+            return (magic == kMagic && version >= kDefaultVersion);
+        }
+
+        inline constexpr int get_compression() const {
+            // First 4 bits.
+            return (0xF & compression_flags);
+        }
+        inline constexpr void set_compression(int comp_type) {
+            compression_flags |= (0xF & comp_type);
+        }
+        inline constexpr int get_compression_level() const {
+            // Bits 4..7
+            return (compression_flags & 0xF0) >> 4;
+        }
+        inline constexpr void set_compression_level(int nlevel) {
+            compression_flags |= ((0xF & nlevel) << 4);
         }
     };
 

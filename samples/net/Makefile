@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2025-11-29 14:25:23 by magnolia>
+# Time-stamp: <Last changed 2025-12-24 01:48:49 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -91,7 +91,7 @@ buffer: test_buffer.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
 netdata: test_netdata.cpp
-	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -lz -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
 dump: test_dump.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)

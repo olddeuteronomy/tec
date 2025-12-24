@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-19 16:10:00 by magnolia>
+// Time-stamp: <Last changed 2025-12-24 02:43:19 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -184,6 +184,15 @@ public:
         rewind();
         write(src.data(), src.size());
     }
+
+    void move_from(MemFile& src, size_t size_to_shrink=0) {
+        blk_size_ = src.blk_size_;
+        pos_ = src.pos_;
+        buffer_ = std::move(src.buffer_);
+        if (size_to_shrink > 0 && size_to_shrink < size()) {
+            buffer_.resize(size_to_shrink);
+        }
+}
 
     const std::string& str() const noexcept {
         return buffer_;

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-19 21:38:17 by magnolia>
+// Time-stamp: <Last changed 2025-12-24 02:45:27 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -59,11 +59,11 @@ public:
 
     virtual ~NetData() = default;
 
-    const Blob& bytes() const {
+    const MemFile& bytes() const {
         return data_;
     }
 
-    Blob& bytes() {
+    MemFile& bytes() {
         return data_;
     }
 
@@ -78,6 +78,11 @@ public:
     void copy_from(const NetData& src) {
         header_ = *src.header();
         data_.copy_from(src.bytes());
+    }
+
+    void move_from(NetData& src, size_t size_to_shrink = 0) {
+        header_ = *src.header();
+        data_.move_from(src.bytes(), size_to_shrink);
     }
 
     size_t header_size() const {
