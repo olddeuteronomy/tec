@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-20 11:44:18 by magnolia>
+// Time-stamp: <Last changed 2025-12-24 15:08:29 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,8 +33,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <cstring>
-#include <sys/types.h>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
@@ -46,12 +44,14 @@ SOFTWARE.
 #include <netdb.h>
 
 #include <array>
+#include <cstring>
 #include <string>
 
 #include "tec/tec_def.hpp"  // IWYU pragma: keep
 #include "tec/tec_trace.hpp"
 #include "tec/tec_status.hpp"
 #include "tec/tec_memfile.hpp"
+#include "tec/net/tec_compression.hpp"
 
 
 namespace tec {
@@ -81,6 +81,8 @@ struct SocketParams {
     int socktype;
     int protocol;
     int flags;
+    int compression;
+    int compression_level;
 
     SocketParams()
         : addr{kLocalURI}
@@ -89,6 +91,8 @@ struct SocketParams {
         , socktype{kDefaultSockType}
         , protocol{kDefaultProtocol}
         , flags{0}
+        , compression{CompressionParams::kDefaultCompression}
+        , compression_level{CompressionParams::kDefaultCompressionLevel}
     {}
 };
 
@@ -139,8 +143,8 @@ struct SocketServerParams: public SocketParams  {
         , opt_reuse_addr{kOptReuseAddress}
         , opt_reuse_port{kOptReusePort}
     {
-        flags = kDefaultServerFlags;
         addr = kAnyAddr; // IPv4, use kAnyAddrIP6 to accept from both IPv4 and IPv6.
+        flags = kDefaultServerFlags;
     }
 };
 
@@ -180,17 +184,18 @@ struct Socket {
         addr[INET6_ADDRSTRLEN-1] = '\0';
     }
 
-    static Status recv(MemFile& data, Socket* sock, size_t length) {
+    static Status recv(MemFile& data, const Socket* sock, size_t length) {
         TEC_ENTER("Socket::recv");
         // Default buffer size as defined in stdio.h (8192).
         std::array<char, BUFSIZ> buffer;
         ssize_t received{0};
         size_t total_received{0};
         bool eof{false};
-
-        // Read data from the client.
+        //
+        // Read data from the socket.
+        //
         while ((received = read(sock->fd, buffer.data(), BUFSIZ)) > 0) {
-            if (length == 0) {
+            if (length == 0 && received > 0) {
                 // Length is unknown -- check for null-terminated char stream.
                 if (buffer[received-1] == '\0') {
                     TEC_TRACE("{}:{} EOF received.", sock->addr, sock->port);
@@ -209,7 +214,9 @@ struct Socket {
                 break;
             }
         }
-
+        //
+        // Check for errors.
+        //
         if (received == 0) {
             auto errmsg = format("{}:{} Peer closed the connection.", sock->addr, sock->port);
             TEC_TRACE(errmsg);
@@ -231,17 +238,17 @@ struct Socket {
     }
 
 
-    static Status send(const MemFile& bytes, Socket* sock) {
+    static Status send(const MemFile& bytes, const Socket* sock) {
         TEC_ENTER("Socket::send");
         ssize_t sent{0};
-
-        // Send data to the client
+        //
+        // Write data to the socket.
+        //
         if (bytes.size() > 0) {
-
-            // NOTE: valgrind gcc/clang -O0 -g: "Syscall param write(buf) points to uninitialised byte(s)"
             sent = write(sock->fd, bytes.ptr(0), bytes.size());
-
-            // Check error.
+            //
+            // Check for errors.
+            //
             if (sent < 0) {
                 auto errmsg = format("{}:{} socket write error {}.", sock->addr, sock->port, errno);
                 TEC_TRACE(errmsg.c_str());

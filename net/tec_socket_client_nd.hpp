@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-20 12:19:38 by magnolia>
+// Time-stamp: <Last changed 2025-12-24 16:02:31 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -52,6 +52,7 @@ SOFTWARE.
 #include "tec/net/tec_net_data.hpp"
 #include "tec/net/tec_socket_nd.hpp"
 #include "tec/net/tec_socket_client.hpp"
+#include "tec/net/tec_nd_compress.hpp"
 
 
 namespace tec {
@@ -90,7 +91,7 @@ public:
     }
 
 
-    Status request_nd(const NetData* nd_in, NetData* nd_out) {
+    Status request_nd(NetData* nd_in, NetData* nd_out) {
         TEC_ENTER("SocketClientNd::request");
         auto status =  send_recv_nd(nd_in, nd_out);
         return status;
@@ -98,7 +99,7 @@ public:
 
 protected:
 
-    virtual Status send_nd(const NetData* nd) {
+    virtual Status send_nd(NetData* nd) {
         TEC_ENTER("SocketClientNd::send_nd");
         // Socket helper.
         SocketNd sock{this->sockfd_, this->params_.addr.c_str(), this->params_.port};
@@ -116,13 +117,35 @@ protected:
     }
 
 
-    virtual Status send_recv_nd(const NetData* nd_in, NetData* nd_out) {
+    virtual Status send_recv_nd(NetData* nd_in, NetData* nd_out) {
         TEC_ENTER("SocketClientNd::send_recv_nd");
-        auto status = send_nd(nd_in);
+        NdCompress compressor(this->params_.compression, this->params_.compression_level);
+        //
+        // Compress input inplace.
+        //
+        auto status = compressor.compress(*nd_in);
         if (status) {
-            status = recv_nd(nd_out);
+            //
+            // Send a request.
+            //
+            status = send_nd(nd_in);
+            if (status) {
+                //
+                // Read a reply.
+                //
+                status = recv_nd(nd_out);
+                if (status) {
+                    //
+                    // Uncompress the reply.
+                    //
+                    status = compressor.uncompress(*nd_out);
+                }
+            }
         }
-        else {
+        //
+        // Check the status.
+        //
+        if (!status) {
             this->terminate();
         }
         return status;

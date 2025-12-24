@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-24 02:45:27 by magnolia>
+// Time-stamp: <Last changed 2025-12-24 16:04:38 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -355,13 +355,13 @@ public:
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     struct StreamIn {
-        const NetData* nd;
+        NetData* nd;
 
         StreamIn()
             : nd{nullptr}
             {}
 
-        StreamIn(const NetData* _nd)
+        StreamIn(NetData* _nd)
             : nd{_nd}
             {}
     };

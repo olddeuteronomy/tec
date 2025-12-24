@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-24 02:59:33 by magnolia>
+// Time-stamp: <Last changed 2025-12-24 16:06:57 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,10 +34,13 @@ SOFTWARE.
 
 #include <cerrno>
 #include <cstdint>
+
 #include <zlib.h>
 
+#include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_status.hpp"
 #include "tec/tec_trace.hpp"
+#include "tec/net/tec_compression.hpp"
 #include "tec/net/tec_net_data.hpp"
 
 
@@ -46,7 +49,7 @@ namespace tec {
 
 class NdCompress {
 public:
-    static constexpr uint32_t kMinSize{256};
+    static constexpr uint32_t kMinSize{128};
 
 protected:
     int type_;
@@ -54,11 +57,11 @@ protected:
 
 public:
     NdCompress()
-        : type_{NetData::Header::kDefaultCompression}
-        , level_{NetData::Header::kDefaultCompressionLevel}
+        : type_{CompressionParams::kDefaultCompression}
+        , level_{CompressionParams::kDefaultCompressionLevel}
     {}
 
-    explicit NdCompress(int _type, int _level=NetData::Header::kDefaultCompressionLevel)
+    explicit NdCompress(int _type, int _level=CompressionParams::kDefaultCompressionLevel)
         : type_{_type}
         , level_{_level}
     {}
@@ -67,9 +70,9 @@ public:
     virtual Status compress(NetData& nd) const {
         TEC_ENTER("NdCompress::compress");
         NetData::Header hdr = *nd.header();
-        if (type_ == NetData::Header::kNoCompression  ||  hdr.size < kMinSize) {
+        if (type_ == CompressionParams::kNoCompression  ||  hdr.size < kMinSize) {
             // No compression required.
-            nd.header()->set_compression(NetData::Header::kNoCompression);
+            nd.header()->set_compression(CompressionParams::kNoCompression);
             return {};
         }
         //
@@ -114,8 +117,9 @@ public:
 
     // Uncompress NetData inplace.
     virtual Status uncompress(NetData& nd) const {
+        TEC_ENTER("NdCompress::uncompress");
         NetData::Header hdr = *nd.header();
-        if (hdr.get_compression() == NetData::Header::kNoCompression  ||  hdr.size_uncompressed == 0) {
+        if (hdr.get_compression() == CompressionParams::kNoCompression  ||  hdr.size_uncompressed == 0) {
             // No uncompression required.
             return {};
         }
@@ -131,6 +135,7 @@ public:
         //
         // Uncompressing.
         //
+        TEC_TRACE("Uncompressing {} bytes...", hdr.size);
         auto result = ::uncompress(
             (Bytef*)tmp.bytes().ptr(0), &dest_len,
             (const Bytef*)nd.bytes().ptr(0), hdr.size);
@@ -143,6 +148,7 @@ public:
         tmp_hdr->size = dest_len;
         tmp_hdr->size_uncompressed = 0;
         nd.move_from(tmp);
+        TEC_TRACE("Upcompressed to {} bytes.", dest_len);
         return {};
     }
 };

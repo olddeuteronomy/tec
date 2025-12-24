@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2025-12-13 23:44:13 by magnolia>
+# Time-stamp: <Last changed 2025-12-24 15:51:12 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -94,7 +94,7 @@ tcp_server: tcp_server.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
 tcp_client_nd: tcp_client_nd.cpp
-	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -lz -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
 tcp_server_nd: tcp_server_nd.cpp
-	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -lz -o $(OUTDIR)/$@$(TARGET_SUFFIX)

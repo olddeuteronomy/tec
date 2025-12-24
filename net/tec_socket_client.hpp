@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-20 12:18:46 by magnolia>
+// Time-stamp: <Last changed 2025-12-24 15:15:37 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,12 +33,10 @@ SOFTWARE.
 
 #pragma once
 
-#include "tec/tec_memfile.hpp"
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L   // This line fixes the "storage size of ‘hints’ isn’t known" issue.
 #endif
 
-#include <any>
 #include <cerrno>
 #include <cstdlib>
 

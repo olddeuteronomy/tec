@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-24 00:09:40 by magnolia>
+// Time-stamp: <Last changed 2025-12-24 15:06:09 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -36,6 +36,7 @@ SOFTWARE.
 #include "tec/tec_memfile.hpp"
 #include "tec/tec_container.hpp"
 #include "tec/tec_serialize.hpp"
+#include "tec/net/tec_compression.hpp"
 
 
 namespace tec {
@@ -90,18 +91,6 @@ struct NdTypes {
         static constexpr uint32_t kMagic{0x00041b00};
         static constexpr uint16_t kDefaultVersion{0x0100};
 
-        // Compression type, 4 bits [0..3], 0..15
-        static constexpr int kNoCompression{0};
-        static constexpr int kCompressionZlib{1};
-
-        static constexpr int kDefaultCompression{kNoCompression};
-
-        // Compression level, 4 bits [4..7], 0..9
-        static constexpr int kCompressionLevelMin{0};
-        static constexpr int kCompressionLevelMax{9};
-
-        static constexpr int kDefaultCompressionLevel{4};
-
         // 24 bytes.
         uint32_t magic;
         uint32_t size;
@@ -118,7 +107,7 @@ struct NdTypes {
             , version{kDefaultVersion}
             , id{0}
             , status{0}
-            , compression_flags{kNoCompression}
+            , compression_flags{CompressionParams::kNoCompression}
             , size_uncompressed{0}
             , reserved{0}
         {}
@@ -127,6 +116,7 @@ struct NdTypes {
             return (magic == kMagic && version >= kDefaultVersion);
         }
 
+        // Compression type, 4 bits [0..3], 0..15
         inline constexpr int get_compression() const {
             // First 4 bits.
             return (0xF & compression_flags);
@@ -134,6 +124,8 @@ struct NdTypes {
         inline constexpr void set_compression(int comp_type) {
             compression_flags |= (0xF & comp_type);
         }
+
+        // Compression level, 4 bits [4..7], 0..9
         inline constexpr int get_compression_level() const {
             // Bits 4..7
             return (compression_flags & 0xF0) >> 4;

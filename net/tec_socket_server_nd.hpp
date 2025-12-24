@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-22 00:08:27 by magnolia>
+// Time-stamp: <Last changed 2025-12-24 15:40:41 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -45,6 +45,7 @@ SOFTWARE.
 #include "tec/net/tec_socket.hpp"
 #include "tec/net/tec_socket_nd.hpp"
 #include "tec/net/tec_socket_server.hpp"
+#include "tec/net/tec_nd_compress.hpp"
 
 
 namespace tec {
@@ -80,7 +81,6 @@ private:
         ~Slot() = default;
     };
 
-
     std::unordered_map<ID, std::unique_ptr<Slot>> slots_;
     std::mutex mtx_slots_;
 
@@ -104,12 +104,14 @@ public:
         // Ensure Derived is actually derived from ServerNd.
         static_assert(std::is_base_of_v<ServerNd, Derived>,
                       "Derived must inherit from tec::SocketServerNd");
-
+        if (id == 0) {
+            // Default echo handler is registered already.
+            return;
+        }
         // Remove existing handler.
         if (auto slot = slots_.find(id); slot != slots_.end()) {
             slots_.erase(id);
         }
-
         // Set the slot.
         slots_[id] = std::make_unique<Slot>(
             server,
@@ -157,6 +159,7 @@ protected:
     void on_net_data(Socket* s) override {
         TEC_ENTER("SocketServerNd::on_net_data");
         SocketNd sock(s->fd, s->addr, s->port);
+        NdCompress compressor(this->params_.compression, this->params_.compression_level);
         NetData nd_in;
         //
         // Read input NetData.
@@ -164,13 +167,28 @@ protected:
         Status status = SocketNd::recv_nd(&nd_in, &sock);
         if (status) {
             //
-            // Process NetData.
+            // Uncompress input inplace.
             //
-            NetData nd_out;
-            DataInOut dio{&status, &sock, &nd_in, &nd_out};
-            status = dispatch(nd_in.header()->id, dio);
+            status = compressor.uncompress(nd_in);
+            //
+            // Dispatch NetData.
+            //
             if (status) {
-                status = SocketNd::send_nd(&nd_out, &sock);
+                NetData nd_out;
+                DataInOut dio{&status, &sock, &nd_in, &nd_out};
+                status = dispatch(nd_in.header()->id, dio);
+                if (status) {
+                    //
+                    // Compress output inplace.
+                    //
+                    status = compressor.compress(nd_out);
+                    if (status) {
+                        //
+                        // Send output to a client.
+                        //
+                        status = SocketNd::send_nd(&nd_out, &sock);
+                    }
+                }
             }
         }
         else if (status.code == EBADMSG) {
@@ -191,7 +209,7 @@ protected:
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      *
-     *                       Default handlers
+     *                       Default handler
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

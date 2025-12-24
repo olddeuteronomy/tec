@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-22 01:59:17 by magnolia>
+// Time-stamp: <Last changed 2025-12-24 15:51:58 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -26,6 +26,7 @@ SOFTWARE.
 #include <csignal>
 // #include <sys/socket.h>
 
+#include "tec/net/tec_compression.hpp"
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
@@ -99,6 +100,7 @@ tec::Status tcp_server() {
     // params.addr = tec::SocketParams::kAnyAddrIP6;
     // params.family = AF_INET6;
     params.mode = tec::SocketServerParams::kModeNetData;
+    params.compression = tec::CompressionParams::kCompressionZlib;
     auto srv{TCPServerWorker::Builder<TCPServerWorker, MyServer>{}(params)};
 
     // Run it and check for the result.
