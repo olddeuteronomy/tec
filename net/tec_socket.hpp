@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-24 15:08:29 by magnolia>
+// Time-stamp: <Last changed 2025-12-26 13:17:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,6 +33,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstddef>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
@@ -83,6 +84,7 @@ struct SocketParams {
     int flags;
     int compression;
     int compression_level;
+    size_t compression_min_size;
 
     SocketParams()
         : addr{kLocalURI}
@@ -93,6 +95,7 @@ struct SocketParams {
         , flags{0}
         , compression{CompressionParams::kDefaultCompression}
         , compression_level{CompressionParams::kDefaultCompressionLevel}
+        , compression_min_size{CompressionParams::kMinSize}
     {}
 };
 
@@ -238,14 +241,14 @@ struct Socket {
     }
 
 
-    static Status send(const MemFile& bytes, const Socket* sock) {
+    static Status send(const MemFile& data, const Socket* sock) {
         TEC_ENTER("Socket::send");
         ssize_t sent{0};
         //
         // Write data to the socket.
         //
-        if (bytes.size() > 0) {
-            sent = write(sock->fd, bytes.ptr(0), bytes.size());
+        if (data.size() > 0) {
+            sent = write(sock->fd, data.ptr(0), data.size());
             //
             // Check for errors.
             //
@@ -254,9 +257,9 @@ struct Socket {
                 TEC_TRACE(errmsg.c_str());
                 return {errno, errmsg, Error::Kind::NetErr};
             }
-            else if (bytes.size() != static_cast<size_t>(sent)) {
+            else if (data.size() != static_cast<size_t>(sent)) {
                 auto errmsg = format("{}:{} socket partial write: {} bytes of {}.",
-                                     sock->addr, sock->port, sent, bytes.size());
+                                     sock->addr, sock->port, sent, data.size());
                 return {EIO, errmsg, Error::Kind::NetErr};
             }
 

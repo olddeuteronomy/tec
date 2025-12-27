@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-24 16:03:46 by magnolia>
+// Time-stamp: <Last changed 2025-12-27 13:37:50 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -150,5 +150,5 @@ int main() {
     auto result = tcp_client();
 
     tec::println("\nExited with {}", result);
-    return result.code.value_or(tec::Error::Code<>::Unspecified);
+    return result.code.value_or(0);
 }

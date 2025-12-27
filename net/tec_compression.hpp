@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-24 15:00:23 by magnolia>
+// Time-stamp: <Last changed 2025-12-26 13:06:41 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,8 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
+/**
+ * @file tec_compression.hpp
+ * @brief Compression parameters.
+ * @author The Emacs Cat
+ * @date 2025-12-23
+ */
 
 #pragma once
+
+#include <cstddef>
 
 
 namespace tec {
@@ -41,6 +49,9 @@ struct CompressionParams {
     static constexpr int kCompressionLevelMax{9};
 
     static constexpr int kDefaultCompressionLevel{4};
+
+    // Minimum data size in bytes for compression.
+    static constexpr size_t kMinSize{128};
 };
 
 

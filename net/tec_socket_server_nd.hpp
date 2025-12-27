@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-25 00:59:35 by magnolia>
+// Time-stamp: <Last changed 2025-12-26 14:46:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -151,11 +151,44 @@ protected:
         TEC_TRACE("Replied with errcode={}.", nd.header()->status);
     }
 
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     *                    Pre- and postprocessing
+     *
+     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+    virtual Status compress(NetData* nd) {
+        // if (this->params_.compression) {
+            NdCompress cmpr(this->params_.compression,
+                            this->params_.compression_level,
+                            this->params_.compression_min_size);
+            return cmpr.compress(*nd);
+        // }
+        // return {};
+    }
+
+    virtual Status uncompress(NetData* nd) {
+        if (nd->header()->get_compression()) {
+            NdCompress cmpr;
+            return cmpr.uncompress(*nd);
+        }
+        return {};
+    }
+
+    virtual Status preprocess(NetData* nd) {
+        TEC_ENTER("SocketServerNd::preprocess");
+        return uncompress(nd);
+    }
+
+    virtual Status postprocess(NetData* nd) {
+        TEC_ENTER("SocketServerNd::postprocess");
+        return compress(nd);
+    }
+
 
     void on_net_data(Socket* s) override {
         TEC_ENTER("SocketServerNd::on_net_data");
         SocketNd sock(s->fd, s->addr, s->port);
-        NdCompress compressor(this->params_.compression, this->params_.compression_level);
         NetData nd_in;
         //
         // Read input NetData.
@@ -163,9 +196,9 @@ protected:
         Status status = SocketNd::recv_nd(&nd_in, &sock);
         if (status) {
             //
-            // Uncompress input inplace.
+            // Preprocess input inplace.
             //
-            status = compressor.uncompress(nd_in);
+            status = preprocess(&nd_in);
             //
             // Dispatch NetData.
             //
@@ -175,9 +208,9 @@ protected:
                 status = dispatch(nd_in.header()->id, dio);
                 if (status) {
                     //
-                    // Compress output inplace.
+                    // Postprocess output inplace.
                     //
-                    status = compressor.compress(nd_out);
+                    status = postprocess(&nd_out);
                     if (status) {
                         //
                         // Send output to a client.

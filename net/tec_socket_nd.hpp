@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-21 11:40:21 by magnolia>
+// Time-stamp: <Last changed 2025-12-26 14:21:10 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -125,7 +125,10 @@ struct SocketNd: public Socket {
 
         }
         // Re-read the header from the message queue.
-        read(sock->fd, hdr, sizeof(NetData::Header));
+        auto rd2 = read(sock->fd, hdr, sizeof(NetData::Header));
+        if (rd2 != sizeof(NetData::Header)) {
+            return {EIO, Error::Kind::System};
+        }
         //
         // Read data.
         //

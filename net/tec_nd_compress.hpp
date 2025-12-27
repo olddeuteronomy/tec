@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-25 01:44:30 by magnolia>
+// Time-stamp: <Last changed 2025-12-26 14:40:56 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,7 +33,7 @@ SOFTWARE.
 #pragma once
 
 #include <cerrno>
-#include <cstdint>
+#include <cstddef>
 
 #if defined (_TEC_USE_ZLIB)
 #include <zlib.h>
@@ -50,32 +50,37 @@ namespace tec {
 
 
 class NdCompress {
-public:
-    static constexpr uint32_t kMinSize{128};
-
 protected:
     int type_;
     int level_;
+    size_t min_size_;
 
 public:
     NdCompress()
         : type_{CompressionParams::kDefaultCompression}
         , level_{CompressionParams::kDefaultCompressionLevel}
+        , min_size_{CompressionParams::kMinSize}
     {}
 
-    explicit NdCompress(int _type, int _level=CompressionParams::kDefaultCompressionLevel)
+    explicit NdCompress(int _type,
+                        int _level = CompressionParams::kDefaultCompressionLevel,
+                        size_t _min_size = CompressionParams::kMinSize)
         : type_{_type}
         , level_{_level}
+        , min_size_{_min_size}
     {}
 
 
     virtual Status compress(NetData& nd) const {
+        TEC_ENTER("NdCompress::compress");
+        TEC_TRACE("Type={} Level={} MinSize={}", type_, level_, min_size_);
 #if defined (ZLIB_VERSION)
         if (type_ == CompressionParams::kCompressionZlib) {
             return compress_zlib(nd);
         }
 #endif
         // No compression required.
+        nd.header()->set_compression(CompressionParams::kNoCompression);
         return {};
     }
 
@@ -106,8 +111,8 @@ protected:
 
     // Compress NetData inplace.
     virtual Status compress_zlib(NetData& nd) const {
-        TEC_ENTER("NdCompress::compress");
-        if (nd.header()->size < kMinSize) {
+        TEC_ENTER("NdCompress::compress_zlib");
+        if (nd.header()->size < min_size_) {
             // Data too small -- no compression required.
             nd.header()->set_compression(CompressionParams::kNoCompression);
             return {};
@@ -155,9 +160,9 @@ protected:
 
     // Uncompress NetData inplace.
     virtual Status uncompress_zlib(NetData& nd) const {
-        TEC_ENTER("NdCompress::uncompress");
+        TEC_ENTER("NdCompress::uncompress_zlib");
         NetData::Header hdr = *nd.header();
-        if (hdr.get_compression() == CompressionParams::kNoCompression  ||  hdr.size_uncompressed == 0) {
+        if (hdr.get_compression() == CompressionParams::kNoCompression) {
             // No uncompression required.
             return {};
         }

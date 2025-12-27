@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-25 00:26:59 by magnolia>
+// Time-stamp: <Last changed 2025-12-26 13:38:09 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -123,12 +123,16 @@ protected:
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     virtual Status compress(NetData* nd) {
-        NdCompress cmpr(this->params_.compression, this->params_.compression_level);
+        NdCompress cmpr(this->params_.compression,
+                        this->params_.compression_level,
+                        this->params_.compression_min_size);
         return cmpr.compress(*nd);
     }
 
     virtual Status uncompress(NetData* nd) {
-        NdCompress cmpr(this->params_.compression, this->params_.compression_level);
+        NdCompress cmpr(this->params_.compression,
+                        this->params_.compression_level,
+                        this->params_.compression_min_size);
         return cmpr.uncompress(*nd);
     }
 
