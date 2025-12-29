@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-28 23:49:38 by magnolia>
+// Time-stamp: <Last changed 2025-12-29 14:25:26 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -190,7 +190,7 @@ protected:
     }
 
 
-    void on_net_data(Socket* s) override {
+    void on_net_data(const Socket* s) override {
         TEC_ENTER("SocketServerNd::on_net_data");
         SocketNd sock(s->fd, s->addr, s->port);
         NetData nd_in;
@@ -238,7 +238,6 @@ protected:
             reply_error(status, nd_in.header()->id, &sock);
         }
     }
-
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      *

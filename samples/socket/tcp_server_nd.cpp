@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-27 13:42:14 by magnolia>
+// Time-stamp: <Last changed 2025-12-29 15:13:35 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,15 +24,14 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 #include <csignal>
-// #include <sys/socket.h>
 
-#include "tec/net/tec_compression.hpp"
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
 #include "tec/tec_status.hpp"
 #include "tec/tec_trace.hpp"
 #include "tec/tec_actor_worker.hpp"
 #include "tec/net/tec_net_data.hpp"
+#include "tec/net/tec_compression.hpp"
 #include "tec/net/tec_socket_server_nd.hpp"
 
 #include "tec/samples/socket/test_data.hpp"
@@ -101,6 +100,7 @@ tec::Status tcp_server() {
     // params.family = AF_INET6;
     params.mode = tec::SocketServerParams::kModeNetData;
     params.compression = tec::CompressionParams::kCompressionZlib;
+    params.use_thread_pool = true;
     auto srv{TCPServerWorker::Builder<TCPServerWorker, MyServer>{}(params)};
 
     // Run it and check for the result.

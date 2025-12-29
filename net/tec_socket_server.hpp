@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-29 02:13:13 by magnolia>
+// Time-stamp: <Last changed 2025-12-29 15:01:39 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -75,7 +75,20 @@ protected:
     std::atomic_bool stop_polling_;
     Signal polling_stopped_;
 
+private:
     ThreadPool pool_;
+
+    template <typename Params>
+    struct Task {
+        SocketServer<Params>* server;
+        Socket sock;
+    };
+
+    struct details {
+        static void socket_proc(Task<Params> task) {
+            task.server->dispatch_socket(task.sock);
+        }
+    };
 
 public:
 
@@ -85,6 +98,7 @@ public:
         , listenfd_{-1}
         , stop_polling_{false}
         , polling_stopped_{}
+        , pool_(params.thread_pool_size)
     {
         static_assert(
             std::is_base_of_v<SocketServerParams, Params>,
@@ -112,6 +126,7 @@ public:
         }
 
         // Start polling.
+        TEC_TRACE("Thread pool is {}.", (params_.use_thread_pool ? "ON" : "OFF"));
         poll(sig_started);
     }
 
@@ -286,18 +301,6 @@ protected:
         return {};
     }
 
-    template <typename Params>
-    struct Task {
-        SocketServer<Params>* server;
-        Socket sock;
-    };
-
-    // template <typename Params>
-    struct details {
-        static void socket_proc(Task<Params> task) {
-            task.server->dispatch_socket(task.sock);
-        }
-    };
 
     virtual void poll(Signal* sig_started) {
         TEC_ENTER("SocketServer::poll");
@@ -315,34 +318,30 @@ protected:
             Socket sock = get_socket_info(clientfd, &client_addr);
             TEC_TRACE("Accepted connection from {}:{}.", sock.addr, sock.port);
 
-            // Pass the client socket for further processing.
-            // ++threads_count;
-            // if (threads_count.load() < params_.max_threads) {
-            //     process_socket(sock);
-            // }
-            // else {
-            //     dispatch_socket(sock);
-            // }
-
-            // Enqueue client handling task to thread pool
-            Task<Params> task{this, sock};
-            pool_.enqueue([task] {
-                details::socket_proc (task);
-            });
+            process_socket(sock);
         }
         polling_stopped_.set();
     }
 
 
     virtual void process_socket(Socket sock) {
-        std::thread t([&]{dispatch_socket(sock);});
-        t.detach();
+        if (params_.use_thread_pool) {
+            // Async processing -- enqueue client handling task to thread pool.
+            Task<Params> task{this, sock};
+            pool_.enqueue([task] {
+                details::socket_proc (task);
+            });
+        }
+        else {
+            // Synchronous processing.
+            dispatch_socket(sock);
+        }
     }
 
 
     virtual void dispatch_socket(Socket _sock) {
         TEC_ENTER("SocketServer::dispatch_socket");
-        Socket sock = _sock;
+        Socket sock{_sock};
         if(params_.mode == SocketServerParams::kModeCharStream) {
             on_string(&sock);
         }
@@ -364,21 +363,18 @@ protected:
     }
 
 
-    virtual void on_string(Socket* sock) {
+    virtual void on_string(const Socket* sock) {
         TEC_ENTER("SocketServer::on_char_stream");
         // Default implementation just echoes received data.
         MemFile data;
         auto status = Socket::recv(data, sock, 0);
         if (status) {
-            status = Socket::send(data, sock);
+            Socket::send(data, sock);
         }
-        // if (!status) {
-        //     close_client_connection(sock);
-        // }
     }
 
 
-    virtual void on_net_data(Socket* sock) {
+    virtual void on_net_data(const Socket* sock) {
     }
 
 }; // class SocketServer

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-29 00:04:00 by magnolia>
+// Time-stamp: <Last changed 2025-12-29 14:15:08 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,10 +33,13 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstddef>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
 #endif
+
+#include <thread>
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -135,21 +138,25 @@ struct SocketServerParams: public SocketParams  {
      */
     static constexpr int kDefaultConnQueueSize{SOMAXCONN};
 
+    static constexpr bool kUseThreadPool{true};
+
     int mode;
     int queue_size;
     int opt_reuse_addr;
     int opt_reuse_port;
-    int max_threads;
+    bool use_thread_pool;
+    size_t thread_pool_size;
 
     SocketServerParams()
         : mode{kDefaultMode}
         , queue_size{kDefaultConnQueueSize}
         , opt_reuse_addr{kOptReuseAddress}
         , opt_reuse_port{kOptReusePort}
-        , max_threads{kDefaultMaxThreads}
+        , use_thread_pool{kUseThreadPool}
     {
         addr = kAnyAddr; // IPv4, use kAnyAddrIP6 to accept from both IPv4 and IPv6.
         flags = kDefaultServerFlags;
+        thread_pool_size = std::thread::hardware_concurrency();
     }
 };
 
