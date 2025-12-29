@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-26 13:17:46 by magnolia>
+// Time-stamp: <Last changed 2025-12-29 00:04:00 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,13 +33,11 @@ SOFTWARE.
 
 #pragma once
 
-#include <cstddef>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
 #endif
 
-#include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netdb.h>
@@ -128,6 +126,8 @@ struct SocketServerParams: public SocketParams  {
     static constexpr int kModeNetData{1};
     static constexpr int kDefaultMode{kModeCharStream};
 
+    static constexpr int kDefaultMaxThreads{16};
+
     /** The maximum length to which the queue of pending connections for socket fd may
        grow. If a connection request arrives when the queue is full, the client may receive an error with an
        indication of ECONNREFUSED or, if the underlying protocol supports retransmission, the request may be
@@ -139,12 +139,14 @@ struct SocketServerParams: public SocketParams  {
     int queue_size;
     int opt_reuse_addr;
     int opt_reuse_port;
+    int max_threads;
 
     SocketServerParams()
         : mode{kDefaultMode}
         , queue_size{kDefaultConnQueueSize}
         , opt_reuse_addr{kOptReuseAddress}
         , opt_reuse_port{kOptReusePort}
+        , max_threads{kDefaultMaxThreads}
     {
         addr = kAnyAddr; // IPv4, use kAnyAddrIP6 to accept from both IPv4 and IPv6.
         flags = kDefaultServerFlags;
@@ -186,6 +188,7 @@ struct Socket {
         std::strncpy(addr, _addr, INET6_ADDRSTRLEN);
         addr[INET6_ADDRSTRLEN-1] = '\0';
     }
+
 
     static Status recv(MemFile& data, const Socket* sock, size_t length) {
         TEC_ENTER("Socket::recv");

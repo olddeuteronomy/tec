@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-20 12:14:30 by magnolia>
+// Time-stamp: <Last changed 2025-12-29 02:13:13 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
 /**
  * @file tec_socket_server.hpp
  * @brief Generic BSD socket server implementation.
@@ -33,8 +32,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <cstring>
-#include <netinet/in.h>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
@@ -61,6 +58,7 @@ SOFTWARE.
 #include "tec/tec_memfile.hpp"
 #include "tec/tec_actor.hpp"
 #include "tec/net/tec_socket.hpp"
+#include "tec/net/tec_thread_pool.hpp"
 
 
 namespace tec {
@@ -72,11 +70,12 @@ public:
     using Params = TParams;
 
 protected:
-
     Params params_;
     int listenfd_;
     std::atomic_bool stop_polling_;
     Signal polling_stopped_;
+
+    ThreadPool pool_;
 
 public:
 
@@ -143,17 +142,20 @@ public:
 
 protected:
 
-    virtual Status set_socket_options(int sockfd) {
+    virtual Status set_socket_options(int fd) {
+        TEC_ENTER("SocketServer::set_socket_options");
         // Avoid "Address already in use" error
-        if( ::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,
+        if( ::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
                          &params_.opt_reuse_addr, sizeof(int)) < 0 ) {
             return {errno, "setsockopt SO_REUSEADDR failed", Error::Kind::NetErr};
         }
-        if (::setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT,
+        TEC_TRACE("SO_REUSEADDR is {}.", params_.opt_reuse_addr);
+        if (::setsockopt(fd, SOL_SOCKET, SO_REUSEPORT,
                        &params_.opt_reuse_port, sizeof(int)) < 0) {
-            ::close(sockfd);
+            ::close(fd);
             return {errno, "setsockopt SO_REUSEPORT", Error::Kind::NetErr};
         }
+        TEC_TRACE("SO_REUSEPORT is {}.", params_.opt_reuse_port);
         return {};
     }
 
@@ -265,11 +267,11 @@ protected:
         TEC_ENTER("SocketServer::accept_connection");
         // Wait for incoming connection.
         socklen_t sin_size = sizeof(sockaddr_storage);
-        *clientfd = ::accept(listenfd_,
+        auto fd = ::accept(listenfd_,
                              (sockaddr *)client_addr,
                              &sin_size);
         // Check result.
-        if (*clientfd == EOF) {
+        if (fd == EOF) {
             std::string err_msg;
             if( errno == EINVAL || errno == EINTR || errno == EBADF ) {
                 err_msg = format("Polling interrupted by signal {}.", errno);
@@ -280,9 +282,22 @@ protected:
             TEC_TRACE(err_msg);
             return {errno, err_msg, Error::Kind::NetErr};
         }
+        *clientfd = fd;
         return {};
     }
 
+    template <typename Params>
+    struct Task {
+        SocketServer<Params>* server;
+        Socket sock;
+    };
+
+    // template <typename Params>
+    struct details {
+        static void socket_proc(Task<Params> task) {
+            task.server->dispatch_socket(task.sock);
+        }
+    };
 
     virtual void poll(Signal* sig_started) {
         TEC_ENTER("SocketServer::poll");
@@ -292,7 +307,6 @@ protected:
             int clientfd{-1};
 
             sockaddr_storage client_addr;
-            // ::memset(&client_addr, 0, sizeof(sockaddr_storage));
             TEC_TRACE("Waiting for incoming connection...");
             if (!accept_connection(&clientfd, &client_addr)) {
                 continue;
@@ -302,24 +316,51 @@ protected:
             TEC_TRACE("Accepted connection from {}:{}.", sock.addr, sock.port);
 
             // Pass the client socket for further processing.
-            process_socket(sock);
+            // ++threads_count;
+            // if (threads_count.load() < params_.max_threads) {
+            //     process_socket(sock);
+            // }
+            // else {
+            //     dispatch_socket(sock);
+            // }
+
+            // Enqueue client handling task to thread pool
+            Task<Params> task{this, sock};
+            pool_.enqueue([task] {
+                details::socket_proc (task);
+            });
         }
         polling_stopped_.set();
     }
 
 
     virtual void process_socket(Socket sock) {
-        TEC_ENTER("SocketServer::process_socket");
+        std::thread t([&]{dispatch_socket(sock);});
+        t.detach();
+    }
+
+
+    virtual void dispatch_socket(Socket _sock) {
+        TEC_ENTER("SocketServer::dispatch_socket");
+        Socket sock = _sock;
         if(params_.mode == SocketServerParams::kModeCharStream) {
             on_string(&sock);
         }
         else if(params_.mode == SocketServerParams::kModeNetData) {
             on_net_data(&sock);
         }
+        close_client_connection(&sock);
+    }
 
-        TEC_TRACE("Closing connection with {}:{}...", sock.addr, sock.port);
-        ::shutdown(sock.fd, SHUT_RDWR);
-        ::close(sock.fd);
+
+    virtual void close_client_connection(Socket* sock) {
+        TEC_ENTER("SocketServer::close_client_connection");
+        TEC_TRACE("Closing connection with {}:{}...", sock->addr, sock->port);
+        if (sock->fd != -1) {
+            ::shutdown(sock->fd, SHUT_RDWR);
+            ::close(sock->fd);
+            sock->fd = -1;
+        }
     }
 
 
@@ -327,8 +368,13 @@ protected:
         TEC_ENTER("SocketServer::on_char_stream");
         // Default implementation just echoes received data.
         MemFile data;
-        Socket::recv(data, sock, 0);
-        Socket::send(data, sock);
+        auto status = Socket::recv(data, sock, 0);
+        if (status) {
+            status = Socket::send(data, sock);
+        }
+        // if (!status) {
+        //     close_client_connection(sock);
+        // }
     }
 
 

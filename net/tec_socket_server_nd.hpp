@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-26 14:46:18 by magnolia>
+// Time-stamp: <Last changed 2025-12-28 23:49:38 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <cerrno>
 #include <functional>
+
 #include <sys/socket.h>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
@@ -125,6 +126,9 @@ protected:
         TEC_ENTER("SocketServerNd::dispatch");
         Status status;
         bool found{false};
+        //
+        // Find and call a corresponding handler.
+        //
         if (auto slot = slots_.find(id); slot != slots_.end()) {
             found = true;
             slot->second->handler(slot->second->server, dio);
@@ -158,13 +162,13 @@ protected:
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     virtual Status compress(NetData* nd) {
-        // if (this->params_.compression) {
+        if (this->params_.compression) {
             NdCompress cmpr(this->params_.compression,
                             this->params_.compression_level,
                             this->params_.compression_min_size);
             return cmpr.compress(*nd);
-        // }
-        // return {};
+        }
+        return {};
     }
 
     virtual Status uncompress(NetData* nd) {
@@ -222,7 +226,7 @@ protected:
         }
         else if (status.code == EBADMSG) {
             //
-            // Not a NetData header -- switch to raw char stream processing.
+            // Not a NetData header -- try with raw char stream processing.
             //
             SocketServer<Params>::on_string(s);
             return;
@@ -238,7 +242,7 @@ protected:
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      *
-     *                       Default handler
+     *                      Default handler (ID=0)
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

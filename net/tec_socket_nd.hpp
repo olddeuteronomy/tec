@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-26 14:21:10 by magnolia>
+// Time-stamp: <Last changed 2025-12-29 00:05:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -109,6 +109,12 @@ struct SocketNd: public Socket {
                                  sock->addr, sock->port);
             TEC_TRACE(errmsg);
             return {EIO, errmsg, Error::Kind::NetErr};
+        }
+        else if (rd < 0) {
+            auto errmsg = format("{}:{} Socket read error.",
+                                 sock->addr, sock->port);
+            TEC_TRACE(errmsg);
+            return {errno, errmsg, Error::Kind::NetErr};
         }
         else if (rd != sizeof(NetData::Header)) {
             auto errmsg = format("{}:{} NetData::Header read error.",
