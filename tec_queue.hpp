@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-17 14:45:57 by magnolia>
+// Time-stamp: <Last changed 2026-01-02 14:35:48 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -82,7 +82,7 @@ public:
      * and notifies one waiting thread that a new element is available.
      * @param t The element to add to the queue (moved into the queue).
      */
-    void enqueue(T t) {
+    void enqueue(T&& t) {
         std::lock_guard<std::mutex> lock(m_);
         q_.push(std::move(t));
         c_.notify_one();

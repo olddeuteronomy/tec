@@ -1,9 +1,9 @@
 
 #include <iostream>
 
-// #include "tec/tec_bytes.hpp"
 #include "tec/tec_dump.hpp"
 #include "tec/tec_memfile.hpp"
+#include "tec/tec_base64.hpp"
 
 
 int main() {
@@ -21,7 +21,13 @@ int main() {
         << "Cap: " << b.capacity() << "\n"
         << "Pos: " << b.tell() << "\n\n"
         ;
-    std::cout << tec::Dump::dump_as_table(b.as_hex()) << "\n";
+    std::cout << tec::dump::as_table(b.as_hex()) << "\n";
+    std::cout
+        << "Base64 decoded:\n"
+        << "\""
+        << tec::base64::to_base64(data)
+        << "\"\n"
+        ;
     return 0;
 }
 

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-19 15:32:43 by magnolia>
+// Time-stamp: <Last changed 2026-01-04 15:55:52 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -39,6 +39,7 @@ SOFTWARE.
 #include "tec/tec_memfile.hpp"
 #include "tec/tec_container.hpp"
 #include "tec/tec_serialize.hpp"
+#include "tec/tec_base64.hpp"
 
 
 namespace tec {
@@ -105,12 +106,13 @@ struct Json {
      *
      * @param val  The byte container
      * @param name Optional JSON key name
-     * @return JSON string like "deadbeef"
+     * @return Base64-encoded string
      */
     static std::string json(const Blob& val, const char* name = nullptr) {
         std::ostringstream os;
         print_name(os, name);
-        os <<  "\"" << val.as_hex() << "\"";
+        os << "\"" << base64::to_base64(val.str()) << "\"";
+        // os <<  "\"" << val.as_hex() << "\"";
         return os.str();
     }
 

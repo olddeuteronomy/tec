@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-15 16:18:33 by magnolia>
+// Time-stamp: <Last changed 2026-01-02 15:40:02 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -100,7 +100,7 @@ public:
      * @param message The message to send.
      * @return bool True if the message was successfully sent, false otherwise.
      */
-    virtual bool send(const Message& message) = 0;
+    virtual bool send(Message&& msg) = 0;
 
     /**
      * @brief Retrieves the signal indicating the daemon is running.
@@ -147,6 +147,7 @@ public:
         Payload  payload{&ready, &status, {req}, {rep}};
         if( !send({&payload}) ) {
             status = {Error::Kind::RuntimeErr};
+            ready.set();
         }
         ready.wait();
         return status;
@@ -159,6 +160,7 @@ public:
         Payload  payload{&ready, &status, {req}, {}};
         if( !send({&payload}) ) {
             status = {Error::Kind::RuntimeErr};
+            ready.set();
         }
         ready.wait();
         return status;

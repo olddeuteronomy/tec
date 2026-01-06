@@ -198,7 +198,7 @@ void print_payload(const Payload& pld, const tec::NetData& nd) {
         << "Bytes:   " << nd.bytes().size() << "\n"
         << "\n"
         ;
-    std::cout << tec::Dump::dump_as_table(nd.bytes().as_hex()) << "\n";
+    std::cout << tec::dump::as_table(nd.bytes().as_hex()) << "\n";
 }
 
 void save_payload(const Payload& pld, tec::NetData& nd) {

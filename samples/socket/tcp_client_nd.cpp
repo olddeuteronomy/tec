@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-27 13:37:50 by magnolia>
+// Time-stamp: <Last changed 2026-01-06 13:30:15 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -69,7 +69,7 @@ void print(const T& p, tec::NetData& nd) {
     // If compiled with `g++ -O2` v.13.3, valgrind v.3.22 may report
     // "Use of uninitialised value of size 8" false positive warning.
     nd.rewind();
-    std::cout << tec::Dump::dump_as_table(nd.bytes().as_hex()) << "\n";
+    std::cout << tec::dump::as_table(nd.bytes().as_hex()) << "\n";
 }
 
 

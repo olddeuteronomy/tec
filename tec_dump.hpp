@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-18 15:30:21 by magnolia>
+// Time-stamp: <Last changed 2026-01-04 15:39:27 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -27,7 +27,7 @@ SOFTWARE.
 
 /**
  * @file tec_dump.hpp
- * @brief A byte buffer class with stream-like read/write semantics.
+ * @brief Debugging/inspecting helpers.
  * @author The Emacs Cat
  * @date 2025-12-17
  */
@@ -38,41 +38,42 @@ SOFTWARE.
 #include <cctype>
 #include <ostream>
 #include <string>
+#include <string_view>
 
 
 namespace tec {
 
-struct Dump {
+namespace dump {
 
-    static std::string dump_as_table(const std::string& s) {
-        constexpr size_t bytes_per_line = 32;
-        constexpr size_t chars_per_line = 2 * bytes_per_line;
-        std::ostringstream os;
-        // Header: decimal column numbers, 2 digits, padded with 0
-        os << "offset|";
-        for (size_t i = 0; i < bytes_per_line; i += 2) {
-            os << std::setw(2) << std::setfill('0') << i << "  ";
-        }
-        os << '\n';
-        // Separator line.
-        os << "======|";
-        for (size_t i = 0; i < bytes_per_line / 2; ++i) {
-            os << "++--";
-        }
-        // Print bytes as 2 characters.
-        for(size_t n = 0 ; n < s.size() ; n += 2) {
-            if((n % chars_per_line) == 0) {
-                os << "|\n"
-                   << std::dec << std::setw(6) << std::setfill('0')
-                   << n / 2 << "|";
-            }
-            os << s[n] << s[n+1];
-        }
-        os << "|";
-        return os.str();
+inline std::string as_table(std::string_view s) {
+    constexpr size_t bytes_per_line = 32;
+    constexpr size_t chars_per_line = 2 * bytes_per_line;
+    std::ostringstream os;
+    // Header: decimal column numbers, 2 digits, padded with 0
+    os << "offset|";
+    for (size_t i = 0; i < bytes_per_line; i += 2) {
+        os << std::setw(2) << std::setfill('0') << i << "  ";
     }
+    os << '\n';
+    // Separator line.
+    os << "======|";
+    for (size_t i = 0; i < bytes_per_line / 2; ++i) {
+        os << "++--";
+    }
+    // Print bytes as 2 characters.
+    for(size_t n = 0 ; n < s.size() ; n += 2) {
+        if((n % chars_per_line) == 0) {
+            os << "|\n"
+               << std::dec << std::setw(6) << std::setfill('0')
+               << n / 2 << "|";
+        }
+        os << s[n] << s[n+1];
+    }
+    os << "|";
+    return os.str();
+}
 
-};
+} // namespace dump
 
 } // namespace tec
 
@@ -92,11 +93,15 @@ int main() {
         ;
 
     tec::Bytes b(data, strlen(data));
-    std::cout << tec::Dump::dump_as_table(b) << "\n";
+    std::cout << tec::dump::as_table(b) << "\n";
     return 0;
 }
 
 OUTPUT:
+
+Size:131
+Cap: 8192
+Pos: 131
 
 offset|00  02  04  06  08  10  12  14  16  18  20  22  24  26  28  30
 ======|++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--++--|
@@ -104,6 +109,6 @@ offset|00  02  04  06  08  10  12  14  16  18  20  22  24  26  28  30
 000032| h e20 s e q u e n c e20 o f20 p r i n t a b l e20 b y t e s .20|
 000064| N o n - p r i n t a b l e20 b y t e s20 a r e20 s h o w n20 i n|
 000096|20 h e x :200102030405060708090A0B0C0D0E0F1A1B1C1D1E1FA1A2A3A4A5|
-000128|F0FF|
+000128|F0FF00|
 
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/

@@ -16,7 +16,7 @@ void print_buffer(int n, const tec::Blob& buf) {
         << "Cap=" << buf.capacity() << "\n"
         << "Siz=" << buf.size() << "\n"
         << "Pos=" << buf.tell() << "\n"
-        << tec::Dump::dump_as_table(buf.as_hex())
+        << tec::dump::as_table(buf.as_hex())
         << "\n"
         ;
 }

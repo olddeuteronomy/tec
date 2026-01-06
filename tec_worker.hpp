@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-17 00:06:10 by magnolia>
+// Time-stamp: <Last changed 2026-01-02 15:52:34 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -183,10 +183,10 @@ public:
      * @return bool True if the message was sent, false if no thread exists.
      * @see Daemon::send()
      */
-    bool send(const Message& msg) override {
+    bool send(Message&& msg) override {
         TEC_ENTER("Worker::send");
         if (thread_.joinable()) {
-            mq_.enqueue(msg);
+            mq_.enqueue(std::move(msg));
             TEC_TRACE("Message [{}] sent.", name(msg));
             return true;
         } else {
@@ -210,17 +210,21 @@ public:
     void register_callback(Derived* worker, void (Derived::*callback)(const Message& msg)) {
         Lock lk{mtx_slots_};
         TEC_ENTER("Worker::register_callback");
+        //
         // Ensure Derived is actually derived from Worker<Params>.
+        //
         static_assert(std::is_base_of_v<Worker<Params>, Derived>,
                       "Derived must inherit from tec::Worker");
         std::type_index ndx = std::type_index(typeid(T));
-
+        //
         // Remove existing handler.
+        //
         if (auto slot = slots_.find(ndx); slot != slots_.end()) {
             slots_.erase(ndx);
         }
-
+        //
         // Set the slot.
+        //
         slots_[ndx] = std::make_unique<Slot>(
             worker,
             [callback](Worker<Params>* worker, const Message& msg) {
@@ -242,7 +246,7 @@ protected:
     virtual void dispatch(const Message& msg) {
         auto ndx = std::type_index(msg.type());
         if (auto slot = slots_.find(ndx); slot != slots_.end()) {
-            slot->second->callback(slot->second->worker, msg);
+            slot->second->callback(slot->second->worker, std::cref(msg));
         }
     }
 
@@ -285,32 +289,37 @@ private:
          */
         static void thread_proc(Worker<Params>& wt) {
             TEC_ENTER("Worker::thread_proc");
-
             // Signal termination on exit.
             OnExit on_terminating{std::ref(wt.sig_terminated_)};
-
+            //
             // Obtain thread ID and wait for the running signal.
+            //
             wt.thread_id_ = std::this_thread::get_id();
             TEC_TRACE("thread {} created.", wt.id());
             wt.sig_running_.wait();
             TEC_TRACE("`sig_running' received.");
-
+            //
             // Exit immediately if flagged.
+            //
             if (wt.flag_exited_) {
                 return;
             }
-
+            //
             // Initialize the worker.
+            //
             TEC_TRACE("on_init() called ...");
             wt.status_ = wt.on_init();
             TEC_TRACE("on_init() returned {}.", wt.status_);
-
+            //
             // Signal initialization complete.
+            //
             wt.sig_inited_.set();
             TEC_TRACE("`sig_inited' signalled.");
 
             if (wt.status_) {
+                //
                 // Process messages if initialized successfully.
+                //
                 TEC_TRACE("entering message loop.");
                 bool stop = false;
                 do {
@@ -320,13 +329,14 @@ private:
                         stop = true;
                         wt.flag_exited_ = true;
                     } else {
-                        wt.dispatch(msg);
+                        wt.dispatch(std::cref(msg));
                     }
                 } while (!stop);
                 TEC_TRACE("leaving message loop, {} message(s) left in queue...", wt.mq_.size());
             }
-
+            //
             // Finalize if it was initialized successfully.
+            //
             if (wt.status_) {
                 TEC_TRACE("on_exit() called ...");
                 wt.status_ = wt.on_exit();
@@ -362,7 +372,9 @@ public:
     Status run() override {
         Lock lk{mtx_thread_proc_};
         TEC_ENTER("Worker::run");
-
+        //
+        // Create a new thread.
+        //
         if (!thread_.joinable()) {
             thread_ = std::thread(details<Params>::thread_proc, std::ref(*this));
         }
@@ -370,17 +382,18 @@ public:
             TEC_TRACE("`Worker::thread_proc' is already running.");
             return {};
         }
-
+        //
         // Resume the thread.
+        //
         flag_running_ = true;
         sig_running_.set();
         TEC_TRACE("`sig_running' signalled.");
-
+        //
         // Wait for thread initialization completed.
+        //
         TEC_TRACE("waiting for `sig_inited' signalled ...");
         sig_inited_.wait();
-
-        // Return the result of thread initialization.
+        // Return a result of thread initialization.
         return status_;
     }
 
@@ -395,25 +408,25 @@ public:
     Status terminate() override {
         Lock lk{mtx_thread_proc_};
         TEC_ENTER("Worker::terminate");
-
         if (!thread_.joinable()) {
             TEC_TRACE("WARNING: no thread exists!");
             return status_;
         }
-
         if (!flag_running_) {
             TEC_TRACE("Exiting the suspended thread...");
             flag_exited_ = true;
             sig_running_.set();
         }
-
+        //
         // Send the null message on normal exiting.
+        //
         if (status_ && !flag_exited_) {
             send(nullmsg());
             TEC_TRACE("QUIT sent.");
         }
-
+        //
         // Wait for the thread to finish its execution.
+        //
         TEC_TRACE("waiting for thread {} to finish ...", id());
         thread_.join();
         TEC_TRACE("thread {} finished OK.", id());
