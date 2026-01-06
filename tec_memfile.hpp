@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-24 02:43:19 by magnolia>
+// Time-stamp: <Last changed 2026-01-07 01:23:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -374,7 +374,7 @@ public:
      *     // Output: " H e l l o010203 W o r l dFF"
      * @endcode
      *
-     * @note Space (0x20) is deliberately rendered as hex `"20"`, not as `' ' + ' '`,
+     * @note Space (0x20) is deliberately rendered as hex "20", not as ' ' + ' ',
      *       which matches classic hex dump tools and avoids ambiguity.
      *
      * @see to_hex_chars()
