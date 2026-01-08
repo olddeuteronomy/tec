@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-07 01:23:43 by magnolia>
+// Time-stamp: <Last changed 2026-01-08 22:06:38 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -199,9 +199,11 @@ public:
     }
 
     const void* data() const {
+        // To prevent silly GCC warning.
         return &buffer_.at(0);
     }
-    void* data() noexcept {
+    void* data() {
+        // To prevent silly GCC warning.
         return &buffer_.at(0);
     }
 
@@ -396,6 +398,9 @@ public:
 
 /** An alias. */
 using Blob = MemFile;
+
+/** An alias. */
+using Bytes = MemFile;
 
 
 } // namespace tec

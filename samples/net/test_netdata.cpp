@@ -30,11 +30,11 @@ SOFTWARE.
 #include <list>
 #include <unordered_map>
 
-#include "tec/net/tec_compression.hpp"
 #include "tec/tec_dump.hpp"
 #include "tec/tec_serialize.hpp"
 #include "tec/tec_json.hpp"
 #include "tec/net/tec_net_data.hpp"
+#include "tec/net/tec_compression.hpp"
 #include "tec/net/tec_nd_compress.hpp"
 
 
@@ -208,9 +208,9 @@ void save_payload(const Payload& pld, tec::NetData& nd) {
     print_payload(pld, nd);
 
     // Compression
-    tec::NdCompress comp(tec::CompressionParams::kCompressionZlib);
-    auto status = comp.compress(nd);
-    print_payload(pld, nd);
+    // tec::NdCompress comp(tec::CompressionParams::kCompressionZlib);
+    // auto status = comp.compress(nd);
+    // print_payload(pld, nd);
 
     // status = comp.uncompress(nd);
     // print_payload(pld, nd);

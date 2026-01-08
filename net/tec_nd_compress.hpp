@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-26 14:40:56 by magnolia>
+// Time-stamp: <Last changed 2026-01-08 23:29:10 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -151,7 +151,7 @@ protected:
         // Update input NetData inplace.
         //
         tmp_hdr->size = size_compressed;
-        nd.move_from(tmp, size_compressed);
+        nd.move_from(std::move(tmp), size_compressed);
         TEC_TRACE("Compressed to {} bytes with ratio {}.",
             size_compressed, (double)hdr.size / (double)size_compressed);
         return {};
@@ -190,7 +190,7 @@ protected:
         //
         tmp_hdr->size = dest_len;
         tmp_hdr->size_uncompressed = 0;
-        nd.move_from(tmp);
+        nd.move_from(std::move(tmp));
         TEC_TRACE("Upcompressed to {} bytes.", dest_len);
         return {};
     }

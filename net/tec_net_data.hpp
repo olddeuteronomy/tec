@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-26 14:10:54 by magnolia>
+// Time-stamp: <Last changed 2026-01-08 23:23:15 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -51,7 +51,7 @@ class NetData: public NdTypes {
 
 protected:
     Header header_;
-    MemFile data_;
+    Bytes data_;
 
 public:
     NetData() {
@@ -59,11 +59,11 @@ public:
 
     virtual ~NetData() = default;
 
-    const MemFile& bytes() const {
+    const Bytes& bytes() const {
         return data_;
     }
 
-    MemFile& bytes() {
+    Bytes& bytes() {
         return data_;
     }
 
@@ -80,13 +80,9 @@ public:
         data_.copy_from(src.bytes());
     }
 
-    void move_from(NetData& src, size_t size_to_shrink = 0) {
+    void move_from(NetData&& src, size_t size_to_shrink = 0) {
         header_ = *src.header();
         data_.move_from(src.bytes(), size_to_shrink);
-    }
-
-    size_t header_size() const {
-        return sizeof(Header);
     }
 
     void rewind() {

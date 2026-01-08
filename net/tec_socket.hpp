@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-06 14:15:54 by magnolia>
+// Time-stamp: <Last changed 2026-01-08 22:14:37 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,6 +33,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstddef>
+#include <cstdio>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
@@ -100,32 +102,20 @@ struct SocketParams {
     /// Null character constant (for internal use).
     static constexpr char kNullString{0};
 
+    /// Default buffer size as defined in stdio.h (8192).
+    static constexpr size_t kDefaultBufSize{BUFSIZ};
+
     /// Target address or hostname.
     std::string addr;
 
-    /// Port number to connect to or bind.
-    int port;
-
-    /// Address family (AF_INET, AF_INET6, AF_UNSPEC, ...).
-    int family;
-
-    /// Socket type (SOCK_STREAM, SOCK_DGRAM, ...).
-    int socktype;
-
-    /// Protocol (usually 0).
-    int protocol;
-
-    /// Flags passed to getaddrinfo().
-    int flags;
-
-    /// Compression algorithm to use (see CompressionParams).
-    int compression;
-
-    /// Compression level (higher = better compression, slower).
-    int compression_level;
-
-    /// Minimum size of data to apply compression (bytes).
-    size_t compression_min_size;
+    int port; ///< Port number to connect to or bind.
+    int family; ///< Address family (AF_INET, AF_INET6, AF_UNSPEC, ...).
+    int socktype; ///< Socket type (SOCK_STREAM, SOCK_DGRAM, ...).
+    int protocol; ///< Protocol (usually 0).
+    int flags; ///< Flags passed to getaddrinfo().
+    int compression; ///< Compression algorithm to use (see CompressionParams).
+    int compression_level; ///< Compression level (higher = better compression, slower).
+    size_t compression_min_size; ///< Minimum size of data to apply compression (bytes).
 
     /**
      * @brief Default constructor.
@@ -213,23 +203,12 @@ struct SocketServerParams : public SocketParams  {
     /// Whether to use a fixed-size thread pool instead of one-thread-per-connection.
     static constexpr bool kUseThreadPool{false};
 
-    /// Data handling mode (character stream or binary network data).
-    int mode;
-
-    /// Maximum backlog for listen().
-    int queue_size;
-
-    /// Whether to set SO_REUSEADDR (0 = no, 1 = yes).
-    int opt_reuse_addr;
-
-    /// Whether to set SO_REUSEPORT (if available).
-    int opt_reuse_port;
-
-    /// Use a thread pool for handling accepted connections.
-    bool use_thread_pool;
-
-    /// Number of threads in the thread pool (if enabled).
-    size_t thread_pool_size;
+    int mode; ///< Data handling mode (character stream or binary network data).
+    int queue_size; ///< Maximum backlog for listen().
+    int opt_reuse_addr; ///< Whether to set SO_REUSEADDR (0 = no, 1 = yes).
+    int opt_reuse_port; ///< Whether to set SO_REUSEPORT (if available).
+    bool use_thread_pool; ///< Use a thread pool for handling accepted connections.
+    size_t thread_pool_size; ///< Number of threads in the thread pool (if enabled).
 
     /**
      * @brief Default constructor.
@@ -296,15 +275,9 @@ struct SocketCharStreamOut {
  * and diagnostic purposes.
  */
 struct Socket {
-
-    /// Underlying socket file descriptor.
-    int fd;
-
-    /// Peer address as a null-terminated string (IPv4 or IPv6).
-    char addr[INET6_ADDRSTRLEN];
-
-    /// Peer port number.
-    int port;
+    int fd; ///< Underlying socket file descriptor.
+    char addr[INET6_ADDRSTRLEN]; ///< Peer address as a null-terminated string (IPv4 or IPv6).
+    int port; ///< Peer port number.
 
     /**
      * @brief Construct a Socket wrapper from an accepted or connected fd.
@@ -333,10 +306,9 @@ struct Socket {
      *
      * @return Status::OK on success, or an error status with details.
      */
-    static Status recv(MemFile& data, const Socket* sock, size_t length) {
+    static Status recv(Bytes& data, const Socket* sock, size_t length) {
         TEC_ENTER("Socket::recv");
-        // Default buffer size as defined in stdio.h (8192).
-        std::array<char, BUFSIZ> buffer;
+        std::array<char, SocketParams::kDefaultBufSize> buffer;
         ssize_t received{0};
         size_t total_received{0};
         bool eof{false};
@@ -391,12 +363,12 @@ struct Socket {
      *
      * Blocks until all data is sent or an error occurs.
      *
-     * @param data  MemFile containing data to send.
+     * @param data  MemFile (Bytes) containing data to send.
      * @param sock  Pointer to the Socket instance.
      *
      * @return Status::OK on success, or an error status with details.
      */
-    static Status send(const MemFile& data, const Socket* sock) {
+    static Status send(const Bytes& data, const Socket* sock) {
         TEC_ENTER("Socket::send");
         ssize_t sent{0};
         //
