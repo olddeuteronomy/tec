@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2025-12-24 01:48:49 by magnolia>
+# Time-stamp: <Last changed 2026-01-10 12:50:55 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -76,6 +76,13 @@ ifdef CLANG
 endif
 endif
 
+# Extra libraries
+LIBS =
+ifdef ZLIB
+	LIBS += -lz
+	DEFS += -D_TEC_USE_ZLIB
+endif
+
 # Create output directory if needed
 ifeq ($(detected_OS),Windows)
 $(shell if not exist $(OUTDIR) (${MKDIR_P} $(OUTDIR)))
@@ -91,7 +98,7 @@ buffer: test_buffer.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
 netdata: test_netdata.cpp
-	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -lz -o $(OUTDIR)/$@$(TARGET_SUFFIX)
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ $(LIBS) -o $(OUTDIR)/$@$(TARGET_SUFFIX)
 
 dump: test_dump.cpp
 	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ -o $(OUTDIR)/$@$(TARGET_SUFFIX)

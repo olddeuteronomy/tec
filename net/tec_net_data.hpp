@@ -1,7 +1,7 @@
-// Time-stamp: <Last changed 2026-01-08 23:23:15 by magnolia>
+// Time-stamp: <Last changed 2026-01-10 15:42:41 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@ SOFTWARE.
 
 /**
  * @file tec_net_data.hpp
- * @brief Binary serialization.
+ * @brief Lightweight binary serialization optimized for network communication.
  * @author The Emacs Cat
  * @date 2025-11-16
  */
@@ -46,64 +46,112 @@ SOFTWARE.
 
 namespace tec {
 
-
+/**
+ * @brief Lightweight binary serialization container optimized for network communication
+ *
+ * NetData provides efficient serialization and deserialization of various C++ types
+ * including scalars, strings, containers, maps and user-defined serializable objects.
+ * The format consists of ElemHeader + payload for each element, allowing flexible
+ * and relatively compact binary representation suitable for network transmission.
+ */
 class NetData: public NdTypes {
+public:
+    /// Global message header
+    Header header;
 
 protected:
-    Header header_;
+    /// Internal storage of serialized binary data
     Bytes data_;
 
 public:
+    /**
+     * @brief Default constructor - creates empty NetData object
+     */
     NetData() {
     }
 
+    /**
+     * @brief Virtual destructor
+     */
     virtual ~NetData() = default;
 
+    /**
+     * @brief Returns const reference to internal byte buffer
+     * @return const reference to the serialized bytes
+     */
     const Bytes& bytes() const {
         return data_;
     }
 
-    Bytes& bytes() {
-        return data_;
+    /**
+     * @brief Returns const pointer to the beginning of serialized data
+     * @return const pointer to raw data
+     */
+    const void* data() const {
+        return data_.data();
     }
 
-    Header* header() {
-        return &header_;
-    }
-
-    const Header* header() const {
-        return &header_;
-    }
-
+    /**
+     * @brief Performs deep copy of content from another NetData instance
+     * @param src source NetData object to copy from
+     */
     void copy_from(const NetData& src) {
-        header_ = *src.header();
+        header = src.header;
         data_.copy_from(src.bytes());
     }
 
+    /**
+     * @brief Efficiently moves content from another NetData instance
+     * @param src rvalue reference to source object (will be left in moved-from state)
+     * @param size_to_shrink optional target capacity after move (0 = don't shrink)
+     */
     void move_from(NetData&& src, size_t size_to_shrink = 0) {
-        header_ = *src.header();
-        data_.move_from(src.bytes(), size_to_shrink);
+        header = src.header;
+        data_.move_from(std::move(src.bytes()), size_to_shrink);
     }
 
+    /**
+     * @brief Resets read position to the beginning of the buffer
+     */
     void rewind() {
         data_.rewind();
     }
 
+    /**
+     * @brief Returns current logical size of the message (according to header)
+     * @return number of bytes of valid serialized data
+     */
     size_t size() const {
-        return header_.size;
+        return header.size;
     }
 
+    /**
+     * @brief Returns current capacity of internal buffer
+     * @return allocated size of the internal byte storage
+     */
     size_t capacity() const {
         return data_.capacity();
     }
 
+    /**
+     * @brief Returns mutable reference to internal byte buffer
+     * @warning Direct manipulation may corrupt serialization format
+     * @return mutable reference to bytes container
+     */
+    Bytes& bytes() {
+        return data_;
+    }
+
+    /**
+     * @brief Returns mutable pointer to the beginning of serialized data
+     * @warning Direct manipulation may corrupt serialization format
+     * @return mutable pointer to raw data
+     */
     void* data() {
         return data_.data();
     }
 
-    const void* data() const {
-        return data_.data();
-    }
+public:
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
      *
@@ -111,8 +159,15 @@ public:
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-public:
-
+    /**
+     * @brief Serialization operator (stream-like syntax)
+     * @tparam T type of value to serialize
+     * @param val value to be serialized
+     * @return reference to self for operation chaining
+     *
+     * Supports most fundamental types, strings, containers, maps and
+     * custom types that satisfy is_serializable_v<> trait.
+     */
     template <typename T>
     NetData& operator << (const T& val) {
         ElemHeader hdr = get_info<T>(val);
@@ -132,12 +187,19 @@ public:
             write_container(&hdr, val);
         }
 
-        header_.size = data_.size();
+        header.size = data_.size();
         return *this;
     }
 
 protected:
 
+    /**
+     * @brief Serializes map-like container (std::unordered_map)
+     * @tparam TMap map-like container type
+     * @param hdr prepared element header
+     * @param map container instance to serialize
+     * @return number of bytes written for map contents (without header)
+     */
     template <typename TMap>
     size_t write_map(ElemHeader* hdr, const TMap& map) {
         if constexpr (is_map_v<TMap>) {
@@ -156,6 +218,13 @@ protected:
         return 0;
     }
 
+    /**
+     * @brief Serializes sequence container (vector, deque, list, ...)
+     * @tparam TContainer sequence container type
+     * @param hdr prepared element header
+     * @param container container instance to serialize
+     * @return number of bytes written for container contents (without header)
+     */
     template <typename TContainer>
     size_t write_container(ElemHeader* hdr, const TContainer& container) {
         if constexpr (is_container_v<TContainer>) {
@@ -174,11 +243,18 @@ protected:
         return 0;
     }
 
+    /**
+     * @brief Serializes custom object that implements store() method
+     * @tparam TObject type of serializable object
+     * @param hdr prepared element header
+     * @param obj object instance to serialize
+     * @return number of bytes written for object contents (without header)
+     */
     template <typename TObject>
     size_t write_object(ElemHeader* hdr, const TObject& obj) {
         if constexpr (is_serializable_v<TObject>) {
             if constexpr (is_root_v<TObject>) {
-                    header_.id = obj.id();
+                    header.id = obj.id();
             }
             ElemHeader* hdr_ptr = (ElemHeader*)data_.ptr(data_.tell());
             data_.write(hdr, sizeof(ElemHeader));
@@ -193,12 +269,24 @@ protected:
         return 0;
     }
 
+    /**
+     * @brief Special handling for long double when sizeof(long double) == 8
+     * @param hdr element header
+     * @param d64 pointer to double value (used as source)
+     * @return number of bytes written
+     */
     virtual size_t write_long_double_64(ElemHeader* hdr, const double* d64) {
         double dst[2]{*d64, 0.0};
         data_.write(dst, hdr->size);
         return hdr->size;
     }
 
+    /**
+     * @brief Writes single scalar value with its header
+     * @param hdr element header
+     * @param p pointer to source value
+     * @return number of bytes written
+     */
     virtual size_t write_scalar(ElemHeader* hdr, const void* p) {
         data_.write(hdr, sizeof(ElemHeader));
         if(sizeof(long double) == 8 && hdr->tag == Tags::F128) {
@@ -210,6 +298,12 @@ protected:
         return hdr->size;
     }
 
+    /**
+     * @brief Writes string or blob sequence (header + raw bytes)
+     * @param hdr element header
+     * @param p pointer to source (std::string or Blob)
+     * @return number of bytes written
+     */
     virtual size_t write_sequence(ElemHeader* hdr, const void* p) {
         data_.write(hdr, sizeof(ElemHeader));
         if (hdr->size) {
@@ -233,6 +327,12 @@ protected:
 
 public:
 
+    /**
+     * @brief Deserialization operator (stream-like syntax)
+     * @tparam T type of value to deserialize
+     * @param val [out] destination variable
+     * @return reference to self for operation chaining
+     */
     template <typename T>
     NetData& operator >> (T& val) {
         ElemHeader hdr;
@@ -267,6 +367,12 @@ public:
 
 protected:
 
+    /**
+     * @brief Reads map-like container from stream
+     * @tparam TMap map-like container type
+     * @param hdr element header already read
+     * @param map [out] destination container
+     */
     template <typename TMap>
     void read_map(ElemHeader* hdr, TMap& map) {
         if constexpr (is_map_v<TMap>) {
@@ -279,6 +385,12 @@ protected:
         }
     }
 
+    /**
+     * @brief Reads sequence container from stream
+     * @tparam TContainer sequence container type
+     * @param hdr element header already read
+     * @param c [out] destination container
+     */
     template <typename TContainer>
     void read_container(ElemHeader* hdr, TContainer& c) {
         if constexpr (
@@ -293,6 +405,11 @@ protected:
         }
     }
 
+    /**
+     * @brief Generic dispatcher for reading scalar/sequence values
+     * @param hdr element header already read
+     * @param dst [out] destination memory
+     */
     void read(ElemHeader* hdr, void* dst) {
         if( hdr->tag & Meta::Scalar) {
             if( hdr->tag & Meta::Sequence ) {
@@ -303,17 +420,27 @@ protected:
             }
         }
         else {
-            // Skip inknown element.
+            // Skip unknown element.
             data_.seek(hdr->size, SEEK_CUR);
         }
     }
 
+    /**
+     * @brief Platform-specific reading of long double stored as 64-bit double
+     * @param hdr element header
+     * @param d64 [out] destination double
+     */
     virtual void read_long_double_64(const ElemHeader* hdr, double* d64) {
         double d[2]{0.0, 0.0};
         data_.read(d, hdr->size);
         *d64 = d[0];
     }
 
+    /**
+     * @brief Reads single scalar value
+     * @param hdr element header
+     * @param dst [out] destination memory
+     */
     virtual void read_scalar(const ElemHeader* hdr, void* dst) {
         if(sizeof(long double) == 8 && hdr->tag == Tags::F128) {
             // On Windows, sizeof(long double) == sizeof(double) == 8
@@ -324,19 +451,22 @@ protected:
         }
     }
 
+    /**
+     * @brief Reads string or blob sequence data
+     * @param hdr element header
+     * @param dst [out] destination string/blob
+     */
     virtual void read_sequence(const ElemHeader* hdr, void* dst) {
         if (hdr->size) {
             if( hdr->tag == Tags::SChar ) {
                 std::string* str = static_cast<String*>(dst);
                 str->resize(hdr->size);
-                // FIXME
-                // data_.read(str->data(), hdr->size);
+                // To avoid silly GCC warning.
                 data_.read(&str->at(0), hdr->size);
             }
             else if( hdr->tag == Tags::SByte ) {
                 Blob* bytes = static_cast<Blob*>(dst);
                 bytes->resize(hdr->size);
-                // FIXME
                 data_.read(bytes->data(), hdr->size);
             }
         }
@@ -350,6 +480,9 @@ public:
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+    /**
+     * @brief Helper type for ADL customization of input operations
+     */
     struct StreamIn {
         NetData* nd;
 
@@ -357,11 +490,14 @@ public:
             : nd{nullptr}
             {}
 
-        StreamIn(NetData* _nd)
+        explicit StreamIn(NetData* _nd)
             : nd{_nd}
             {}
     };
 
+    /**
+     * @brief Helper type for ADL customization of output operations
+     */
     struct StreamOut {
         NetData* nd;
 
@@ -369,7 +505,7 @@ public:
             : nd{nullptr}
             {}
 
-        StreamOut(NetData* _nd)
+        explicit StreamOut(NetData* _nd)
             : nd{_nd}
             {}
     };

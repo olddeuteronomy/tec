@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-29 14:25:26 by magnolia>
+// Time-stamp: <Last changed 2026-01-10 13:33:03 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -149,10 +149,10 @@ protected:
     virtual void reply_error(Status status, NetData::ID request_id, SocketNd* sock) {
         TEC_ENTER("SocketServerNd::reply_error");
         NetData nd;
-        nd.header()->id = request_id;
-        nd.header()->status = static_cast<decltype(nd.header()->status)>(status.code.value_or(0xffff));
+        nd.header.id = request_id;
+        nd.header.status = static_cast<decltype(nd.header.status)>(status.code.value_or(0xffff));
         SocketNd::send_nd(&nd, sock);
-        TEC_TRACE("Replied with errcode={}.", nd.header()->status);
+        TEC_TRACE("Replied with errcode={}.", nd.header.status);
     }
 
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -172,7 +172,7 @@ protected:
     }
 
     virtual Status uncompress(NetData* nd) {
-        if (nd->header()->get_compression()) {
+        if (nd->header.get_compression()) {
             NdCompress cmpr;
             return cmpr.uncompress(*nd);
         }
@@ -209,7 +209,7 @@ protected:
             if (status) {
                 NetData nd_out;
                 DataInOut dio{&status, &sock, &nd_in, &nd_out};
-                status = dispatch(nd_in.header()->id, dio);
+                status = dispatch(nd_in.header.id, dio);
                 if (status) {
                     //
                     // Postprocess output inplace.
@@ -235,7 +235,7 @@ protected:
         // Send an error to the client if not OK.
         //
         if (!status) {
-            reply_error(status, nd_in.header()->id, &sock);
+            reply_error(status, nd_in.header.id, &sock);
         }
     }
 

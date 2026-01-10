@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-29 00:05:18 by magnolia>
+// Time-stamp: <Last changed 2026-01-10 13:38:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -62,13 +62,12 @@ struct SocketNd: public Socket {
     {}
 
 
-    static Status send_nd(const NetData* nd, SocketNd* sock) {
+    static Status send_nd(const NetData* nd, const SocketNd* sock) {
         TEC_ENTER("SocketNd::send_nd");
         //
         // Write the NetData header to the stream.
         //
-        const NetData::Header* hdr = nd->header();
-        ssize_t sent = write(sock->fd, hdr, sizeof(NetData::Header));
+        ssize_t sent = write(sock->fd, &nd->header, sizeof(NetData::Header));
         if (sent == 0) {
             auto errmsg = format("{}:{} Peer closed the connection.",
                                  sock->addr, sock->port);
@@ -84,17 +83,17 @@ struct SocketNd: public Socket {
         //
         // Write data to the stream.
         //
-        if (hdr->size > 0) {
+        if (nd->size() > 0) {
             return Socket::send(nd->bytes(), sock);
         }
         return {};
     }
 
 
-    static Status recv_nd(NetData* nd, SocketNd* sock) {
+    static Status recv_nd(NetData* nd, const SocketNd* sock) {
         TEC_ENTER("SocketNd::recv_nd");
         Status status;
-        NetData::Header* hdr = nd->header();
+        NetData::Header hdr;
         //
         // Read the header.
         //
@@ -102,7 +101,7 @@ struct SocketNd: public Socket {
         // from the beginning of the receive queue without removing that data from the queue.
         // Thus, a subsequent receive call will return the same data.
         //
-        ssize_t rd = ::recv(sock->fd, hdr, sizeof(NetData::Header),
+        ssize_t rd = ::recv(sock->fd, &hdr, sizeof(NetData::Header),
                             MSG_PEEK);
         if (rd == 0) {
             auto errmsg = format("{}:{} Peer closed the connection.",
@@ -123,7 +122,7 @@ struct SocketNd: public Socket {
             return {EBADMSG, errmsg, Error::Kind::Invalid};
         }
         // Validate the header.
-        else if (!hdr->is_valid()) {
+        else if (!hdr.is_valid()) {
             auto errmsg = format("{}:{} NetData::Header is invalid.",
                                  sock->addr, sock->port);
             TEC_TRACE(errmsg);
@@ -131,15 +130,16 @@ struct SocketNd: public Socket {
 
         }
         // Re-read the header from the message queue.
-        auto rd2 = read(sock->fd, hdr, sizeof(NetData::Header));
+        auto rd2 = read(sock->fd, &hdr, sizeof(NetData::Header));
         if (rd2 != sizeof(NetData::Header)) {
             return {EIO, Error::Kind::System};
         }
         //
         // Read data.
         //
-        if (hdr->size > 0) {
-            status = Socket::recv(nd->bytes(), sock, hdr->size);
+        nd->header = hdr;
+        if (nd->size() > 0) {
+            status = Socket::recv(nd->bytes(), sock, nd->size());
         }
         nd->rewind();
         return status;

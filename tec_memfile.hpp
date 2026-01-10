@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-08 22:06:38 by magnolia>
+// Time-stamp: <Last changed 2026-01-10 13:24:58 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -185,25 +185,25 @@ public:
         write(src.data(), src.size());
     }
 
-    void move_from(MemFile& src, size_t size_to_shrink=0) {
+    void move_from(MemFile&& src, size_t size_to_shrink=0) {
         blk_size_ = src.blk_size_;
         pos_ = src.pos_;
         buffer_ = std::move(src.buffer_);
         if (size_to_shrink > 0 && size_to_shrink < size()) {
             buffer_.resize(size_to_shrink);
         }
-}
+    }
 
     const std::string& str() const noexcept {
         return buffer_;
     }
 
     const void* data() const {
-        // To prevent silly GCC warning.
+        // To prevent silly GCC warning?
         return &buffer_.at(0);
     }
     void* data() {
-        // To prevent silly GCC warning.
+        // To prevent silly GCC warning?
         return &buffer_.at(0);
     }
 

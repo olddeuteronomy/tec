@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-08 23:29:10 by magnolia>
+// Time-stamp: <Last changed 2026-01-10 13:26:11 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -80,13 +80,13 @@ public:
         }
 #endif
         // No compression required.
-        nd.header()->set_compression(CompressionParams::kNoCompression);
+        nd.header.set_compression(CompressionParams::kNoCompression);
         return {};
     }
 
 
     virtual Status uncompress(NetData& nd) const {
-        int compression = nd.header()->get_compression();
+        int compression = nd.header.get_compression();
         if (compression == CompressionParams::kNoCompression) {
             // Nothing to do.
             return {};
@@ -112,16 +112,16 @@ protected:
     // Compress NetData inplace.
     virtual Status compress_zlib(NetData& nd) const {
         TEC_ENTER("NdCompress::compress_zlib");
-        if (nd.header()->size < min_size_) {
+        if (nd.header.size < min_size_) {
             // Data too small -- no compression required.
-            nd.header()->set_compression(CompressionParams::kNoCompression);
+            nd.header.set_compression(CompressionParams::kNoCompression);
             return {};
         }
         //
         // Calculate output size.
         //
-        NetData::Header hdr = *nd.header();
-        auto size_compressed = ::compressBound(hdr.size);
+        // NetData::Header hdr = nd.header;
+        auto size_compressed = ::compressBound(nd.header.size);
         if (size_compressed == 0) {
             return{EINVAL, Error::Kind::RuntimeErr};
         }
@@ -129,17 +129,16 @@ protected:
         // Prepare temp NetData.
         //
         NetData tmp;
-        NetData::Header* tmp_hdr = tmp.header();
-        *tmp_hdr = hdr;
-        tmp_hdr->size_uncompressed = hdr.size;
-        tmp_hdr->set_compression(type_);
-        tmp_hdr->set_compression_level(level_);
+        tmp.header = nd.header;
+        tmp.header.size_uncompressed = nd.header.size;
+        tmp.header.set_compression(type_);
+        tmp.header.set_compression_level(level_);
         // Prepare output buffer.
         tmp.bytes().resize(size_compressed);
         //
         // Compressing.
         //
-        TEC_TRACE("Compressing {} bytes...", hdr.size);
+        TEC_TRACE("Compressing {} bytes...", nd.header.size);
         auto result = ::compress2(
             (Bytef*)tmp.bytes().ptr(0), &size_compressed,
             (const Bytef*)nd.bytes().ptr(0), nd.size(),
@@ -150,10 +149,11 @@ protected:
         //
         // Update input NetData inplace.
         //
-        tmp_hdr->size = size_compressed;
+        tmp.header.size = size_compressed;
         nd.move_from(std::move(tmp), size_compressed);
         TEC_TRACE("Compressed to {} bytes with ratio {}.",
-            size_compressed, (double)hdr.size / (double)size_compressed);
+            size_compressed,
+                  (double)nd.header.size_uncompressed / (double)nd.header.size);
         return {};
     }
 
@@ -161,8 +161,8 @@ protected:
     // Uncompress NetData inplace.
     virtual Status uncompress_zlib(NetData& nd) const {
         TEC_ENTER("NdCompress::uncompress_zlib");
-        NetData::Header hdr = *nd.header();
-        if (hdr.get_compression() == CompressionParams::kNoCompression) {
+        // NetData::Header hdr = *nd.header();
+        if (nd.header.get_compression() == CompressionParams::kNoCompression) {
             // No uncompression required.
             return {};
         }
@@ -170,28 +170,27 @@ protected:
         // Prepare temp NetData.
         //
         NetData tmp;
-        NetData::Header* tmp_hdr = tmp.header();
-        *tmp_hdr = hdr;
+        tmp.header = nd.header;
         // Prepare output buffer.
-        uLongf dest_len = hdr.size_uncompressed;
+        uLongf dest_len = nd.header.size_uncompressed;
         tmp.bytes().resize(dest_len);
         //
         // Uncompressing.
         //
-        TEC_TRACE("Uncompressing {} bytes...", hdr.size);
+        TEC_TRACE("Uncompressing {} bytes...", nd.size());
         auto result = ::uncompress(
-            (Bytef*)tmp.bytes().ptr(0), &dest_len,
-            (const Bytef*)nd.bytes().ptr(0), hdr.size);
+            (Bytef*)tmp.data(), &dest_len,
+            (const Bytef*)nd.data(), nd.size());
         if (result != Z_OK) {
             return {EILSEQ, Error::Kind::RuntimeErr};
         }
         //
         // Update input NetData inplace.
         //
-        tmp_hdr->size = dest_len;
-        tmp_hdr->size_uncompressed = 0;
+        tmp.header.size = dest_len;
+        tmp.header.size_uncompressed = 0;
         nd.move_from(std::move(tmp));
-        TEC_TRACE("Upcompressed to {} bytes.", dest_len);
+        TEC_TRACE("Upcompressed to {} bytes.", nd.size());
         return {};
     }
 

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-24 15:15:37 by magnolia>
+// Time-stamp: <Last changed 2026-01-10 15:02:00 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -168,12 +168,14 @@ public:
             return send_recv_string(req, rep);
         }
 
+        // Process future NetData request. See `tec_socket_client_nd.hpp`
+        // that implements NetData processing.
         return {Error::Kind::NotImplemented};
     }
 
 
     Status request_str(const std::string* str_in, std::string* str_out) {
-        TEC_ENTER("SocketClient::request");
+        TEC_ENTER("SocketClient::request_str");
         SocketCharStreamIn request{str_in};
         SocketCharStreamOut reply{str_out};
         auto status = send_recv_string(&request, &reply);
@@ -194,7 +196,7 @@ protected:
         TEC_ENTER("SocketClient::send_string");
         if (request && request->str) {
             // `request` must be valid.
-            MemFile data(*request->str);
+            MemFile data(request->str->data(), request->str->size() + 1);
             Socket sock{sockfd_, params_.addr.c_str(), params_.port};
             auto status = Socket::send(data, &sock);
             return status;

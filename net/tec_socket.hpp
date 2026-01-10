@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-08 22:14:37 by magnolia>
+// Time-stamp: <Last changed 2026-01-10 13:43:53 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -35,6 +35,7 @@ SOFTWARE.
 
 #include <cstddef>
 #include <cstdio>
+#include <sys/types.h>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
@@ -311,16 +312,16 @@ struct Socket {
         std::array<char, SocketParams::kDefaultBufSize> buffer;
         ssize_t received{0};
         size_t total_received{0};
-        bool eof{false};
+        bool eot{false}; // End of transfer.
         //
         // Read data from the socket.
         //
-        while ((received = read(sock->fd, buffer.data(), BUFSIZ)) > 0) {
+        while ((received = read(sock->fd, buffer.data(), buffer.size())) > 0) {
             if (length == 0 && received > 0) {
                 // Length is unknown -- check for null-terminated char stream.
                 if (buffer[received-1] == '\0') {
-                    TEC_TRACE("{}:{} EOF received.", sock->addr, sock->port);
-                    eof = true;
+                    TEC_TRACE("{}:{} EOT received.", sock->addr, sock->port);
+                    eot = true;
                  }
             }
             if (received > 0) {
@@ -331,19 +332,23 @@ struct Socket {
                     break;
                 }
             }
-            if (eof || received < BUFSIZ) {
+            if (eot || received < static_cast<ssize_t>(buffer.size())) {
                 break;
             }
         }
         //
         // Check for errors.
         //
-        if (received == 0) {
+        if (length > 0  &&  total_received == length) {
+            // OK
+            return {};
+        }
+        else if (received == 0) {
             auto errmsg = format("{}:{} Peer closed the connection.", sock->addr, sock->port);
             TEC_TRACE(errmsg);
             return {EIO, errmsg, Error::Kind::NetErr};
         }
-        else if (received == -1) {
+        else if (received < 0) {
             auto errmsg = format("{}:{} socket read error {}.", sock->addr, sock->port, errno);
             TEC_TRACE(errmsg);
             return {errno, errmsg, Error::Kind::NetErr};
@@ -355,6 +360,7 @@ struct Socket {
             return {EIO, errmsg, Error::Kind::NetErr};
         }
 
+        // OK
         return {};
     }
 

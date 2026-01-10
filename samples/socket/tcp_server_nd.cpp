@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-06 13:33:34 by magnolia>
+// Time-stamp: <Last changed 2026-01-10 14:40:34 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -71,7 +71,7 @@ public:
         reply.persons.push_back({67, "John", "Dow"});
         reply.persons.push_back({52, "John", "Applegate"});
         reply.persons.push_back({29, "Lucy", "Skywalker"});
-        reply.persons.push_back({20, "Harry", "Long"});
+        reply.persons.push_back({20, "", "Long"});
         //
         // ... and send it back to a client.
         //
@@ -100,7 +100,7 @@ tec::Status tcp_server() {
     // params.family = AF_INET6;
     params.mode = tec::SocketServerParams::kModeNetData;
     params.compression = tec::CompressionParams::kCompressionZlib;
-    // params.use_thread_pool = true;
+    params.use_thread_pool = true;
     auto srv{TCPServerWorker::Builder<TCPServerWorker, MyServer>{}(params)};
 
     // Run it and check for the result.

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-06 13:30:15 by magnolia>
+// Time-stamp: <Last changed 2026-01-10 13:40:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -56,13 +56,13 @@ void print(const T& p, tec::NetData& nd) {
     std::cout << p << "\n";
     std::cout << std::string(40, '-') << "\n";
 
-    auto hdr = nd.header();
+    // auto hdr = nd.header();
     std::cout
-        << "\nMagic:   " << std::hex << hdr->magic
-        << "\nVersion: " << hdr->version << std::dec
-        << "\nID:      " << hdr->id
-        << "\nSize:    " << hdr->size
-        << "\nStatus:  " << hdr->status
+        << "\nMagic:   " << std::hex << nd.header.magic
+        << "\nVersion: " << nd.header.version << std::dec
+        << "\nID:      " << nd.header.id
+        << "\nSize:    " << nd.header.size
+        << "\nStatus:  " << nd.header.status
         << "\n"
         ;
 

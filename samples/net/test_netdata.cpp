@@ -188,13 +188,12 @@ struct Payload: tec::NdRoot {
 
 void print_payload(const Payload& pld, const tec::NetData& nd) {
     std::cout << pld << "\n";
-    auto hdr = nd.header();
     std::cout
-        << "Magic:   " << std::hex << hdr->magic << "\n"
-        << "Version: " << hdr->version << std::dec << "\n"
-        << "ID:      " << hdr->id << "\n"
-        << "Size:    " << hdr->size << "\n"
-        << "Orig:    " << hdr->size_uncompressed << "\n"
+        << "Magic:   " << std::hex << nd.header.magic << "\n"
+        << "Version: " << nd.header.version << std::dec << "\n"
+        << "ID:      " << nd.header.id << "\n"
+        << "Size:    " << nd.header.size << "\n"
+        << "Orig:    " << nd.header.size_uncompressed << "\n"
         << "Bytes:   " << nd.bytes().size() << "\n"
         << "\n"
         ;
@@ -204,28 +203,25 @@ void print_payload(const Payload& pld, const tec::NetData& nd) {
 void save_payload(const Payload& pld, tec::NetData& nd) {
     nd << pld;
 
-    std::cout << "\n-------- STORE --------\n";
+    std::cout << "\n\n------------------------ STORE --------\n";
     print_payload(pld, nd);
 
     // Compression
-    // tec::NdCompress comp(tec::CompressionParams::kCompressionZlib);
-    // auto status = comp.compress(nd);
-    // print_payload(pld, nd);
-
-    // status = comp.uncompress(nd);
-    // print_payload(pld, nd);
+    tec::NdCompress comp(tec::CompressionParams::kCompressionZlib);
+    auto status = comp.compress(nd);
+    print_payload(pld, nd);
 }
 
 void restore_payload(tec::NetData& nd) {
     Payload pld;
 
+    std::cout << "\n\n------------------------- LOAD ---------\n";
     tec::NdCompress comp;
     comp.uncompress(nd);
 
     nd.rewind();
     nd >> pld;
 
-    std::cout << "\n-------- LOAD ---------\n";
     print_payload(pld, nd);
 }
 
