@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-29 02:58:33 by magnolia>
+// Time-stamp: <Last changed 2026-01-13 15:45:52 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -51,19 +51,36 @@ namespace tec {
 class ThreadPool {
 
 private:
-
+    size_t num_threads_;
     std::vector<std::thread> workers_;
     std::queue<std::function<void()>> tasks_;
     std::mutex queue_mutex_;
     std::condition_variable condition_;
     std::atomic<bool> stop_;
 
+    size_t buffer_size_;
+    std::vector<char*> buffers_;
+    std::atomic<size_t> next_worker_index_;
+
 public:
 
-    explicit ThreadPool(size_t num_threads = std::thread::hardware_concurrency())
-        : stop_(false)
+    explicit ThreadPool(size_t buffer_size, size_t num_threads)
+        : num_threads_(num_threads)
+        , stop_(false)
+        , buffer_size_(buffer_size)
+        , next_worker_index_{0}
     {
         TEC_ENTER("ThreadPool::ThreadPool");
+        //
+        // Allocate thread buffers.
+        //
+        buffers_.resize(num_threads);
+        for (size_t i = 0; i < num_threads; ++i) {
+            buffers_[i] = new char[BUFSIZ];
+        }
+        //
+        // Register thread workers.
+        //
         for (size_t i = 0; i < num_threads; ++i) {
             workers_.emplace_back([this] {
                 while (true) {
@@ -87,9 +104,26 @@ public:
                 }
             });
         }
-        TEC_TRACE("Thread pool created with {} workers", num_threads);
+        TEC_TRACE("Thread pool created with {} workers.", num_threads_);
     }
 
+    char* get_buffer(size_t idx) {
+        return buffers_[idx % buffers_.size()];  // safe even if idx is huge
+    }
+
+    // Helper to get next index (atomic increment + modulo)
+    size_t get_next_worker_index() {
+        return next_worker_index_.fetch_add(1, std::memory_order_relaxed)
+             % workers_.size();
+    }
+
+    size_t get_num_threads() const {
+        return num_threads_;
+    }
+
+    size_t get_buffer_size() const {
+        return buffer_size_;
+    }
 
     ~ThreadPool() {
         {
@@ -100,6 +134,9 @@ public:
         for (std::thread& worker : workers_) {
             if (worker.joinable())
                 worker.join();
+        }
+        for (char* buf : buffers_) {
+            delete[] buf;
         }
     }
 

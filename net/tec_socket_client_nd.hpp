@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-26 13:38:09 by magnolia>
+// Time-stamp: <Last changed 2026-01-14 01:45:06 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -102,7 +102,8 @@ protected:
     virtual Status send_nd(NetData* nd) {
         TEC_ENTER("SocketClientNd::send_nd");
         // Socket helper.
-        SocketNd sock{this->sockfd_, this->params_.addr.c_str(), this->params_.port};
+        SocketNd sock{this->sockfd_, this->params_.addr.c_str(), this->params_.port,
+                      this->get_buffer(), this->get_buffer_size()};
         return SocketNd::send_nd(nd, &sock);
     }
 
@@ -110,7 +111,8 @@ protected:
     virtual Status recv_nd(NetData* nd) {
         TEC_ENTER("SocketClientNd::recv_nd");
         // Socket helper.
-        SocketNd sock{this->sockfd_, this->params_.addr.c_str(), this->params_.port};
+        SocketNd sock{this->sockfd_, this->params_.addr.c_str(), this->params_.port,
+                      this->get_buffer(), this->get_buffer_size()};
         auto status = SocketNd::recv_nd(nd, &sock);
         nd->rewind();
         return status;

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-29 15:01:39 by magnolia>
+// Time-stamp: <Last changed 2026-01-14 02:04:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,6 +32,9 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstddef>
+#include <memory>
+#include <vector>
 #ifndef _POSIX_C_SOURCE
 // This line fixes the "storage size of 'hints' isn't known" issue.
 #define _POSIX_C_SOURCE 200809L
@@ -76,7 +79,8 @@ protected:
     Signal polling_stopped_;
 
 private:
-    ThreadPool pool_;
+    std::unique_ptr<ThreadPool> pool_;
+    std::vector<char> buffer_;
 
     template <typename Params>
     struct Task {
@@ -98,7 +102,6 @@ public:
         , listenfd_{-1}
         , stop_polling_{false}
         , polling_stopped_{}
-        , pool_(params.thread_pool_size)
     {
         static_assert(
             std::is_base_of_v<SocketServerParams, Params>,
@@ -110,22 +113,36 @@ public:
 
     void start(Signal* sig_started, Status* status) override {
         TEC_ENTER("SocketServer::start");
-
+        //
         // Resolve the server address and bind the host.
+        //
         *status = resolve_and_bind_host();
         if (!status->ok()) {
             sig_started->set();
             return;
         }
-
+        //
         // Start listening on the host.
+        //
         *status = start_listening();
         if (!status->ok()) {
             sig_started->set();
             return;
         }
-
+        //
+        // Prepare a single-thread buffer or a multi-thread pool.
+        //
+        if (params_.use_thread_pool) {
+            // Multiple-threaded server.
+            pool_ = std::make_unique<ThreadPool>(get_buffer_size(), params_.thread_pool_size);
+        } else {
+            // Single-threaded server.
+            buffer_.resize(get_buffer_size());
+        }
+        TEC_TRACE("Buffer size is {} bytes.", get_buffer_size());
+        //
         // Start polling.
+        //
         TEC_TRACE("Thread pool is {}.", (params_.use_thread_pool ? "ON" : "OFF"));
         poll(sig_started);
     }
@@ -133,8 +150,9 @@ public:
 
     void shutdown(Signal* sig_stopped) override {
         TEC_ENTER("SocketServer::shutdown");
-
+        //
         // Stop polling in a separate thread
+        //
         TEC_TRACE("Stopping server polling...");
         std::thread polling_thread([this] {
             stop_polling_ = true;
@@ -142,10 +160,8 @@ public:
             ::close(listenfd_);
         });
         polling_thread.join();
-
         TEC_TRACE("Closing server socket...");
         polling_stopped_.wait();
-
         TEC_TRACE("Server stopped.");
         sig_stopped->set();
     }
@@ -156,6 +172,14 @@ public:
     }
 
 protected:
+
+    constexpr char* get_buffer() {
+        return buffer_.data();
+    }
+
+    constexpr size_t get_buffer_size() {
+        return params_.buffer_size;
+    }
 
     virtual Status set_socket_options(int fd) {
         TEC_ENTER("SocketServer::set_socket_options");
@@ -191,7 +215,7 @@ protected:
             client_port = ::ntohs(s->sin6_port);
         }
 
-        return {client_fd, client_ip, client_port};
+        return {client_fd, client_ip, client_port, get_buffer(), get_buffer_size()};
     }
 
 
@@ -325,11 +349,17 @@ protected:
 
 
     virtual void process_socket(Socket sock) {
-        if (params_.use_thread_pool) {
+        TEC_ENTER("process_socket");
+        if (pool_) {
+            // Rolled-robin.
+            size_t idx = pool_->get_next_worker_index();
+            TEC_TRACE("Pool IDX={}", idx);
+            sock.buffer = pool_->get_buffer(idx);
+            sock.buffer_size = pool_->get_buffer_size();
             // Async processing -- enqueue client handling task to thread pool.
             Task<Params> task{this, sock};
-            pool_.enqueue([task] {
-                details::socket_proc (task);
+            pool_->enqueue([task] {
+                details::socket_proc(task);
             });
         }
         else {

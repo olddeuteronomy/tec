@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-10 13:33:03 by magnolia>
+// Time-stamp: <Last changed 2026-01-14 00:57:04 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -100,11 +100,11 @@ public:
 
     template <typename Derived>
     void register_handler(Derived* server, ID id, void (Derived::*handler)(DataInOut dio)) {
-        Lock lk{mtx_slots_};
-        TEC_ENTER("SocketServerNd::register_handler");
         // Ensure Derived is actually derived from ServerNd.
         static_assert(std::is_base_of_v<ServerNd, Derived>,
                       "Derived must inherit from tec::SocketServerNd");
+        Lock lk{mtx_slots_};
+        TEC_ENTER("SocketServerNd::register_handler");
         // Remove existing handler.
         if (auto slot = slots_.find(id); slot != slots_.end()) {
             slots_.erase(id);
@@ -127,7 +127,7 @@ protected:
         Status status;
         bool found{false};
         //
-        // Find and call a corresponding handler.
+        // Find and call the corresponding handler.
         //
         if (auto slot = slots_.find(id); slot != slots_.end()) {
             found = true;
@@ -192,7 +192,7 @@ protected:
 
     void on_net_data(const Socket* s) override {
         TEC_ENTER("SocketServerNd::on_net_data");
-        SocketNd sock(s->fd, s->addr, s->port);
+        SocketNd sock(*s);
         NetData nd_in;
         //
         // Read input NetData.
@@ -248,7 +248,7 @@ protected:
     virtual void echo(DataInOut dio) {
         TEC_ENTER("SocketServerNd::echo");
         //
-        // Copy input to output.
+        // It just copies input to output.
         //
         dio.nd_out->copy_from(*dio.nd_in);
         *dio.status = {};

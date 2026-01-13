@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-10 15:02:00 by magnolia>
+// Time-stamp: <Last changed 2026-01-14 02:03:40 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -33,12 +33,14 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstddef>
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L   // This line fixes the "storage size of ‘hints’ isn’t known" issue.
 #endif
 
 #include <cerrno>
 #include <cstdlib>
+#include <vector>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -57,6 +59,8 @@ namespace tec {
 
 template <typename TParams>
 class SocketClient: public Actor {
+private:
+    std::vector<char> buffer_;
 
 public:
     using Params = TParams;
@@ -64,6 +68,9 @@ public:
 protected:
     Params params_;
     int sockfd_;
+
+    constexpr char* get_buffer() { return buffer_.data(); }
+    constexpr size_t get_buffer_size() { return params_.buffer_size; }
 
 public:
     explicit SocketClient(const Params& params)
@@ -140,10 +147,13 @@ public:
             TEC_TRACE(emsg);
             return;
         }
-
-        // Success.
+        //
+        // Success. Allocate buffer for send/recv operations.
+        //
         sockfd_ = fd;
         TEC_TRACE("Connected OK.");
+        buffer_.resize(get_buffer_size());
+        TEC_TRACE("Buffer size is {} bytes.", get_buffer_size());
     }
 
 
@@ -196,8 +206,9 @@ protected:
         TEC_ENTER("SocketClient::send_string");
         if (request && request->str) {
             // `request` must be valid.
-            MemFile data(request->str->data(), request->str->size() + 1);
-            Socket sock{sockfd_, params_.addr.c_str(), params_.port};
+            Bytes data(request->str->data(), request->str->size() + 1);
+            Socket sock{sockfd_, params_.addr.c_str(), params_.port,
+                        get_buffer(), get_buffer_size()};
             auto status = Socket::send(data, &sock);
             return status;
         }
@@ -213,8 +224,9 @@ protected:
         if (reply->str == nullptr) {
             return {EFAULT, Error::Kind::Invalid};
         }
-        MemFile data;
-        Socket sock{sockfd_, params_.addr.c_str(), params_.port};
+        Bytes data;
+        Socket sock{sockfd_, params_.addr.c_str(), params_.port,
+                    get_buffer(), get_buffer_size()};
         auto status = Socket::recv(data, &sock, 0);
         if (status) {
             *reply->str = static_cast<const char*>(data.data());

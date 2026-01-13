@@ -1,8 +1,8 @@
 #!/bin/bash
 
-prog=out/tcp_client_nd_clang
 # prog=out/tcp_client_clang
-nruns=1000
+prog=out/tcp_client_nd_clang
+nruns=5000
 sec_to_sleep=0.05
 
 for ((i = 1; i <= $nruns; i++)); do

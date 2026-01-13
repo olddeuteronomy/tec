@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-10 15:42:41 by magnolia>
+// Time-stamp: <Last changed 2026-01-11 01:04:49 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -67,8 +67,7 @@ public:
     /**
      * @brief Default constructor - creates empty NetData object
      */
-    NetData() {
-    }
+    NetData() = default;
 
     /**
      * @brief Virtual destructor
@@ -204,6 +203,7 @@ protected:
     size_t write_map(ElemHeader* hdr, const TMap& map) {
         if constexpr (is_map_v<TMap>) {
             ElemHeader* hdr_ptr = (ElemHeader*)data_.ptr(data_.tell());
+            // Write the map header.
             data_.write(hdr, sizeof(ElemHeader));
             size_t cur_pos = data_.tell();
             // Write all elements of a container.
@@ -229,6 +229,7 @@ protected:
     size_t write_container(ElemHeader* hdr, const TContainer& container) {
         if constexpr (is_container_v<TContainer>) {
             ElemHeader* hdr_ptr = (ElemHeader*)data_.ptr(data_.tell());
+            // Write the container header.
             data_.write(hdr, sizeof(ElemHeader));
             size_t cur_pos = data_.tell();
             // Write all elements of a container.
@@ -257,6 +258,7 @@ protected:
                     header.id = obj.id();
             }
             ElemHeader* hdr_ptr = (ElemHeader*)data_.ptr(data_.tell());
+            // Write the object header.
             data_.write(hdr, sizeof(ElemHeader));
             size_t cur_pos = data_.tell();
             // Write an object
@@ -270,7 +272,7 @@ protected:
     }
 
     /**
-     * @brief Special handling for long double when sizeof(long double) == 8
+     * @brief Special handling for long double when sizeof(long double) == 8 (on MS Windows)
      * @param hdr element header
      * @param d64 pointer to double value (used as source)
      * @return number of bytes written
@@ -305,6 +307,7 @@ protected:
      * @return number of bytes written
      */
     virtual size_t write_sequence(ElemHeader* hdr, const void* p) {
+        // Write the sequence header.
         data_.write(hdr, sizeof(ElemHeader));
         if (hdr->size) {
             if( hdr->tag == Tags::SChar ) {
@@ -358,7 +361,7 @@ public:
                 read_container(&hdr, val);
             }
         }
-        // Scalar.
+        // Scalar (including sequences).
         else {
             read(&hdr, &val);
         }
@@ -426,7 +429,7 @@ protected:
     }
 
     /**
-     * @brief Platform-specific reading of long double stored as 64-bit double
+     * @brief Platform-specific reading of long double stored as 64-bit double (on MS Windows)
      * @param hdr element header
      * @param d64 [out] destination double
      */

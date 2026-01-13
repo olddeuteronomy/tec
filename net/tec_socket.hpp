@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-10 13:43:53 by magnolia>
+// Time-stamp: <Last changed 2026-01-14 01:14:05 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -45,9 +45,7 @@ SOFTWARE.
 #include <unistd.h>
 #include <netdb.h>
 
-#include <array>
 #include <cstring>
-#include <string>
 #include <thread>
 
 #include "tec/tec_def.hpp"  // IWYU pragma: keep
@@ -101,7 +99,7 @@ struct SocketParams {
     static constexpr int kDefaultClientFlags{0};
 
     /// Null character constant (for internal use).
-    static constexpr char kNullString{0};
+    static constexpr char kNullChar{0};
 
     /// Default buffer size as defined in stdio.h (8192).
     static constexpr size_t kDefaultBufSize{BUFSIZ};
@@ -115,8 +113,9 @@ struct SocketParams {
     int protocol; ///< Protocol (usually 0).
     int flags; ///< Flags passed to getaddrinfo().
     int compression; ///< Compression algorithm to use (see CompressionParams).
-    int compression_level; ///< Compression level (higher = better compression, slower).
+    int compression_level; ///< Compression level [0..9] (higher = better compression, slower).
     size_t compression_min_size; ///< Minimum size of data to apply compression (bytes).
+    size_t buffer_size; ///< Buffer size for using in send/recv operations (bytes).
 
     /**
      * @brief Default constructor.
@@ -133,6 +132,7 @@ struct SocketParams {
         , compression{CompressionParams::kDefaultCompression}
         , compression_level{CompressionParams::kDefaultCompressionLevel}
         , compression_min_size{CompressionParams::kMinSize}
+        , buffer_size{kDefaultBufSize}
     {}
 };
 
@@ -194,7 +194,7 @@ struct SocketServerParams : public SocketParams  {
     static constexpr int kDefaultMaxThreads{16};
 
     /**
-     * @brief Maximum length of the pending connections queue for listen().
+     * @brief Maximum length of the pending connections queue for listen(). Usually 4096.
      *
      * If a connection request arrives when the queue is full, the client may receive
      * ECONNREFUSED or the request may be ignored (depending on protocol).
@@ -209,13 +209,13 @@ struct SocketServerParams : public SocketParams  {
     int opt_reuse_addr; ///< Whether to set SO_REUSEADDR (0 = no, 1 = yes).
     int opt_reuse_port; ///< Whether to set SO_REUSEPORT (if available).
     bool use_thread_pool; ///< Use a thread pool for handling accepted connections.
-    size_t thread_pool_size; ///< Number of threads in the thread pool (if enabled).
+    size_t thread_pool_size; ///< Number of threads in the thread pool.
 
     /**
      * @brief Default constructor.
      *
      * Initializes with server-appropriate defaults:
-     * - Binds to any address (0.0.0.0)
+     * - Binds to any IPv4 address (0.0.0.0)
      * - Uses AI_PASSIVE flag
      * - Sets thread pool size to hardware concurrency
      */
@@ -279,6 +279,8 @@ struct Socket {
     int fd; ///< Underlying socket file descriptor.
     char addr[INET6_ADDRSTRLEN]; ///< Peer address as a null-terminated string (IPv4 or IPv6).
     int port; ///< Peer port number.
+    char* buffer; ///< Buffer used in send/recv operations.
+    size_t buffer_size; /// Size of the buffer.
 
     /**
      * @brief Construct a Socket wrapper from an accepted or connected fd.
@@ -290,6 +292,28 @@ struct Socket {
     Socket(int _fd, const char* _addr, int _port)
         : fd{_fd}
         , port{_port}
+        , buffer{nullptr}
+        , buffer_size{SocketParams::kDefaultBufSize}
+    {
+        std::strncpy(addr, _addr, INET6_ADDRSTRLEN);
+        addr[INET6_ADDRSTRLEN-1] = '\0';
+    }
+
+
+    /**
+     * @brief Construct a Socket wrapper from an accepted or connected fd.
+     *
+     * @param _fd    Socket file descriptor.
+     * @param _addr  Peer address string (must fit in INET6_ADDRSTRLEN).
+     * @param _port  Peer port number.
+     * @param _buffer Pointer to an internal buffer used in send/recv operations.
+     * @param _buffer_size Size of the internal buffer.
+     */
+    Socket(int _fd, const char* _addr, int _port, char* _buffer, size_t _buffer_size)
+        : fd{_fd}
+        , port{_port}
+        , buffer{_buffer}
+        , buffer_size{_buffer_size}
     {
         std::strncpy(addr, _addr, INET6_ADDRSTRLEN);
         addr[INET6_ADDRSTRLEN-1] = '\0';
@@ -309,30 +333,29 @@ struct Socket {
      */
     static Status recv(Bytes& data, const Socket* sock, size_t length) {
         TEC_ENTER("Socket::recv");
-        std::array<char, SocketParams::kDefaultBufSize> buffer;
-        ssize_t received{0};
         size_t total_received{0};
+        ssize_t received{0};
         bool eot{false}; // End of transfer.
         //
         // Read data from the socket.
         //
-        while ((received = read(sock->fd, buffer.data(), buffer.size())) > 0) {
+        while ((received = read(sock->fd, sock->buffer, sock->buffer_size)) > 0) {
             if (length == 0 && received > 0) {
                 // Length is unknown -- check for null-terminated char stream.
-                if (buffer[received-1] == '\0') {
+                if (sock->buffer[received-1] == '\0') {
                     TEC_TRACE("{}:{} EOT received.", sock->addr, sock->port);
                     eot = true;
                  }
             }
             if (received > 0) {
-                data.write(buffer.data(), received);
+                data.write(sock->buffer, received);
                 TEC_TRACE("{}:{} --> RECV {} bytes.", sock->addr, sock->port, received);
                 total_received += received;
                 if (length > 0 && length == total_received) {
                     break;
                 }
             }
-            if (eot || received < static_cast<ssize_t>(buffer.size())) {
+            if (eot || received < static_cast<ssize_t>(sock->buffer_size)) {
                 break;
             }
         }

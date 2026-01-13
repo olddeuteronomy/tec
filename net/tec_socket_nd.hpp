@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-10 13:38:43 by magnolia>
+// Time-stamp: <Last changed 2026-01-14 01:43:23 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -57,8 +57,12 @@ namespace tec {
 
 struct SocketNd: public Socket {
 
-    SocketNd(int _fd, const char* _addr, int _port)
-        : Socket(_fd, _addr, _port)
+    explicit SocketNd(const Socket& sock)
+        : Socket(sock.fd, sock.addr, sock.port, sock.buffer, sock.buffer_size)
+    {}
+
+    SocketNd(int _fd, const char* _addr, int _port, char* _buffer, size_t _buffer_size)
+        : Socket(_fd, _addr, _port, _buffer, _buffer_size)
     {}
 
 

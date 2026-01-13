@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-19 23:17:10 by magnolia>
+// Time-stamp: <Last changed 2026-01-13 15:40:21 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -52,6 +52,7 @@ tec::Status tcp_server() {
     // To accept IPv6:
     params.addr = tec::SocketParams::kAnyAddrIP6;
     params.family = AF_INET6;
+    params.use_thread_pool = true;
     auto srv{TCPServerWorker::Builder<TCPServerWorker, TCPServer>{}(params)};
 
     // Run it and check for the result.
