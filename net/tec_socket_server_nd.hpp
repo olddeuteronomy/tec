@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-14 00:57:04 by magnolia>
+// Time-stamp: <Last changed 2026-01-14 15:42:23 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +24,7 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- * @file tec_net_data.hpp
+ * @file tec_socket_server_nd.hpp
  * @brief NetData server.
  * @author The Emacs Cat
  * @date 2025-12-11

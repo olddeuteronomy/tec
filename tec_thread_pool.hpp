@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-13 15:45:52 by magnolia>
+// Time-stamp: <Last changed 2026-01-14 15:25:22 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +24,7 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 /**
  * @file tec_thread_pool.hpp
- * @brief Server thread pool implementation.
+ * @brief Simple, non-stealing thread pool implementation using a single shared task queue.
  * @author The Emacs Cat
  * @date 2025-12-29
  */
@@ -46,45 +46,49 @@ SOFTWARE.
 
 namespace tec {
 
-
-// Thread pool implementation
+/**
+ * @brief Simple, non-stealing thread pool implementation using a single shared task queue.
+ *
+ * Classic worker thread pattern with condition variable notification.
+ * Tasks are std::function<void()> objects (can wrap lambdas, functors, bound functions, etc.).
+ *
+ * Thread safety: all public methods are thread-safe.
+ * Destruction: waits for all currently running tasks to finish (but does **not** wait
+ * for tasks that are still in the queue when stop is requested).
+ */
 class ThreadPool {
+public:
+    /// Type alias for the task function objects stored and executed by the pool
+    using TaskFunc = std::function<void()>;
 
-private:
-    size_t num_threads_;
-    std::vector<std::thread> workers_;
-    std::queue<std::function<void()>> tasks_;
-    std::mutex queue_mutex_;
-    std::condition_variable condition_;
-    std::atomic<bool> stop_;
-
-    size_t buffer_size_;
-    std::vector<char*> buffers_;
-    std::atomic<size_t> next_worker_index_;
+protected:
+    size_t num_threads_; ///< Number of worker threads in the pool (set during construction)
+    std::vector<std::thread> workers_; ///< Container holding all worker std::thread objects
+    std::queue<TaskFunc> tasks_; ///< Thread-safe queue of pending tasks (protected by queue_mutex_)
+    std::mutex queue_mutex_; ///< Mutex protecting access to the tasks_ queue
+    std::condition_variable condition_; ///< Condition variable used to wake up sleeping worker threads when tasks arrive
+    std::atomic<bool> stop_; ///< Atomic flag used to signal all worker threads to terminate
 
 public:
-
-    explicit ThreadPool(size_t buffer_size, size_t num_threads)
+    /**
+     * @brief Constructs a thread pool with the specified number of worker threads
+     * @param num_threads Desired number of worker threads (usually std::thread::hardware_concurrency() or similar)
+     *
+     * Starts exactly `num_threads` worker threads that immediately begin waiting
+     * for tasks via condition variable.
+     */
+    explicit ThreadPool(size_t num_threads)
         : num_threads_(num_threads)
         , stop_(false)
-        , buffer_size_(buffer_size)
-        , next_worker_index_{0}
     {
         TEC_ENTER("ThreadPool::ThreadPool");
-        //
-        // Allocate thread buffers.
-        //
-        buffers_.resize(num_threads);
-        for (size_t i = 0; i < num_threads; ++i) {
-            buffers_[i] = new char[BUFSIZ];
-        }
         //
         // Register thread workers.
         //
         for (size_t i = 0; i < num_threads; ++i) {
             workers_.emplace_back([this] {
                 while (true) {
-                    std::function<void()> task;
+                    TaskFunc task;
                     {
                         std::unique_lock<std::mutex> lock(queue_mutex_);
                         condition_.wait(lock, [this] {
@@ -107,25 +111,27 @@ public:
         TEC_TRACE("Thread pool created with {} workers.", num_threads_);
     }
 
-    char* get_buffer(size_t idx) {
-        return buffers_[idx % buffers_.size()];  // safe even if idx is huge
-    }
-
-    // Helper to get next index (atomic increment + modulo)
-    size_t get_next_worker_index() {
-        return next_worker_index_.fetch_add(1, std::memory_order_relaxed)
-             % workers_.size();
-    }
-
-    size_t get_num_threads() const {
+    /**
+     * @brief Returns the number of worker threads in this pool
+     * @return Number of threads that were requested at construction
+     */
+    constexpr size_t get_num_threads() {
         return num_threads_;
     }
 
-    size_t get_buffer_size() const {
-        return buffer_size_;
-    }
-
-    ~ThreadPool() {
+    /**
+     * @brief Destructor – gracefully shuts down the thread pool
+     *
+     * Sets the stop flag, wakes up all waiting threads,
+     * and joins every worker thread.
+     *
+     * Important:
+     *   - Any tasks still remaining in the queue when destruction begins
+     *     are **discarded** (not executed).
+     *   - Tasks that are already running on worker threads are allowed
+     *     to complete normally.
+     */
+    virtual ~ThreadPool() {
         {
             std::unique_lock<std::mutex> lock(queue_mutex_);
             stop_ = true;
@@ -135,12 +141,21 @@ public:
             if (worker.joinable())
                 worker.join();
         }
-        for (char* buf : buffers_) {
-            delete[] buf;
-        }
     }
 
-    // Add a new task (client handling function)
+    /**
+     * @brief Enqueues a new task to be executed by one of the worker threads
+     * @tparam F Type of the callable (usually deduced)
+     * @param task Callable object (lambda, std::bind result, function pointer + arguments, etc.)
+     *
+     * The task is moved into the internal queue (zero-copy when possible).
+     * Notification is sent to exactly one waiting worker (if any).
+     *
+     * Thread-safe — can be called from any thread, including worker threads.
+     *
+     * @note If the pool is already stopped (being destroyed), the task is
+     *       still added to the queue but will never be executed.
+     */
     template<class F>
     void enqueue(F&& task) {
         {

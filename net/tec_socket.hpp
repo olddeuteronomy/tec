@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-14 01:14:05 by magnolia>
+// Time-stamp: <Last changed 2026-01-14 15:17:57 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -288,6 +288,7 @@ struct Socket {
      * @param _fd    Socket file descriptor.
      * @param _addr  Peer address string (must fit in INET6_ADDRSTRLEN).
      * @param _port  Peer port number.
+     * @note All other members are set to corresponding default values.
      */
     Socket(int _fd, const char* _addr, int _port)
         : fd{_fd}
@@ -320,12 +321,12 @@ struct Socket {
     }
 
     /**
-     * @brief Receive data from a socket into a MemFile.
+     * @brief Receive data from a socket into a MemFile (Bytes).
      *
      * Reads until the requested length is received, or until a null terminator
      * is detected when length == 0 (character stream mode).
      *
-     * @param data    MemFile to append received data to.
+     * @param data    MemFile (Bytes) to append received data to.
      * @param sock    Pointer to the Socket instance.
      * @param length  Expected number of bytes (0 = read until null terminator).
      *
@@ -388,7 +389,7 @@ struct Socket {
     }
 
     /**
-     * @brief Send the entire contents of a MemFile through a socket.
+     * @brief Send the entire contents of a MemFile (Bytes) through a socket.
      *
      * Blocks until all data is sent or an error occurs.
      *

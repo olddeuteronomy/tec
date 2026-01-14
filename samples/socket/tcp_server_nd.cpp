@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-10 14:40:34 by magnolia>
+// Time-stamp: <Last changed 2026-01-14 14:10:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -65,7 +65,7 @@ public:
         GetPersonsIn request;
         *dio.nd_in >> request;
         //
-        // Generate reply...
+        // Generate a reply...
         //
         GetPersonsOut reply;
         reply.persons.push_back({67, "John", "Dow"});
@@ -102,19 +102,22 @@ tec::Status tcp_server() {
     params.compression = tec::CompressionParams::kCompressionZlib;
     params.use_thread_pool = true;
     auto srv{TCPServerWorker::Builder<TCPServerWorker, MyServer>{}(params)};
-
+    //
     // Run it and check for the result.
+    //
     auto status = srv->run();
     if( !status ) {
         tec::println("run(): {}", status);
         return status;
     }
-
+    //
     // Wait for <Ctrl-C> pressed to terminate the server.
+    //
     tec::println("\nPRESS <Ctrl-C> TO QUIT THE SERVER");
     sig_quit.wait();
-
-    // Terminate the server
+    //
+    // Terminate the server.
+    //
     status = srv->terminate();
     return status;
 }
