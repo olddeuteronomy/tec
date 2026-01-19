@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-19 16:35:22 by magnolia>
+// Time-stamp: <Last changed 2026-01-20 01:45:33 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -60,6 +60,20 @@ struct Timestamp {
     /// 1970-01-01T00:00:00Z to 2262-04-11T23:47:16Z inclusive.
     count_t count;
 
+    Timestamp()
+        : count{0}
+    {}
+
+    Timestamp(count_t _count)
+        : count{_count}
+    {}
+
+    Timestamp(duration_t d)
+        : count{d.count()}
+    {}
+
+    Timestamp(const Timestamp&) = default;
+    Timestamp(Timestamp&&) = default;
 
     /// Get `std::chrono::duration` in nanoseconds.
     duration_t dur() const {
@@ -70,7 +84,6 @@ struct Timestamp {
     /// Get UTC as `std::tm` struct.
     std::tm utc_time() const {
         std::lock_guard<std::mutex> lk(time_mutex::get());
-        // duration_t d{count};
         auto tp = time_point_t{dur()};
         auto tt = system_clock_t::to_time_t(tp);
         auto tm_utc = *std::gmtime(&tt);
@@ -80,7 +93,6 @@ struct Timestamp {
     /// Get local time as `std::tm` struct.
     std::tm local_time() const {
         std::lock_guard<std::mutex> lk(time_mutex::get());
-        // duration_t dur{count};
         auto tp = time_point_t{dur()};
         auto tt = system_clock_t::to_time_t(tp);
         auto tm_local = *std::localtime(&tt);
@@ -103,9 +115,10 @@ struct Timestamp {
     static Timestamp now() {
         auto now = system_clock_t::now();
         auto d = now.time_since_epoch();
-        // return {d.count()};
         return {std::chrono::duration_cast<duration_t>(d).count()};
     }
+
+private:
 
     static std::string iso_8601(const char* fmt, std::tm* tm) {
         char buf[80];
@@ -113,13 +126,12 @@ struct Timestamp {
         return buf;
     }
 
-private:
 
-   /**
-    * @struct time_mutex
-    * @brief Provides a global mutex for synchronizing time conversion.
-    * @details Manages a static mutex to ensure thread-safe time conversion operations.
-    */
+    /**
+     * @struct time_mutex
+     * @brief Provides a global mutex for synchronizing time conversion.
+     * @details Manages a static mutex to ensure thread-safe time conversion operations.
+     */
     struct time_mutex {
         /**
          * @brief Retrieves the global time mutex.
