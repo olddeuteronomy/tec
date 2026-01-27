@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-02 15:52:34 by magnolia>
+// Time-stamp: <Last changed 2026-01-27 00:35:31 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -130,6 +130,7 @@ public:
         , params_{params}
         , flag_running_{false}
         , flag_exited_{false}
+        , thread_id_{0}
     {}
 
     /**
@@ -180,19 +181,38 @@ public:
      * @details Enqueues a message for processing if the worker thread is joinable.
      * Logs the operation using tracing if enabled.
      * @param msg The message to send.
-     * @return bool True if the message was sent, false if no thread exists.
      * @see Daemon::send()
      */
-    bool send(Message&& msg) override {
+    void send(Message&& msg) override {
         TEC_ENTER("Worker::send");
-        if (thread_.joinable()) {
-            mq_.enqueue(std::move(msg));
-            TEC_TRACE("Message [{}] sent.", name(msg));
-            return true;
-        } else {
-            // No worker thread.
-            return false;
-        }
+        mq_.enqueue(std::move(msg));
+        TEC_TRACE("Message [{}] sent.", name(msg));
+    }
+
+    /**
+     * @brief Sends a request and **waits** for a reply in a daemon thread.
+     *
+     * This method sends a request of type Request to the daemon and **waits** for a corresponding reply of type Reply.
+     * It uses a signal to synchronize the operation and returns the status of the request processing.
+     * If the request cannot be sent, a runtime error status is returned.
+     *
+     * @param req The request object to be sent.
+     * @param rep The reply object where the response will be stored.
+     * @return Status The status of the request operation, indicating success or an error.
+     * @see Actor::process_request()
+     * @see ActorWorker
+     */
+    Status make_request(Request&& req, Reply&& rep) override {
+        Signal ready;
+        Status status;
+        Payload payload{
+            &ready,
+            &status,
+            std::move(req),
+            std::move(rep)};
+        send({&payload});
+        ready.wait();
+        return status;
     }
 
     /**
@@ -251,25 +271,6 @@ protected:
     }
 
 private:
-    /**
-     * @struct OnExit
-     * @brief Helper struct to signal termination on exit.
-     * @details Automatically sets the termination signal when destroyed.
-     */
-    struct OnExit {
-        Signal& sig_; ///< Reference to the termination signal.
-
-        /**
-         * @brief Constructs an OnExit helper with a termination signal.
-         * @param sig The termination signal to set on destruction.
-         */
-        explicit OnExit(Signal& sig) : sig_{sig} {}
-
-        /**
-         * @brief Destructor that sets the termination signal.
-         */
-        ~OnExit() { sig_.set(); }
-    };
 
     /**
      * @struct details
@@ -290,7 +291,7 @@ private:
         static void thread_proc(Worker<Params>& wt) {
             TEC_ENTER("Worker::thread_proc");
             // Signal termination on exit.
-            OnExit on_terminating{std::ref(wt.sig_terminated_)};
+            Signal::OnExit on_terminating{&wt.sig_terminated_};
             //
             // Obtain thread ID and wait for the running signal.
             //

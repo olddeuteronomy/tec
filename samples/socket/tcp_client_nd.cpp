@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-10 13:40:46 by magnolia>
+// Time-stamp: <Last changed 2026-01-27 13:47:27 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -27,7 +27,6 @@ SOFTWARE.
 #include <string>
 #include <sys/socket.h>
 
-#include "tec/net/tec_compression.hpp"
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
 #include "tec/tec_dump.hpp"
@@ -73,7 +72,7 @@ void print(const T& p, tec::NetData& nd) {
 }
 
 
-// #define USE_DAEMON 1
+#define USE_DAEMON 1
 
 tec::Status tcp_client() {
     // By default, it can connect to either IPv4 or IPv6 tec::SocketServer.

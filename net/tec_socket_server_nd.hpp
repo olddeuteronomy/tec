@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-14 15:42:23 by magnolia>
+// Time-stamp: <Last changed 2026-01-23 15:22:26 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -51,33 +51,63 @@ SOFTWARE.
 
 namespace tec {
 
-
+/**
+ * @brief NetData-protocol-aware TCP server with request dispatching and optional compression
+ *
+ * SocketServerNd<TParams> extends SocketServer<TParams> to handle the NetData message
+ * framing protocol (header + payload) and provides:
+ *   - typed handler registration by NetData::ID
+ *   - automatic compression/decompression (when enabled in params)
+ *   - default echo handler (ID = 0)
+ *   - structured error reply mechanism
+ *   - fallback to raw string handling when message is not valid NetData
+ *
+ * @tparam TParams Must provide at least:
+ *                 - bool         compression
+ *                 - int          compression_level
+ *                 - size_t       compression_min_size
+ *                 - other fields required by base SocketServer<TParams>
+ */
 template <typename TParams>
-class SocketServerNd: public SocketServer<TParams> {
+class SocketServerNd : public SocketServer<TParams>
+{
 public:
-    using Params = TParams;
-    using Lock = std::lock_guard<std::mutex>;
-    using ID = NetData::ID;
-    using ServerNd = SocketServerNd<Params>;
+    using Params    = TParams;
+    using Lock      = std::lock_guard<std::mutex>;
+    using ID        = NetData::ID;
+    using ServerNd  = SocketServerNd<Params>;
 
-    struct DataInOut {
-        Status* status;
-        SocketNd* sock;
-        NetData* nd_in;
-        NetData* nd_out;
+    /**
+     * @brief Container carrying context for one request/response cycle
+     */
+    struct DataInOut
+    {
+        Status*   status;     ///< [in/out] current operation status — can be modified by handler
+        SocketNd* sock;       ///< [in]     connection to the client
+        NetData*  nd_in;      ///< [in]     received and already uncompressed message
+        NetData*  nd_out;     ///< [out]    message to be sent back (usually filled by handler)
     };
 
+    /**
+     * @brief Signature of request handler functions
+     *
+     * Handler receives full context (server instance + in/out data)
+     * and is responsible for:
+     *   - reading nd_in
+     *   - preparing nd_out (if reply is needed)
+     *   - updating dio.status
+     */
     using HandlerFunc = std::function<void (ServerNd*, DataInOut)>;
 
 private:
-
-    struct Slot{
-        ServerNd* server;
+    struct Slot
+    {
+        ServerNd*   server;
         HandlerFunc handler;
 
         explicit Slot(ServerNd* _server, HandlerFunc _handler)
             : server{_server}
-            , handler{_handler}
+            , handler{std::move(_handler)}
         {}
         ~Slot() = default;
     };
@@ -87,6 +117,10 @@ private:
 
 public:
 
+    /**
+     * @brief Constructs server and automatically registers default echo handler (ID=0)
+     * @param params Configuration parameters (compression settings, listen address, etc.)
+     */
     explicit SocketServerNd(const Params& params)
         : SocketServer<Params>(params)
     {
@@ -98,8 +132,21 @@ public:
     virtual ~SocketServerNd() = default;
 
 
+    /**
+     * @brief Registers a request handler for a specific NetData message ID
+     *
+     * Replaces any previously registered handler for the same ID.
+     * Uses dynamic_cast + lambda to allow handlers to be member functions
+     * of classes derived from SocketServerNd.
+     *
+     * @tparam Derived Type of the actual server class (must derive from SocketServerNd)
+     * @param server   Pointer to the derived server instance (usually `this`)
+     * @param id       Message identifier this handler should process
+     * @param handler  Member function pointer of form `void Derived::handler(DataInOut)`
+     */
     template <typename Derived>
-    void register_handler(Derived* server, ID id, void (Derived::*handler)(DataInOut dio)) {
+    void register_handler(Derived* server, ID id, void (Derived::*handler)(DataInOut dio))
+    {
         // Ensure Derived is actually derived from ServerNd.
         static_assert(std::is_base_of_v<ServerNd, Derived>,
                       "Derived must inherit from tec::SocketServerNd");
@@ -122,7 +169,14 @@ public:
 
 protected:
 
-    virtual Status dispatch(ID id, DataInOut dio) {
+    /**
+     * @brief Finds and invokes the handler registered for the given message ID
+     * @param id  Message identifier from the received NetData header
+     * @param dio Request/response context (input/output NetData, socket, status)
+     * @return Final status after handler execution (or ENOTSUP if no handler found)
+     */
+    virtual Status dispatch(ID id, DataInOut dio)
+    {
         TEC_ENTER("SocketServerNd::dispatch");
         Status status;
         bool found{false};
@@ -145,8 +199,18 @@ protected:
         return status;
     }
 
-
-    virtual void reply_error(Status status, NetData::ID request_id, SocketNd* sock) {
+    /**
+     * @brief Sends a minimal error reply containing only status code
+     *
+     * Used when processing fails before or after handler execution.
+     * Reply uses the same request_id so client can correlate it.
+     *
+     * @param status     Error status to send
+     * @param request_id Original request identifier
+     * @param sock       Client connection
+     */
+    virtual void reply_error(Status status, NetData::ID request_id, SocketNd* sock)
+    {
         TEC_ENTER("SocketServerNd::reply_error");
         NetData nd;
         nd.header.id = request_id;
@@ -161,7 +225,13 @@ protected:
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-    virtual Status compress(NetData* nd) {
+    /**
+     * @brief Applies compression to the NetData message if enabled in parameters
+     * @param nd Message to compress (modified in-place)
+     * @return success / compression error
+     */
+    virtual Status compress(NetData* nd)
+    {
         if (this->params_.compression) {
             NdCompress cmpr(this->params_.compression,
                             this->params_.compression_level,
@@ -171,7 +241,13 @@ protected:
         return {};
     }
 
-    virtual Status uncompress(NetData* nd) {
+    /**
+     * @brief Decompresses the NetData message if header indicates compression
+     * @param nd Message to decompress (modified in-place)
+     * @return success / decompression error
+     */
+    virtual Status uncompress(NetData* nd)
+    {
         if (nd->header.get_compression()) {
             NdCompress cmpr;
             return cmpr.uncompress(*nd);
@@ -179,18 +255,42 @@ protected:
         return {};
     }
 
-    virtual Status preprocess(NetData* nd) {
+    /**
+     * @brief Pre-processes incoming message (currently only decompression)
+     * @param nd Received message (modified in-place)
+     */
+    virtual Status preprocess(NetData* nd)
+    {
         TEC_ENTER("SocketServerNd::preprocess");
         return uncompress(nd);
     }
 
-    virtual Status postprocess(NetData* nd) {
+    /**
+     * @brief Post-processes outgoing message (currently only compression)
+     * @param nd Message prepared by handler (modified in-place)
+     */
+    virtual Status postprocess(NetData* nd)
+    {
         TEC_ENTER("SocketServerNd::postprocess");
         return compress(nd);
     }
 
-
-    void on_net_data(const Socket* s) override {
+    /**
+     * @brief Main entry point for handling new data on a client connection
+     *
+     * Tries to read structured NetData message first.
+     * If parsing fails with EBADMSG → falls back to raw string handler (legacy mode).
+     * Otherwise performs the full NetData request cycle:
+     *   1. receive + uncompress
+     *   2. dispatch to registered handler
+     *   3. compress reply
+     *   4. send reply
+     *   5. send error reply on failure (unless connection already closed)
+     *
+     * @param s Base Socket pointer received from acceptor loop
+     */
+    void on_net_data(const Socket* s) override
+    {
         TEC_ENTER("SocketServerNd::on_net_data");
         SocketNd sock(*s);
         NetData nd_in;
@@ -245,7 +345,12 @@ protected:
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-    virtual void echo(DataInOut dio) {
+    /**
+     * @brief Default handler (ID=0) — echoes the received message back
+     * @param dio Context containing input/output NetData and status
+     */
+    virtual void echo(DataInOut dio)
+    {
         TEC_ENTER("SocketServerNd::echo");
         //
         // It just copies input to output.

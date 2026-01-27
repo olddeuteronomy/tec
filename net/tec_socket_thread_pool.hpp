@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-14 15:29:01 by magnolia>
+// Time-stamp: <Last changed 2026-01-23 14:59:33 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -94,7 +94,7 @@ public:
      * Uses modulo arithmetic so any large `idx` value maps safely into the valid range.
      * Intended usage: `pool.get_buffer(pool.get_next_worker_index())`
      */
-    constexpr char* get_buffer(size_t idx) {
+    char* get_buffer(size_t idx) const {
         return buffers_[idx % buffers_.size()];  // safe even if idx is huge
     }
 

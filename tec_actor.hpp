@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-11 00:30:21 by magnolia>
+// Time-stamp: <Last changed 2026-01-27 13:00:51 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -35,7 +35,6 @@ SOFTWARE.
  * - **Non-copyable, polymorphic** base class.
  * - **Signal-based** lifecycle notifications (`start`, `shutdown`).
  * - **Synchronous request processing** via `process_request`.
- * - **RAII helper** `SignalOnExit` for automatic signal triggering.
  *
  * @note This file is part of the **TEC** framework.
  * @see tec_signal.hpp, tec_status.hpp, tec_message.hpp
@@ -68,38 +67,6 @@ namespace tec {
  * @note Actors are **non-copyable** and **non-movable** to ensure unique ownership.
  */
 class Actor {
-  public:
-      /**
-       * @struct SignalOnExit
-       * @brief RAII wrapper that sets a signal upon destruction.
-       *
-       * Used to automatically notify completion of `start()` or `shutdown()` operations.
-       *
-       * @code
-       * Signal sig;
-       * actor->start(&sig, &status);
-       * sig.wait(); // blocks until start completes
-       * @endcode
-       */
-      struct SignalOnExit {
-          /**
-           * @brief Constructs the RAII guard and binds it to a signal.
-           * @param sig Pointer to the signal to set on destruction.
-           */
-          explicit SignalOnExit(Signal* sig) : sig_{sig} {}
-
-          /**
-           * @brief Destructor – sets the bound signal.
-           *
-           * This is automatically called when exiting the scope in which
-           * `start()` or `shutdown()` was invoked, ensuring timely notification.
-           */
-          ~SignalOnExit() { if (sig_) sig_->set(); }
-
-      private:
-          Signal* sig_; ///< Raw pointer to signal (non-owning).
-      };
-
   public:
       /**
        * @brief Default constructor.
@@ -162,7 +129,7 @@ class Actor {
        * @warning In long-running actors (e.g. gRPC), this call may **not return**
        *          until `shutdown()` is invoked from another thread.
        *
-       * @see SignalOnExit, shutdown(), Status
+       * @see shutdown(), Status
        */
       virtual void start(Signal* sig_started, Status* status) = 0;
 
@@ -176,7 +143,7 @@ class Actor {
        *                     Must remain valid until triggered.
        *
        * @note This is typically called from a separate thread.
-       * @see SignalOnExit, start()
+       * @see start()
        */
       virtual void shutdown(Signal* sig_stopped) = 0;
 
@@ -205,6 +172,9 @@ class Actor {
     virtual Status process_request(Request request, Reply reply) = 0;
 
 
+    /**
+     * Mimics Daemon's behavior.
+     */
     virtual Status run() {
         Status status;
         Signal sig;
@@ -213,10 +183,14 @@ class Actor {
         return status;
     }
 
-    virtual void terminate() {
+    /**
+     * Mimics Daemon's behavior.
+     */
+    virtual Status terminate() {
         Signal sig;
         shutdown(&sig);
         sig.wait();
+        return {};
     }
 
 

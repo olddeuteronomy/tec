@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-11 01:04:49 by magnolia>
+// Time-stamp: <Last changed 2026-01-23 14:57:41 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -341,25 +341,18 @@ public:
         ElemHeader hdr;
         data_.read(&hdr, sizeof(ElemHeader));
         // Object.
-        if constexpr (is_serializable_v<T>) {
-            if(hdr.tag == Tags::Object) {
+        if (hdr.tag == Tags::Object) {
+            if constexpr(is_serializable_v<T>) {
                 val.load(std::ref(*this));
             }
         }
         // Map.
-        else if constexpr(is_map_v<T>) {
-            if (hdr.tag == Tags::Map) {
-                read_map(&hdr, val);
-            }
+        else if (hdr.tag == Tags::Map) {
+            read_map(&hdr, val);
         }
         // Container (but not a String!).
-        else if constexpr (
-            is_container_v<T>  &&
-            !std::is_same_v<T, String>
-            ) {
-            if (hdr.tag == Tags::Container) {
-                read_container(&hdr, val);
-            }
+        else if (hdr.tag == Tags::Container) {
+            read_container(&hdr, val);
         }
         // Scalar (including sequences).
         else {
@@ -378,7 +371,7 @@ protected:
      */
     template <typename TMap>
     void read_map(ElemHeader* hdr, TMap& map) {
-        if constexpr (is_map_v<TMap>) {
+        if constexpr(is_map_v<TMap>) {
             for( size_t n = 0 ; n < hdr->count ; ++n ) {
                 typename TMap::key_type k;
                 typename TMap::mapped_type e;
@@ -396,8 +389,9 @@ protected:
      */
     template <typename TContainer>
     void read_container(ElemHeader* hdr, TContainer& c) {
-        if constexpr (
+        if constexpr(
             is_container_v<TContainer>  &&
+            !is_map_v<TContainer> &&
             !std::is_same_v<TContainer, String>
             ) {
             for( size_t n = 0 ; n < hdr->count ; ++n ) {
@@ -413,7 +407,7 @@ protected:
      * @param hdr element header already read
      * @param dst [out] destination memory
      */
-    void read(ElemHeader* hdr, void* dst) {
+    virtual void read(ElemHeader* hdr, void* dst) {
         if( hdr->tag & Meta::Scalar) {
             if( hdr->tag & Meta::Sequence ) {
                 read_sequence(hdr, dst);
@@ -429,7 +423,7 @@ protected:
     }
 
     /**
-     * @brief Platform-specific reading of long double stored as 64-bit double (on MS Windows)
+     * @brief Platform-specific reading of MSWindows' `long double` (64 bit) stored as 128-bit double.
      * @param hdr element header
      * @param d64 [out] destination double
      */

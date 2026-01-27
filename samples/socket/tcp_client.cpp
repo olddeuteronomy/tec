@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-10 14:31:10 by magnolia>
+// Time-stamp: <Last changed 2026-01-27 13:33:47 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -45,7 +45,7 @@ using TCPParams = tec::SocketClientParams;
 using TCPClient = tec::SocketClient<TCPParams>;
 using TCPClientWorker = tec::ActorWorker<TCPParams, TCPClient>;
 
-#define USE_DAEMON 1
+// #define USE_DAEMON 1
 
 tec::Status tcp_client() {
     // By default, it can connect to either IPv4 or IPv6 tec::SocketServer.

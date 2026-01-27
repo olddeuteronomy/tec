@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-01 01:51:46 by magnolia>
+// Time-stamp: <Last changed 2026-01-27 00:45:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -75,18 +75,18 @@ public:
     {}
 
     void start(tec::Signal* sig_started, tec::Status* status) override {
-        SignalOnExit on_exit{sig_started};
+        tec::Signal::OnExit on_exit{sig_started};
         // Emulate error:
         // status = {"cannot start the server"};
         tec::println("Server started with {} ...", *status);
     }
 
     void shutdown(tec::Signal* sig_stopped) override {
-        SignalOnExit on_exit{sig_stopped};
+        tec::Signal::OnExit on_exit{sig_stopped};
         tec::println("Server stopped.");
     }
 
-    // Request handler.
+    // Request handler -- registered by tec::ActorWorker.
     tec::Status process_request(tec::Request _request, tec::Reply _reply) override {
         // Check type compatibility.
         // NOTE: *Request* is const!
@@ -155,7 +155,7 @@ tec::Status test_server() {
         ChrReply rep{0};
 
         // Make a request.
-        auto status = svr->request<>(&req, &rep);
+        auto status = svr->request(&req, &rep);
         if( status ) {
             tec::println("'{}' -> '{}'", static_cast<char>(req.ch), static_cast<char>(rep.ch));
         }
@@ -182,5 +182,5 @@ int main() {
     auto result = test_server();
 
     tec::println("\nExited with {}", result);
-    return result.code.value_or(tec::Error::Code<>::Unspecified);
+    return result.code.value_or(0);
 }

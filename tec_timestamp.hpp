@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-20 01:45:33 by magnolia>
+// Time-stamp: <Last changed 2026-01-21 13:49:22 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -44,45 +44,89 @@ namespace tec {
 /**
  * @brief A point in time.
  *
- * @details A Timestamp represents a point in time independent of any
+ * @details Timestamp represents a point in time independent of any
  * time zone or local calendar, encoded as a count of nanoseconds.
  * The count is relative to an epoch at UTC midnight on January 1, 1970.
+ *
+ * @par Example
+ * @snippet snp_timestamp.cpp main
+ *
+ * @par Output
+ * @snippet snp_timestamp.cpp output
  *
  * @sa https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/timestamp.proto
  */
 struct Timestamp {
+    /// @name Type aliases
+    /// @{
+
+    /// @brief Underlying integer type used to store nanosecond count
     using count_t = int64_t;
+
+    /// @brief Duration unit used by this timestamp (nanoseconds)
     using duration_t = std::chrono::nanoseconds;
+
+    /// @brief Clock type used as the basis for time_point conversion
     using system_clock_t = std::chrono::system_clock;
+
+    /// @brief std::chrono time_point type with nanosecond precision
     using time_point_t = std::chrono::time_point<system_clock_t, duration_t>;
 
-    /// Represents nanoseconds of UTC time since Unix epoch
-    /// 1970-01-01T00:00:00Z to 2262-04-11T23:47:16Z inclusive.
+    /// @}
+
+    /**
+     * @brief Nanoseconds since Unix epoch (1970-01-01T00:00:00Z).
+     *
+     * @details Represents the number of nanoseconds elapsed since
+     * 1970-01-01 00:00:00 UTC. The valid range is approximately
+     * 1970-01-01 to 2262-04-11 (due to 64-bit signed integer limits).
+     *
+     * Negative values represent times before the Unix epoch.
+     */
     count_t count;
 
+    // ──────────────────────────────────────────────────────────────────────────
+    // Constructors
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /// @brief Default constructor — creates timestamp at epoch (count = 0)
     Timestamp()
         : count{0}
     {}
 
+    /// @brief Construct from raw nanosecond count since epoch
     Timestamp(count_t _count)
         : count{_count}
     {}
 
-    Timestamp(duration_t d)
+    /// @brief Construct from std::chrono::nanoseconds duration
+    explicit Timestamp(duration_t d)
         : count{d.count()}
     {}
 
     Timestamp(const Timestamp&) = default;
     Timestamp(Timestamp&&) = default;
 
-    /// Get `std::chrono::duration` in nanoseconds.
+    // ──────────────────────────────────────────────────────────────────────────
+    // Accessors / Conversions
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * @brief Returns the duration since epoch as std::chrono::nanoseconds
+     * @return duration_t nanoseconds since 1970-01-01T00:00:00Z
+     */
     duration_t dur() const {
         duration_t d{count};
         return d;
     }
 
-    /// Get UTC as `std::tm` struct.
+    /**
+     * @brief Returns broken-down UTC time as std::tm
+     * @details Uses thread-safe wrapper around std::gmtime
+     * @return std::tm structure with UTC time components
+     */
     std::tm utc_time() const {
+        // To prevent possible problems with std::gmtime that may not be thread-safe.
         std::lock_guard<std::mutex> lk(time_mutex::get());
         auto tp = time_point_t{dur()};
         auto tt = system_clock_t::to_time_t(tp);
@@ -90,8 +134,13 @@ struct Timestamp {
         return tm_utc;
     }
 
-    /// Get local time as `std::tm` struct.
+    /**
+     * @brief Returns broken-down local time as std::tm
+     * @details Uses thread-safe wrapper around std::localtime
+     * @return std::tm structure with local time components
+     */
     std::tm local_time() const {
+        // To prevent possible problems with std::localtime that may not be thread-safe.
         std::lock_guard<std::mutex> lk(time_mutex::get());
         auto tp = time_point_t{dur()};
         auto tt = system_clock_t::to_time_t(tp);
@@ -99,19 +148,33 @@ struct Timestamp {
         return tm_local;
     }
 
+    /**
+     * @brief Returns ISO 8601 string in UTC (with Z suffix)
+     * @return std::string formatted as "YYYY-MM-DDThh:mm:ssZ"
+     */
     std::string utc_time_str() const {
         static constexpr char fmt[] = "%FT%TZ";
         auto tm = utc_time();
         return iso_8601(fmt, &tm);
     }
 
+    /**
+     * @brief Returns ISO 8601 string in local time (with timezone offset)
+     * @return std::string formatted as "YYYY-MM-DDThh:mm:ss±hhmm"
+     */
     std::string local_time_str() const {
         static constexpr char fmt[] = "%FT%T%z";
         auto tm = local_time();
         return iso_8601(fmt, &tm);
     }
 
-    /// It's UTC-based, no leap seconds, and what virtually every system, language, and network protocol expects.
+    /**
+     * @brief Returns current time as Timestamp (UTC-based, nanosecond precision)
+     * @details Uses std::chrono::system_clock::now() and converts to nanoseconds.
+     * This is the recommended way to obtain "current time" in this system.
+     * @note It is **not** monotonic — subject to system clock adjustments.
+     * @return Timestamp representing current UTC time
+     */
     static Timestamp now() {
         auto now = system_clock_t::now();
         auto d = now.time_since_epoch();
@@ -119,24 +182,27 @@ struct Timestamp {
     }
 
 private:
-
+    /**
+     * @brief Internal helper to format std::tm according to strftime pattern
+     * @param fmt   strftime-compatible format string
+     * @param tm    pointer to std::tm structure
+     * @return Formatted string (max ~80 characters)
+     */
     static std::string iso_8601(const char* fmt, std::tm* tm) {
         char buf[80];
         std::strftime(buf, sizeof(buf)-1, fmt, tm);
         return buf;
     }
 
-
     /**
-     * @struct time_mutex
-     * @brief Provides a global mutex for synchronizing time conversion.
-     * @details Manages a static mutex to ensure thread-safe time conversion operations.
+     * @brief Helper class providing a static mutex for thread-safe time functions
+     * @details Wraps a mutex used to protect calls to
+     * std::gmtime / std::localtime which are typically not thread-safe.
      */
     struct time_mutex {
         /**
-         * @brief Retrieves the global time mutex.
-         * @details Returns a reference to a static mutex used for synchronizing time conversion operations.
-         * @return std::mutex& The global time mutex.
+         * @brief Returns reference to the global static mutex
+         * @return std::mutex& thread-safe mutex for time conversion
          */
         static std::mutex& get() {
             static std::mutex mtx_time__;
@@ -144,6 +210,6 @@ private:
         }
     };
 
-}; // class Timestamp
+}; // struct Timestamp
 
 } // namespace tec

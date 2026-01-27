@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-14 16:00:33 by magnolia>
+// Time-stamp: <Last changed 2026-01-23 14:22:02 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -162,13 +162,14 @@ public:
      */
     virtual Status compress(NetData& nd) const {
         TEC_ENTER("NdCompress::compress");
-        TEC_TRACE("Type={} Level={} MinSize={}", type_, level_, min_size_);
 #if defined (ZLIB_VERSION)
         if (type_ == CompressionParams::kCompressionZlib) {
+            TEC_TRACE("Type={} Level={} MinSize={}", type_, level_, min_size_);
             return compress_zlib(nd);
         }
 #endif
         // No compression required.
+        TEC_TRACE("OFF");
         nd.header.set_compression(CompressionParams::kNoCompression);
         return {};
     }

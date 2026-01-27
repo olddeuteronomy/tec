@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-26 23:00:41 by magnolia>
+// Time-stamp: <Last changed 2026-01-28 00:37:10 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -48,13 +48,13 @@ using Message = std::any;
 
 /**
  * @brief Type alias for a request object that can hold any object.
- * @see Daemon::request()
+ * @see Daemon::make_request()
  */
 using Request = std::any;
 
 /**
  * @brief Type alias for a reply object that can hold any object.
- * @see Daemon::request()
+ * @see Daemon::make_request()
  */
 using Reply = std::any;
 
@@ -68,7 +68,7 @@ using Reply = std::any;
  * to exit its message loop.
  * @return Message A null message.
  */
-inline Message nullmsg() { return Message{}; }
+inline Message nullmsg() noexcept { return Message{}; }
 
 /**
  * @brief Checks if a message is null.
@@ -76,7 +76,7 @@ inline Message nullmsg() { return Message{}; }
  * @param msg The Message to check.
  * @return bool True if the message is null, false otherwise.
  */
-inline bool is_null(const Message& msg) { return !msg.has_value(); }
+inline bool is_null(const Message& msg) noexcept { return !msg.has_value(); }
 
 /**
  * @brief Retrieves the type name of a message's content for registering the corresponding message handler.
@@ -85,7 +85,7 @@ inline bool is_null(const Message& msg) { return !msg.has_value(); }
  * @return const char* The name of the type stored in the Message.
  * @sa Worker::register_handler().
  */
-inline auto name(const Message& msg) { return msg.type().name(); }
+inline auto name(const Message& msg) noexcept { return msg.type().name(); }
 
 /// @}
 

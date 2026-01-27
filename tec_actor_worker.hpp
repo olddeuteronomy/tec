@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-11 00:17:17 by magnolia>
+// Time-stamp: <Last changed 2026-01-27 01:18:05 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -132,8 +132,9 @@ public:
         static_assert(
             std::is_base_of_v<Actor, TActor>,
             "ActorWorker::TActor must derive from tec::Actor");
-
-        // Register synchronous request handler
+        //
+        // Register synchronous request handler.
+        //
         this->template register_callback<ActorWorker, Daemon::Payload*>(
             this, &ActorWorker::on_request);
     }
@@ -176,27 +177,24 @@ protected:
      *   - `Error::Kind::RuntimeErr` if already running
      *   - Actor-reported error (e.g., timeout, bind failure)
      *
-     * @par Trace Events
-     * - `TEC_ENTER`, `TEC_TRACE` for startup and completion.
-     *
      * @see on_exit(), Actor::start()
      */
     Status on_init() override {
         TEC_ENTER("ActorWorker::on_init");
-
         if (actor_thread_.joinable()) {
             return Status{"Actor is already running", Error::Kind::RuntimeErr};
         }
-
-        // Launch actor in dedicated thread
+        //
+        // Launch Actor in dedicated thread.
+        //
         actor_thread_ = std::thread([this] {
             actor_->start(&sig_started_, &status_started_);
         });
-
-        // Block until startup completes
+        //
+        // Block until startup completes.
+        //
         sig_started_.wait();
         TEC_TRACE("Actor thread {} started with status: {}", actor_thread_.get_id(), status_started_);
-
         return status_started_;
     }
 
@@ -215,16 +213,15 @@ protected:
      */
     Status on_exit() override {
         TEC_ENTER("ActorWorker::on_exit");
-
         if (!actor_thread_.joinable()) {
             return {}; // Already stopped
         }
-
-        // Launch shutdown in a separate thread
+        //
+        // Launch Actor's shutdown in a separate thread.
+        //
         std::thread shutdown_thread([this] {
             actor_->shutdown(&sig_stopped_);
         });
-
         TEC_TRACE("Actor thread {} is stopping...", actor_thread_.get_id());
         sig_stopped_.wait();
         TEC_TRACE("Actor thread {} stopped.", actor_thread_.get_id());
@@ -246,7 +243,7 @@ protected:
      * Protected by `mtx_request_` to ensure only one request is processed at a time.
      *
      * @par RAII Signal
-     * Uses `Actor::SignalOnExit` to auto-set `payload->ready` on exit.
+     * Uses `Signal::OnExit` to auto-set `payload->ready` on exit.
      *
      * @see Daemon::Payload, Actor::process_request()
      */
@@ -254,9 +251,9 @@ protected:
         typename Worker<TParams>::Lock lk{mtx_request_};
         TEC_ENTER("ActorWorker::on_request");
         TEC_TRACE("Payload received: {}", msg.type().name());
-
+        //
         auto payload = std::any_cast<Daemon::Payload*>(msg);
-        Actor::SignalOnExit on_exit(payload->ready);
+        Signal::OnExit on_exit(payload->ready);
         *(payload->status) = actor_->process_request(
             std::move(payload->request), std::move(payload->reply));
     }

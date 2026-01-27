@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-02 15:40:02 by magnolia>
+// Time-stamp: <Last changed 2026-01-27 00:32:14 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -41,12 +41,26 @@ namespace tec {
 
 /**
  * @class Daemon
- * @brief Abstract interface for a daemon that runs as a background process.
+ * @brief Abstract interface for a daemon that runs in a separate thread.
  * @details A daemon is a process or thread that runs continuously in the background
  * and handles periodic service messages and requests. This interface defines the minimum set of
  * methods and signals that a derived class must implement, including starting,
  * terminating, sending messages, requests, and signaling state changes.
  * @note Daemons are **non-copyable** and **non-movable** to ensure unique ownership.
+ *
+ * @par Example: worker.hpp
+ * Common header -- defines `TestWorker` parameters and messages.
+ * @snippet snp_worker.cpp header
+ *
+ * @par Example: worker.cpp
+ * `TestWorker` implementation. Exposes the `TestWorker` Worker as a **Daemon**.
+ * @snippet snp_worker.cpp worker
+ *
+ * @par Example: run.cpp
+ * Run the daemon.
+ * @snippet snp_worker.cpp run
+ *
+ * @sa Worker
  */
 class Daemon {
 public:
@@ -98,9 +112,8 @@ public:
      * @details Allows external components to send a message to the daemon for processing.
      * Must be implemented by derived classes.
      * @param message The message to send.
-     * @return bool True if the message was successfully sent, false otherwise.
      */
-    virtual bool send(Message&& msg) = 0;
+    virtual void send(Message&& msg) = 0;
 
     /**
      * @brief Retrieves the signal indicating the daemon is running.
@@ -127,9 +140,23 @@ public:
     virtual const Signal& sig_terminated() const = 0;
 
     /**
-     * @brief Sends a request and waits for a reply in a daemon process.
+     * @brief Sends a request and **waits** for a reply in a daemon process.
      *
-     * This method sends a request of type TRequest to the daemon and waits for a corresponding reply of type TReply.
+     * This method sends a request of type Request to the daemon and **waits** for a corresponding reply of type TReply.
+     * It uses a signal to synchronize the operation and returns the status of the request processing.
+     * If the request cannot be sent, a runtime error status is returned.
+     *
+     * @param req The request object to be sent.
+     * @param rep The reply object where the response will be stored.
+     * @return Status The status of the request operation, indicating success or an error.
+     * @see Worker::make_request()
+     */
+    virtual Status make_request(Request&&, Reply&&) = 0;
+
+    /**
+     * @brief Helper: Sends a request and waits for a reply in a daemon process.
+     *
+     * This method sends a request of type TRequest to the daemon and **waits** for a corresponding reply of type TReply.
      * It uses a signal to synchronize the operation and returns the status of the request processing.
      * If the request cannot be sent, a runtime error status is returned.
      *
@@ -138,35 +165,24 @@ public:
      * @param req Pointer to the request object to be sent.
      * @param rep Pointer to the reply object where the response will be stored.
      * @return Status The status of the request operation, indicating success or an error.
-     * @see Daemon::Payload
+     * @see make_request()
      */
     template <typename TRequest, typename TReply>
     Status request(const TRequest* req, TReply* rep) {
-        Signal ready;
-        Status status;
-        Payload  payload{&ready, &status, {req}, {rep}};
-        if( !send({&payload}) ) {
-            status = {Error::Kind::RuntimeErr};
-            ready.set();
-        }
-        ready.wait();
-        return status;
+        return make_request({req}, {rep});
     }
 
+    /**
+     * @brief Helper: Sends a **notification** request -- no reply required.
+     * @see make_request()
+     */
     template <typename TRequest>
     Status request(const TRequest* req) {
-        Signal ready;
-        Status status;
-        Payload  payload{&ready, &status, {req}, {}};
-        if( !send({&payload}) ) {
-            status = {Error::Kind::RuntimeErr};
-            ready.set();
-        }
-        ready.wait();
-        return status;
+        return make_request({req}, {});
     }
 
 public:
+
     /**
      * @struct Builder
      * @brief Factory for creating daemon instances.

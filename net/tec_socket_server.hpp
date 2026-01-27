@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-14 15:40:58 by magnolia>
+// Time-stamp: <Last changed 2026-01-23 14:00:56 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -163,7 +163,7 @@ public:
         // Start listening on the host.
         //
         *status = start_listening();
-        if (!status) {
+        if (!status->ok()) {
             sig_started->set();
             return;
         }

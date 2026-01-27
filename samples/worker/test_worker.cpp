@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-02 15:07:15 by magnolia>
+// Time-stamp: <Last changed 2026-01-26 22:50:55 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -74,7 +74,7 @@ protected:
         const int counter = std::any_cast<int>(msg);
         TEC_TRACE(">>> counter={}", counter);
         if( counter <= params().max_count ) {
-            // Continue processing...
+            // Increment `counter` and continue processing...
             std::this_thread::sleep_for(params().process_delay);
             send({counter + 1});
         }
@@ -119,7 +119,6 @@ protected:
 
 };
 
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                            TEST
@@ -140,11 +139,6 @@ tec::Status test_daemon() {
     // Build a daemon using the derived TestWorker class.
     auto daemon{tec::Daemon::Builder<TestWorker>{}(params)};
 
-    // Crash test 2025-07-22
-    auto daemon2{tec::Daemon::Builder<TestWorker>{}(params)};
-    // daemon2->run();
-    // daemon2->terminate();
-
     // Start the daemon and check for an initialization error.
     auto status = daemon->run();
     if( !status ) {
@@ -154,7 +148,7 @@ tec::Status test_daemon() {
     // Send different messages.
     daemon->send({std::string("This is a string!")});
     daemon->send({"This is a const char*!"});
-    daemon->send(Position{234, 71});
+    daemon->send({Position{234, 71}});
 
     // Wait for daemon is finished.
     daemon->sig_terminated().wait();
@@ -163,20 +157,6 @@ tec::Status test_daemon() {
     // if we don't want to get the status of daemon termination.
     return daemon->terminate();
 }
-
-
-tec::Status test_run() {
-    struct Params1 {
-        int dummy;
-    } params{0};
-
-    auto daemon{tec::Daemon::Builder<tec::Worker<Params1>>{}(params)};
-    daemon->run();
-    // daemon->terminate();
-    // return daemon->terminate();
-    return {};
-}
-
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
@@ -189,12 +169,11 @@ int main() {
                  __FILE__, __DATE__, __TIME__, __TEC_COMPILER_NAME__);
 
     // Run the daemon.
-    // const auto status = test_run();
     const auto status = test_daemon();
 
     tec::println("\nExited with {}", status);
     tec::print("Press <Enter> to quit ...");
     std::getchar();
 
-    return status.code.value_or(tec::Error::Code<>::Unspecified);
+    return status.code.value_or(0);
 }

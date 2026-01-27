@@ -1,10 +1,9 @@
 
+//! [main]
 #include <ctime>
 #include <iostream>
 
-#include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_timestamp.hpp"
-
 
 int main() {
     using namespace std::literals;
@@ -40,3 +39,28 @@ int main() {
 
     return 0;
 }
+
+//! [main]
+
+
+//! [output]
+// Epoch:
+// Count: 0
+// UTC  : 1970-01-01T00:00:00Z
+// Local: 1970-01-01T03:00:00+0300
+
+// Now:
+// Count: 1768992601096852237
+// UTC  : 2026-01-21T10:50:01Z
+// Local: 2026-01-21T13:50:01+0300
+
+// One day and five minutes ago:
+// Count: 1768905901096852237
+// UTC  : 2026-01-20T10:45:01Z
+// Local: 2026-01-20T13:45:01+0300
+
+// One week forward:
+// Count: 1769597401096852237
+// UTC  : 2026-01-28T10:50:01Z
+// Local: 2026-01-28T13:50:01+0300
+//! [output]

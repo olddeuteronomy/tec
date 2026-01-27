@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-14 01:43:23 by magnolia>
+// Time-stamp: <Last changed 2026-01-23 14:55:21 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -54,19 +54,54 @@ SOFTWARE.
 
 namespace tec {
 
-
-struct SocketNd: public Socket {
-
+/**
+ * @brief Specialized socket wrapper optimized for sending/receiving NetData protocol messages
+ *
+ * SocketNd extends the basic Socket class with protocol-aware send/receive operations
+ * specifically tailored for the NetData message format (header + payload).
+ *
+ * Main differences from base Socket class:
+ * - Understands NetData::Header structure
+ * - Performs header validation
+ * - Uses MSG_PEEK to safely inspect message size before committing to read
+ * - Combines header + payload operations into atomic-like protocol messages
+ */
+struct SocketNd : public Socket
+{
+    /**
+     * @brief Constructs SocketNd by copying from an existing Socket object
+     * @param sock Source Socket object to copy file descriptor and address information from
+     */
     explicit SocketNd(const Socket& sock)
         : Socket(sock.fd, sock.addr, sock.port, sock.buffer, sock.buffer_size)
     {}
 
+    /**
+     * @brief Constructs SocketNd with explicit parameters
+     * @param _fd File descriptor of the socket
+     * @param _addr Remote peer address (usually string representation of IP)
+     * @param _port Remote peer port number
+     * @param _buffer Pointer to external buffer used for receive operations
+     * @param _buffer_size Size of the provided external buffer (in bytes)
+     */
     SocketNd(int _fd, const char* _addr, int _port, char* _buffer, size_t _buffer_size)
         : Socket(_fd, _addr, _port, _buffer, _buffer_size)
     {}
 
-
-    static Status send_nd(const NetData* nd, const SocketNd* sock) {
+    /**
+     * @brief Sends a complete NetData message (header + payload) over the socket
+     *
+     * The function performs two write operations:
+     * 1. Writes the fixed-size NetData header
+     * 2. Writes the variable-length payload (if present)
+     *
+     * @param nd Pointer to the NetData message to send
+     * @param sock SocketNd instance representing the connection
+     * @return Status success if entire message was sent,
+     *         appropriate error status otherwise (EIO, connection closed, partial write, etc.)
+     */
+    static Status send_nd(const NetData* nd, const SocketNd* sock)
+    {
         TEC_ENTER("SocketNd::send_nd");
         //
         // Write the NetData header to the stream.
@@ -93,8 +128,32 @@ struct SocketNd: public Socket {
         return {};
     }
 
-
-    static Status recv_nd(NetData* nd, const SocketNd* sock) {
+    /**
+     * @brief Receives one complete NetData message (header + payload)
+     *
+     * Protocol flow:
+     * 1. Peeks at the header using MSG_PEEK (non-destructive read)
+     * 2. Validates header sanity (magic, version, size field, etc.)
+     * 3. Removes header from receive queue with normal read()
+     * 4. Reads payload according to size specified in header
+     * 5. Rewinds the NetData internal cursor
+     *
+     * Important: Uses MSG_PEEK to avoid reading partial/invalid messages.
+     *            This helps implement reliable framed message reading over TCP.
+     *
+     * @param[out] nd Pointer to NetData object that will receive the message
+     *                Must be properly constructed (buffer must be valid)
+     * @param sock SocketNd instance representing the connection
+     * @return Status::success() when complete message was received,
+     *         various error codes when:
+     *          - connection closed (EIO)
+     *          - read error (errno value)
+     *          - malformed header (EBADMSG)
+     *          - invalid protocol fields (EBADMSG)
+     *          - payload receive failure (from Socket::recv)
+     */
+    static Status recv_nd(NetData* nd, const SocketNd* sock)
+    {
         TEC_ENTER("SocketNd::recv_nd");
         Status status;
         NetData::Header hdr;
@@ -131,9 +190,8 @@ struct SocketNd: public Socket {
                                  sock->addr, sock->port);
             TEC_TRACE(errmsg);
             return {EBADMSG, errmsg, Error::Kind::Invalid};
-
         }
-        // Re-read the header from the message queue.
+        // Re-read the header from the message queue (destructive this time).
         auto rd2 = read(sock->fd, &hdr, sizeof(NetData::Header));
         if (rd2 != sizeof(NetData::Header)) {
             return {EIO, Error::Kind::System};

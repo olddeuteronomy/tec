@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-14 02:03:40 by magnolia>
+// Time-stamp: <Last changed 2026-01-27 12:59:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -92,7 +92,7 @@ public:
 
     void start(Signal* sig_started, Status* status) override {
         TEC_ENTER("SocketClient::start");
-        Actor::SignalOnExit on_exit{sig_started};
+        Signal::OnExit on_exit(sig_started);
 
         // Resolve the server address.
         TEC_TRACE("Resolving address {}:{}...", params_.addr, params_.port);
@@ -159,7 +159,7 @@ public:
 
     void shutdown(Signal* sig_stopped) override {
         TEC_ENTER("SocketClient::shutdown");
-        Actor::SignalOnExit on_exit(sig_stopped);
+        Signal::OnExit on_exit(sig_stopped);
         ::shutdown(sockfd_, SHUT_RDWR);
         close(sockfd_);
         sockfd_ = EOF;

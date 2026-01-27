@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2026-01-19 14:44:21 by magnolia>
+# Time-stamp: <Last changed 2026-01-27 14:03:04 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -54,6 +54,10 @@ endif
 
 # Compilation parameters
 CPPFLAGS := -std=c++17 -Wall -pthread
+ifdef MINGW
+	MINGWFLAGS := -static-libgcc -static-libstdc++ -static
+endif
+
 ifdef REL
 	CPPFLAGS += -O2
 else
@@ -92,7 +96,10 @@ endif
 
 
 # Build the targets
-all: timestamp
+all: timestamp guid
 
 timestamp: test_timestamp.cpp
-	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ $(LIBS) -o $(OUTDIR)/$@$(TARGET_SUFFIX)
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ $(MINGWFLAGS) $(LIBS) -o $(OUTDIR)/$@$(TARGET_SUFFIX)
+
+guid: test_guid.cpp
+	$(CXX) $(EXTRAS) $(CPPFLAGS) $(INCLUDES) $(DEFS) $^ $(MINGWFLAGS) $(LIBS) -o $(OUTDIR)/$@$(TARGET_SUFFIX)

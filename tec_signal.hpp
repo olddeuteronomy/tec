@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-09-30 16:33:34 by magnolia>
+// Time-stamp: <Last changed 2026-01-26 22:31:00 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -107,6 +107,28 @@ public:
         ULock ulock(m_);
         return cv_.wait_for(ulock, dur, [this] { return flag_; });
     }
+
+    /**
+     * @struct OnExit
+     * @brief Helper struct to signal termination on exit.
+     * @details Automatically sets the termination signal when destroyed.
+     */
+    struct OnExit {
+    private:
+        Signal* sig_; ///< The termination signal.
+
+    public:
+        /**
+         * @brief Constructs an OnExit helper with a termination signal.
+         * @param sig The termination signal to set on destruction.
+         */
+        explicit OnExit(Signal* sig) : sig_{sig} {}
+
+        /**
+         * @brief Destructor that sets the termination signal.
+         */
+        ~OnExit() { sig_->set(); }
+    };
 }; // class Signal
 
 } // namespace tec

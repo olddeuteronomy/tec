@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-18 14:03:48 by magnolia>
+// Time-stamp: <Last changed 2026-01-28 00:14:42 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,9 +25,7 @@ SOFTWARE.
 /**
  *   @file tec_guid.hpp
  *   @brief GUID generation utilities.
- *   @note Inspired by Grok.
  *   @date 2026-01-17
- *
  */
 
 #pragma once
@@ -36,7 +34,7 @@ SOFTWARE.
 #include <array>
 #include <cstdint>
 #include <string>
-#include <iomanip>
+# include <iomanip>
 #include <sstream>
 #include <cstring>
 
@@ -45,26 +43,37 @@ SOFTWARE.
 
 namespace tec {
 
-namespace guid {
-
-
-// Optional: if you want thread-local randomness (recommended)
-thread_local static std::mt19937_64 rng{
-    std::random_device{}()
-};
-
+/// 16-byte GUID
 using uuid_t = std::array<std::uint8_t, 16>;
 
+namespace guid {
 
+namespace details {
+
+/// Thread-local randomness (recommended).
+struct randgen {
+    static std::mt19937_64& get_rng() {
+        thread_local static std::mt19937_64 rng__{std::random_device{}()};
+        return rng__;
+    }
+}; // randgen
+
+} // namespace details
+
+
+/**
+ * @brief Generates 16-byte uuid_t version 4.
+ */
 inline uuid_t generate_v4()
 {
     uuid_t uuid;
     //
     // Fill with cryptographically strong random bytes if possible,
-    // otherwise high-quality pseudo-random bytes
+    // otherwise high-quality pseudo-random bytes.
+    //
     std::uniform_int_distribution<std::uint8_t> dist{0, 255};
     for (auto& byte : uuid) {
-        byte = dist(rng);
+        byte = dist(details::randgen::get_rng());
     }
     //
     // Set version (4) --> bits 12-15 of byte 6
@@ -77,38 +86,44 @@ inline uuid_t generate_v4()
     return uuid;
 }
 
+inline std::ostream& operator<<(std::ostream& os, const uuid_t& uuid) {
+    auto flags = os.flags();
+    os << std::hex << std::setfill('0');
+    for (int i = 0; i < 16; ++i) {
+        if (i == 4 || i == 6 || i == 8 || i == 10) os << '-';
+        os << std::setw(2) << static_cast<unsigned>(uuid[i]);
+    }
+    os.flags(flags);  // restore original flags
+    return os;
+}
+
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                        Formatting helpers
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/**
+ * @brief Convert GUID to hex string (in lowercase, by default).
+ */
 inline std::string to_string(const uuid_t& uuid, bool uppercase = false)
 {
-    std::ostringstream oss;
-    oss << std::hex << std::setfill('0');
-
-    const auto put = [&](std::size_t i, int width) {
-        oss << std::setw(width) << static_cast<unsigned>(uuid[i]);
-    };
-
-    put(0,  8);  oss << '-';
-    put(4,  4);  oss << '-';
-    put(6,  4);  oss << '-';
-    put(8,  4);  oss << '-';
-    put(10, 12);
-
-    std::string result = oss.str();
+    std::ostringstream os;
+    os << uuid;
+    std::string result = os.str();
+    // If we need uppercase.
     if (uppercase) {
         for (char& c : result) {
             if (c >= 'a' && c <= 'f') c -= 32;
         }
     }
-
     return result;
 }
 
-
+/**
+ * @brief Generate new GUID as hex string (in lowercase, by default).
+ * @snippet snp_guid.cpp guid
+ */
 inline std::string generate(bool uppercase = false)
 {
     return to_string(generate_v4(), uppercase);
