@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-30 14:07:33 by magnolia>
+// Time-stamp: <Last changed 2026-01-28 16:24:28 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,12 +24,16 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   @file tec_grpc_client.hpp
- *   @brief gRPC client implementation.
+ * @file tec_grpc_client.hpp
+ * @brief gRPC client template.
+ * @author The Emacs Cat
+ * @date 2026-01-28
  *
- *  Declares a gRPC client.
- *
-*/
+ * Declares a flexible, actor-based gRPC client template that can be specialized
+ * for different gRPC services via template parameters.
+ * Provides channel creation, connection management, compression and message size
+ * configuration, and serves as a base class for concrete service clients.
+ */
 
 #pragma once
 
@@ -43,14 +47,27 @@ SOFTWARE.
 
 namespace tec {
 
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                      gRPC Client traits
 *
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! gRPC client definition traits.
+/**
+ * @struct grpc_client_traits
+ * @brief Type traits / type aliases collection for configuring a gRPC client.
+ *
+ * This structure is used to group and alias all the gRPC-related types that
+ * a particular GrpcClient instantiation will use.
+ * It allows clean decoupling between the client implementation and the
+ * concrete gRPC service/channel/credentials types.
+ *
+ * @tparam TService                The generated gRPC service class (e.g. `MyService::Stub`)
+ * @tparam TGrpcChannel            Channel type (usually `grpc::Channel`)
+ * @tparam TGrpcClientCredentials  Credentials type (usually `grpc::ChannelCredentials`)
+ * @tparam TGrpcChannelArguments   Channel creation arguments (usually `grpc::ChannelArguments`)
+ * @tparam TGrpcCompressionAlgorithm Compression algorithm enum (usually `grpc::CompressionAlgorithm`)
+ */
 template <
     typename TService,
     typename TGrpcChannel,
@@ -59,59 +76,96 @@ template <
     typename TGrpcCompressionAlgorithm
     >
 struct grpc_client_traits {
-    typedef TService Service;
-    typedef TGrpcChannel Channel;
-    typedef TGrpcClientCredentials Credentials;
-    typedef TGrpcChannelArguments Arguments;
-    typedef TGrpcCompressionAlgorithm CompressionAlgorithm;
-
+    typedef TService                Service;               ///< gRPC service stub type
+    typedef TGrpcChannel            Channel;               ///< gRPC channel type
+    typedef TGrpcClientCredentials  Credentials;           ///< credentials factory type
+    typedef TGrpcChannelArguments   Arguments;             ///< channel creation arguments
+    typedef TGrpcCompressionAlgorithm CompressionAlgorithm; ///< supported compression algorithms enum
 };
-
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                          gRPC client
 *
- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+/**
+ * @class GrpcClient
+ * @brief Base class for actor-style asynchronous gRPC clients.
+ *
+ * Provides common infrastructure for creating and managing a gRPC channel,
+ * configuring message size limits and compression, connecting with timeout,
+ * and creating a service stub.
+ *
+ * Concrete clients should inherit from this class and implement
+ * `process_request()` to perform actual RPC calls.
+ *
+ * @tparam TParams  User-defined parameter structure (must derive from `GrpcClientParams`)
+ * @tparam Traits   Instance of `grpc_client_traits<...>` defining all gRPC-related types
+ */
 template <typename TParams, typename Traits>
-class GrpcClient: public Actor {
+class GrpcClient : public Actor {
 public:
+    typedef Traits   traits;               ///< Traits providing all gRPC-related type aliases
+    typedef TParams  Params;               ///< Configuration parameters type
+    typedef typename traits::Service                Service;               ///< gRPC service stub type
+    typedef typename traits::Channel                Channel;               ///< gRPC channel type
+    typedef typename traits::Credentials            Credentials;           ///< credentials type
+    typedef typename traits::Arguments              Arguments;             ///< channel arguments type
+    typedef typename traits::CompressionAlgorithm   CompressionAlgorithm;  ///< compression enum type
 
-    typedef Traits traits;
-    typedef TParams Params;
-    typedef typename traits::Service Service;
-    typedef typename traits::Channel Channel;
-    typedef typename traits::Credentials Credentials;
-    typedef typename traits::Arguments Arguments;
-    typedef typename traits::CompressionAlgorithm CompressionAlgorithm;
-
-    //! Declares a pointer to CreateChannel() gRPC function.
+    /**
+     * @struct ChannelBuilder
+     * @brief Holder for a function pointer that creates a gRPC channel.
+     *
+     * Abstracts away the exact channel creation function (`grpc::CreateChannel`, `CreateChannelWithInterceptor`, etc.)
+     * so different channel factories can be injected at construction time.
+     */
     struct ChannelBuilder {
-        std::shared_ptr<Channel> (*fptr)(const std::string&, const std::shared_ptr<Credentials>&, const Arguments&);
+        /// Function pointer matching signature of grpc::CreateChannel / CreateCustomChannel / etc.
+        std::shared_ptr<Channel> (*fptr)(const std::string&,
+                                        const std::shared_ptr<Credentials>&,
+                                        const Arguments&);
     };
 
 protected:
+    // ── Configuration & state ───────────────────────────────────────────────
 
-    //! Custom parameters - must be inherited from ClientParams.
+    /// Runtime configuration parameters (address, timeouts, message size, compression, etc.)
     Params params_;
 
-    // gRPC-specific stuff.
+    /// Credentials object used to create secure/insecure channels
     std::shared_ptr<Credentials> credentials_;
+
+    /// Owned stub instance — created after successful channel connection
     std::unique_ptr<typename Service::Stub> stub_;
+
+    /// Channel creation functor (injected at construction)
     ChannelBuilder channel_builder_;
+
+    /// Shared pointer to the active gRPC channel
     std::shared_ptr<Channel> channel_;
+
+    /// Channel creation arguments (message size limits, compression, keepalive, etc.)
     Arguments arguments_;
 
 protected:
-
-    //! Set grpc::ChannelArgiments *before* creating a channel. Can be overwritten.
+    /**
+     * @brief Configures channel arguments before channel creation.
+     *
+     * Called automatically during `start()`.
+     * Sets maximum send/receive message sizes and compression algorithm
+     * according to values in `params_`.
+     *
+     * Can be overridden in derived classes to set additional channel arguments
+     * (e.g. keep-alive, HTTP/2 settings, custom interceptors, etc.).
+     */
     virtual void set_channel_arguments() {
         TEC_ENTER("GrpcClient::set_channel_arguments");
 
         // Maximum message size, see tec::kGrpcMaxMessageSize
         if (params_.max_message_size > 0) {
-            // Set max message size in Mb
+            // Convert MB → bytes
             const int max_size = params_.max_message_size * 1024 * 1024;
             arguments_.SetMaxSendMessageSize(max_size);
             arguments_.SetMaxReceiveMessageSize(max_size);
@@ -119,7 +173,7 @@ protected:
         TEC_TRACE("MaxMessageSize is set to {} Mb.", params_.max_message_size);
 
         // Compression algorithm
-        // GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
+        // GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, ...
         if (params_.compression_algorithm > 0) {
             arguments_.SetCompressionAlgorithm(static_cast<CompressionAlgorithm>(params_.compression_algorithm));
         }
@@ -127,11 +181,16 @@ protected:
     }
 
 public:
-    //! Constructs a GrpcClient.
+    /**
+     * @brief Constructs a GrpcClient instance.
+     *
+     * @param params          Configuration parameters (address, timeouts, limits…)
+     * @param channel_builder Functor responsible for creating the gRPC channel
+     * @param credentials     Credentials to use (insecure / SSL / custom)
+     */
     GrpcClient(const Params& params,
                const ChannelBuilder& channel_builder,
-               const std::shared_ptr<Credentials>& credentials
-        )
+               const std::shared_ptr<Credentials>& credentials)
         : Actor()
         , params_{params}
         , channel_builder_{channel_builder}
@@ -139,38 +198,35 @@ public:
     {
         static_assert(
             std::is_base_of<GrpcClientParams, Params>::value,
-            "not derived from tec::GrpcClientParams class");
+            "Must be derived from tec::GrpcClientParams class");
     }
 
+    /// Virtual destructor (defaulted)
     virtual ~GrpcClient() = default;
 
-
     /**
-     *  @brief Connect to the gRPC server.
+     * @brief Establishes connection to the gRPC server.
      *
-     *  1) Sets gRPC channel arguments as specified in *params*.
+     * 1. Configures channel arguments
+     * 2. Creates the channel using the injected ChannelBuilder
+     * 3. Waits for connection with timeout
+     * 4. Creates service stub on success
      *
-     *  2) Creates the gRPC channel.
-     *
-     *  3) Connects to the server using *addr_uri* and *connect_timeout*
-     *  provided in *params*.
-     *
-     *  4)
+     * @param sig_started Signal to notify when initialization completes
+     * @param status      [out] Connection result status
      */
     void start(Signal* sig_started, Status* status) override {
         TEC_ENTER("GrpcClient::start");
-        Actor::SignalOnExit on_exit(sig_started);
+        Signal::OnExit on_exit(sig_started);
 
-        // Set channel arguments.
+        // Prepare channel creation arguments
         set_channel_arguments();
 
-        // Create a channel.
-        // If failed, a lame channel (one on which all operations fail) is created.
+        // Create channel (may return "lame" channel on error)
         channel_ = channel_builder_.fptr(params_.addr_uri, credentials_, arguments_);
-
         TEC_TRACE("Connecting to {} ...", params_.addr_uri);
 
-        // Connect to the server with timeout.
+        // Wait for connection with timeout
         auto deadline = std::chrono::system_clock::now() + params_.connect_timeout;
         if (!channel_->WaitForConnected(deadline)) {
             std::string msg{format(
@@ -181,20 +237,38 @@ public:
             return;
         }
 
-        // Create a stub.
+        // Create service stub
         stub_ = Service::NewStub(channel_);
         TEC_TRACE("connected to {} OK.", params_.addr_uri);
     }
 
-
+    /**
+     * @brief Graceful shutdown hook.
+     *
+     * Currently only logs; derived classes may override to drain queues,
+     * cancel pending RPCs, etc.
+     *
+     * @param sig_stopped Signal to notify when shutdown is complete
+     */
     void shutdown(Signal* sig_stopped) override {
         TEC_ENTER("GrpcClient::shutdown");
-        Actor::SignalOnExit on_exit{sig_stopped};
+        Signal::OnExit on_exit{sig_stopped};
         TEC_TRACE("closed OK.");
     }
 
-
-    Status process_request(Request request, Reply reply) override {
+    /**
+     * @brief Processes a single request → reply pair.
+     *
+     * Pure virtual in the base class — **must** be implemented by derived classes.
+     * This is where actual RPC calls (unary, client-streaming, server-streaming, bidi)
+     * should be performed.
+     *
+     * @param request  Input request message
+     * @param reply    Output reply message (to be filled)
+     * @return Status  Success or detailed error information
+     */
+    virtual Status process_request(Request request, Reply reply) override {
+        // Must be implemented in derived class.
         return {Error::Kind::NotImplemented};
     }
 }; // class GrpcClient

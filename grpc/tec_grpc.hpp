@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-11-10 14:48:03 by magnolia>
+// Time-stamp: <Last changed 2026-01-28 15:30:26 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,11 +24,13 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   @file tec_grpc.hpp
- *   @brief Generic gRPC parameters.
+ * @file tec_grpc.hpp
+ * @brief Generic gRPC parameters.
  *
  *  gRPC server/client parameters declaration.
  *
+ * @author The Emacs Cat
+ * @date 2024-10-28
 */
 
 #pragma once
@@ -46,7 +48,7 @@ namespace tec {
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Message size in Mb, 4 Mb by default.
+/// Message size in Mb, 4 Mb by default.
 static constexpr const int kGrpcMaxMessageSize{4};
 
 
@@ -56,12 +58,12 @@ static constexpr const int kGrpcMaxMessageSize{4};
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Declare the gRPC health check service builder.
+/// Declare the gRPC health check service builder.
 struct GrpcHealthCheckBuilder {
     void (*fptr)(bool);
 };
 
-//! Declare the gRPC reflection service builder.
+/// Declare the gRPC reflection service builder.
 struct GrpcReflectionBuilder {
     void (*fptr)(void);
 };
@@ -91,16 +93,16 @@ struct GrpcServerParams {
      */
     static constexpr const MilliSec kShutdownTimeout{Seconds{10}};
 
-    std::string addr_uri;      ///!< See kDefaultAddrUri.
+    std::string addr_uri;      ///< See kDefaultAddrUri.
     MilliSec start_timeout;    ///< Timeout for server startup in milliseconds.
     MilliSec shutdown_timeout; ///< Timeout for server shutdown in milliseconds.
 
     // ServerBuilder parameters
-    GrpcHealthCheckBuilder health_check_builder;  //!< e.g. {&grpc::EnableDefaultHealthCheckService}.
-    GrpcReflectionBuilder reflection_builder;     //!< e.g. {&grpc::reflection::InitProtoReflectionServerBuilderPlugin}.
-    int max_message_size;                         //!< kGrpcMaxMessageSize, set to 0 to use gRPC's default (4Mb).
-    int compression_algorithm;                    //!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT.
-    int compression_level;                        //!< GRPC_COMPRESS_LEVEL_NONE = 0, GRPC_COMPRESS_LEVEL_LOW, GRPC_COMPRESS_LEVEL_MED, GRPC_COMPRESS_LEVEL_HIGH, GRPC_COMPRESS_LEVEL_COUNT.
+    GrpcHealthCheckBuilder health_check_builder;  ///< e.g. {&grpc::EnableDefaultHealthCheckService}.
+    GrpcReflectionBuilder reflection_builder;     ///< e.g. {&grpc::reflection::InitProtoReflectionServerBuilderPlugin}.
+    int max_message_size;                         ///< kGrpcMaxMessageSize, set to 0 to use gRPC's default (4Mb).
+    int compression_algorithm;                    ///< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT.
+    int compression_level;                        ///< GRPC_COMPRESS_LEVEL_NONE = 0, GRPC_COMPRESS_LEVEL_LOW, GRPC_COMPRESS_LEVEL_MED, GRPC_COMPRESS_LEVEL_HIGH, GRPC_COMPRESS_LEVEL_COUNT.
 
     GrpcServerParams()
         : addr_uri{kDefaultAddrUri}
@@ -129,7 +131,7 @@ struct GrpcServerParams {
 struct GrpcClientParams {
     /**
      * @brief Default client URI.
-     * @details Set to *localhost* (127.0.0.1:50051).
+     * @details Set to IPv4 *localhost* (127.0.0.1:50051).
      */
     static constexpr const char kDefaultAddrUri[] = "127.0.0.1:50051";
 
@@ -137,21 +139,21 @@ struct GrpcClientParams {
      * @brief Default timeout for client connection.
      * @details Set to 5 seconds.
      */
-    static constexpr const MilliSec kConnectTimeout{Seconds{5}};
+    static constexpr MilliSec kConnectTimeout{Seconds{5}};
 
     /**
      * @brief Default timeout for client closing.
      * @details Set to 10 seconds.
      */
-    static constexpr const MilliSec kCloseTimeout{Seconds{10}};
+    static constexpr MilliSec kCloseTimeout{Seconds{10}};
 
-    std::string addr_uri;        ///!< See kDefaultAddrUri.
-    MilliSec connect_timeout;    ///!< Timeout for client connection in milliseconds.
-    MilliSec close_timeout;      ///!< Timeout for client closing in milliseconds.
+    std::string addr_uri;        ///< See kDefaultAddrUri.
+    MilliSec connect_timeout;    ///< Timeout for client connection in milliseconds.
+    MilliSec close_timeout;      ///< Timeout for client closing in milliseconds.
 
     // Channel arguments
-    int max_message_size;      ///!< See kGrpcMaxMessageSize.
-    int compression_algorithm; ///!< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
+    int max_message_size;      ///< See kGrpcMaxMessageSize.
+    int compression_algorithm; ///< GRPC_COMPRESS_NONE = 0, GRPC_COMPRESS_DEFLATE, GRPC_COMPRESS_GZIP, GRPC_COMPRESS_ALGORITHMS_COUNT
 
     GrpcClientParams()
         : addr_uri{kDefaultAddrUri}
@@ -169,9 +171,12 @@ struct GrpcClientParams {
  *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Get server's metadata on the client side.
+/**
+ * @brief Get server's metadata on the **client** side.
+ * @tparam TClientContext gRPC ClientContext.
+ */
 template <typename TClientContext>
-std::string get_server_metadata(const TClientContext& ctx, const std::string& key) {
+inline std::string get_server_metadata(const TClientContext& ctx, const std::string& key) {
     auto meta = ctx.GetServerInitialMetadata();
     auto data = meta.find(key);
     if( data != meta.end() ) {
@@ -185,9 +190,13 @@ std::string get_server_metadata(const TClientContext& ctx, const std::string& ke
     return{};
 }
 
-//! Put client's metadata on the client side.
+/**
+ * @brief Put client's metadata on the **client** side.
+ * @tparam TClientContext gRPC ClientContext.
+ */
+
 template <typename TClientContext>
-void add_client_metadata(TClientContext& ctx, const std::string& key, const std::string& data) {
+inline void add_client_metadata(TClientContext& ctx, const std::string& key, const std::string& data) {
     ctx.AddMetadata(key, data);
 }
 
@@ -198,9 +207,12 @@ void add_client_metadata(TClientContext& ctx, const std::string& key, const std:
  *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-//! Get client's metadada on the server side.
+/**
+ * @brief Get client's metadata on the **server** side.
+ * @tparam TServerContext gRPC ServerContext.
+ */
 template <typename TServerContext>
-std::string get_client_metadata(const TServerContext* pctx, const std::string& key) {
+inline std::string get_client_metadata(const TServerContext* pctx, const std::string& key) {
     auto meta = pctx->client_metadata();
     auto data = meta.find(key);
     if( data != meta.end() ) {
@@ -214,9 +226,12 @@ std::string get_client_metadata(const TServerContext* pctx, const std::string& k
     return{};
 }
 
-//! Put server's metadata on the server side.
+/**
+ * @brief Get server's metadata on the **server** side.
+ * @tparam TServerContext gRPC ServerContext.
+ */
 template <typename TServerContext>
-void add_server_medadata(TServerContext* pctx, const std::string& key, const std::string& data) {
+inline void add_server_medadata(TServerContext* pctx, const std::string& key, const std::string& data) {
     pctx->AddInitialMetadata(key, data);
 }
 
