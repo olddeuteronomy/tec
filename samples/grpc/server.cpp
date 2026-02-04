@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-31 16:09:41 by magnolia>
+// Time-stamp: <Last changed 2026-02-03 14:18:17 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,14 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
-/**
- *   \file server.cpp
- *   \brief A simplest gRPC server.
- *
- *  Creates the gRPC server.
- *
-*/
 
 #include <memory>
 #include <csignal>

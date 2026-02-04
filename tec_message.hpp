@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-28 00:37:10 by magnolia>
+// Time-stamp: <Last changed 2026-02-04 16:05:40 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -34,6 +34,8 @@ SOFTWARE.
 #include <any>
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_status.hpp"
+#include "tec/tec_signal.hpp"
 
 
 namespace tec {
@@ -86,6 +88,16 @@ inline bool is_null(const Message& msg) noexcept { return !msg.has_value(); }
  * @sa Worker::register_handler().
  */
 inline auto name(const Message& msg) noexcept { return msg.type().name(); }
+
+/**
+ * @brief A message used for RPC-style calls.
+ */
+struct Payload {
+    Signal* ready;
+    Status* status;
+    Request request;
+    Reply   reply;
+};
 
 /// @}
 

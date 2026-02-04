@@ -1,34 +1,46 @@
-// Time-stamp: <Last changed 2026-01-14 01:45:06 by magnolia>
+// Time-stamp: <Last changed 2026-02-05 02:43:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+     http://www.apache.org/licenses/LICENSE-2.0
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
 /**
  * @file tec_socket_client_nd.hpp
- * @brief BSD socket client implementing NetData requests.
- * @note For BSD, macOS, Linux. Windows version is not implemented yet.
+ * @brief Definition of the SocketClientNd class template.
+ *
+ * This file contains the implementation of the SocketClientNd class,
+ * which is a specialized extension of the SocketClient class for
+ * handling NetData streams. It adds support for sending and receiving
+ * NetData objects, including preprocessing (e.g., compression) and
+ * postprocessing (e.g., uncompression). The class uses the same
+ * parameter template as SocketClient to maintain configuration
+ * consistency.
+ *
+ * SocketClientNd overrides key methods to process NetData requests
+ * and provides virtual hooks for customization of send/receive
+ * operations and data processing. It integrates compression based on
+ * parameters and is designed for efficient binary data transmission
+ * over sockets.
+ *
+ * @note This class builds upon SocketClient and is part of the TEC
+ *       library namespace for network operations involving structured
+ *       data (NetData).
+ *
  * @author The Emacs Cat
- * @date 2025-11-10
+ * @date 2025-12-07
  */
 
 #pragma once
@@ -57,19 +69,66 @@ SOFTWARE.
 
 namespace tec {
 
+/**
+ * @class SocketClientNd
+ * @brief Templated client socket actor for NetData stream handling.
+ *
+ * The SocketClientNd class extends SocketClient to support
+ * NetData-based requests and replies. It handles binary data
+ * transmission with optional compression, providing overrides for
+ * request processing and virtual methods for send/receive and data
+ * processing customization.
+ *
+ * Key features:
+ * - Processes NetData::StreamIn and StreamOut for structured data exchange.
+ * - Supports compression/uncompression based on parameters.
+ * - Delegates to base class for non-NetData requests.
+ * - Integrates with SocketNd for low-level NetData socket operations.
+ *
+ * @tparam TParams The parameter type, which must derive from SocketClientParams (inherited check).
+ *
+ * @see SocketClient
+ * @see NetData
+ * @see SocketNd
+ * @see NdCompress
+ */
 template <typename TParams>
 class SocketClientNd: public SocketClient<TParams> {
 public:
+    /// @brief Type alias for the template parameter TParams.
+    /// This allows easy reference to the params type within the class.
     using Params = TParams;
 
+    /**
+     * @brief Constructs a SocketClientNd with the given parameters.
+     *
+     * Initializes the base SocketClient with the provided params.
+     *
+     * @param params The configuration parameters for the client.
+     */
     explicit SocketClientNd(const Params& params)
         : SocketClient<Params>(params)
     {
     }
 
+    /**
+     * @brief Default destructor.
+     *
+     * No additional cleanup beyond the base class destructor.
+     */
     virtual ~SocketClientNd() = default;
 
-
+    /**
+     * @brief Processes incoming requests, handling NetData types.
+     *
+     * This override checks for NetData::StreamIn and StreamOut types,
+     * validates them, and delegates to send_recv_nd. Falls back to
+     * base class processing for other request types.
+     *
+     * @param request The incoming request (std::any).
+     * @param reply Optional reply object (std::any).
+     * @return Status indicating success or error (e.g., Invalid if pointers are null).
+     */
     Status process_request(Request request, Reply reply) override {
         TEC_ENTER("SocketClientNd::process_request");
         if( request.type() == typeid(const NetData::StreamIn*) &&
@@ -90,7 +149,15 @@ public:
         return SocketClient<Params>::process_request(request, reply);
     }
 
-
+    /**
+     * @brief Convenience method to send a NetData request and receive a response.
+     *
+     * Directly calls send_recv_nd to handle the input and output NetData objects.
+     *
+     * @param nd_in Pointer to the input NetData to send.
+     * @param nd_out Pointer to the output NetData to receive.
+     * @return Status indicating success or error.
+     */
     Status request_nd(NetData* nd_in, NetData* nd_out) {
         TEC_ENTER("SocketClientNd::request");
         auto status =  send_recv_nd(nd_in, nd_out);
@@ -99,6 +166,14 @@ public:
 
 protected:
 
+    /**
+     * @brief Sends a NetData object over the socket.
+     *
+     * Creates a SocketNd helper and uses SocketNd::send_nd to transmit the data.
+     *
+     * @param nd Pointer to the NetData to send.
+     * @return Status indicating success or error.
+     */
     virtual Status send_nd(NetData* nd) {
         TEC_ENTER("SocketClientNd::send_nd");
         // Socket helper.
@@ -107,7 +182,14 @@ protected:
         return SocketNd::send_nd(nd, &sock);
     }
 
-
+    /**
+     * @brief Receives a NetData object from the socket.
+     *
+     * Creates a SocketNd helper, uses SocketNd::recv_nd to receive the data, and rewinds the NetData.
+     *
+     * @param nd Pointer to the NetData to populate with received data.
+     * @return Status indicating success or error.
+     */
     virtual Status recv_nd(NetData* nd) {
         TEC_ENTER("SocketClientNd::recv_nd");
         // Socket helper.
@@ -124,6 +206,14 @@ protected:
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+    /**
+     * @brief Compresses the NetData using configured parameters.
+     *
+     * Creates an NdCompress object with params and calls its compress method.
+     *
+     * @param nd Pointer to the NetData to compress.
+     * @return Status indicating success or error.
+     */
     virtual Status compress(NetData* nd) {
         NdCompress cmpr(this->params_.compression,
                         this->params_.compression_level,
@@ -131,6 +221,14 @@ protected:
         return cmpr.compress(*nd);
     }
 
+    /**
+     * @brief Uncompresses the NetData using configured parameters.
+     *
+     * Creates an NdCompress object with params and calls its uncompress method.
+     *
+     * @param nd Pointer to the NetData to uncompress.
+     * @return Status indicating success or error.
+     */
     virtual Status uncompress(NetData* nd) {
         NdCompress cmpr(this->params_.compression,
                         this->params_.compression_level,
@@ -138,10 +236,26 @@ protected:
         return cmpr.uncompress(*nd);
     }
 
+    /**
+     * @brief Preprocesses the NetData before sending (default: compress).
+     *
+     * Calls compress as the default preprocessing step.
+     *
+     * @param nd Pointer to the NetData to preprocess.
+     * @return Status indicating success or error.
+     */
     virtual Status preprocess(NetData* nd) {
         return compress(nd);
     }
 
+    /**
+     * @brief Postprocesses the NetData after receiving (default: uncompress).
+     *
+     * Calls uncompress as the default postprocessing step.
+     *
+     * @param nd Pointer to the NetData to postprocess.
+     * @return Status indicating success or error.
+     */
     virtual Status postprocess(NetData* nd) {
         return uncompress(nd);
     }
@@ -152,6 +266,17 @@ protected:
      *
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+    /**
+     * @brief Sends a NetData request and receives a reply with pre/postprocessing.
+     *
+     * Applies preprocessing to input, sends, receives, applies
+     * postprocessing to output. Terminates the connection if any step
+     * fails.
+     *
+     * @param nd_in Pointer to the input NetData to send.
+     * @param nd_out Pointer to the output NetData to receive.
+     * @return Status indicating overall success or error.
+     */
     virtual Status send_recv_nd(NetData* nd_in, NetData* nd_out) {
         TEC_ENTER("SocketClientNd::send_recv_nd");
         //
@@ -183,6 +308,6 @@ protected:
         return status;
     }
 
-};
+}; // class SocketClientNd
 
-}
+} // namespace tec

@@ -1,6 +1,4 @@
 
-#include <memory>
-
 #include "tec/tec_daemon.hpp"
 #include "tec/grpc/tec_grpc.hpp"
 
@@ -20,5 +18,6 @@ struct TestHelloReply {
     std::string message;
 };
 
-// Client builder.
+
+// Client builder -- implemented in client.cpp
 std::unique_ptr<tec::Daemon> build_client(const ClientParams&);

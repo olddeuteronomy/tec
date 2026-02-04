@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-23 14:59:33 by magnolia>
+// Time-stamp: <Last changed 2026-01-29 12:04:42 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -59,7 +59,7 @@ namespace tec {
 class SocketThreadPool : public ThreadPool {
 private:
     size_t buffer_size_; ///< Size (in bytes) of each per-thread scratch buffer
-    std::vector<char*> buffers_; ///< Vector of raw pointers to per-thread buffers (one per worker)
+    std::vector<char> buffers_; ///< Vector of raw pointers to per-thread buffers (one per worker)
     std::atomic<size_t> next_worker_index_; ///< Atomic counter used for round-robin worker index selection
 
 public:
@@ -80,10 +80,7 @@ public:
         //
         // Allocate thread buffers.
         //
-        buffers_.resize(num_threads);
-        for (size_t i = 0; i < num_threads; ++i) {
-            buffers_[i] = new char[buffer_size_];
-        }
+        buffers_.resize(num_threads_ * buffer_size_);
     }
 
     /**
@@ -95,7 +92,8 @@ public:
      * Intended usage: `pool.get_buffer(pool.get_next_worker_index())`
      */
     char* get_buffer(size_t idx) const {
-        return buffers_[idx % buffers_.size()];  // safe even if idx is huge
+        // safe even if idx is huge
+        return (char*)buffers_.data() + ((idx % num_threads_) * buffer_size_);
     }
 
     /**
@@ -130,12 +128,6 @@ public:
      * Base class (`ThreadPool`) destructor is called afterwards and joins all threads.
      */
     virtual ~SocketThreadPool() {
-        //
-        // Release thread buffers.
-        //
-        for (char* buf : buffers_) {
-            delete[] buf;
-        }
     }
 
 }; // class SocketThreadPool

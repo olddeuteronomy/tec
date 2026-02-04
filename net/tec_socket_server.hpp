@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-23 14:00:56 by magnolia>
+// Time-stamp: <Last changed 2026-01-29 12:07:25 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -225,7 +225,7 @@ protected:
     }
 
     /// @return Configured buffer size for client connections
-    constexpr size_t get_buffer_size() {
+    constexpr size_t get_buffer_size() const {
         return params_.buffer_size;
     }
 

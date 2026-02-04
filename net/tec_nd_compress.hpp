@@ -1,32 +1,28 @@
-// Time-stamp: <Last changed 2026-01-23 14:22:02 by magnolia>
+// Time-stamp: <Last changed 2026-02-04 16:43:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+     http://www.apache.org/licenses/LICENSE-2.0
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
 /**
- * @file tec_nd_compress.hpp
+ * @file net/tec_nd_compress.hpp
  * @brief Compression wrapper for NetData objects with pluggable backends.
  * @author The Emacs Cat
+ * @note This product optionally uses the Zlib library (http://zlib.net).
+ *       If used, Zlib is Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler.
  * @date 2025-12-23
  */
 
@@ -37,6 +33,8 @@ SOFTWARE.
 
 #if defined (_TEC_USE_ZLIB)
 #include <zlib.h>
+// TEC library optionally uses the Zlib library (http://zlib.net).
+// If used, Zlib is Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler.
 #endif
 
 #include "tec/tec_def.hpp"   // IWYU pragma: keep
@@ -51,7 +49,7 @@ namespace tec {
 /**
  * @brief Compression wrapper for NetData objects with pluggable backends.
  *
- * Currently supports only **zlib** (deflate) when `_TEC_USE_ZLIB` / `ZLIB_VERSION` is defined.
+ * Currently supports **Zlib** (deflate) when `_TEC_USE_ZLIB` / `ZLIB_VERSION` is defined.
  * Designed to be used as a strategy object — either as a member or passed by const reference.
  *
  * Main features:
@@ -61,20 +59,20 @@ namespace tec {
  *   - Sets appropriate fields in `NetData::header` (compression type, level, uncompressed size)
  *
  * @note All public methods are `const` — the object is immutable after construction.
- * @note Currently only zlib is implemented; other algorithms can be added by extending
+ * @note Currently only Zlib is implemented; other algorithms can be added by extending
  *       the `compress()` / `uncompress()` dispatch logic.
  *
  * **Basic usage examples**
  * @code
- * // 1. Default (usually zlib or no-op depending on build)
- * NdCompress compressor;
+ * // 1. Zlib (usually Zlib or no-op depending on build)
+ * NdCompress compressor(CompressionParams::kCompressionZlib);
  * NetData msg = ...;           // filled message
  * compressor.compress(msg);    // may compress in-place
  *
  * // Later on receiver side
  * compressor.uncompress(msg);  // restores original if was compressed
  *
- * // 2. Explicit zlib with custom level
+ * // 2. Explicit Zlib with custom level
  * NdCompress fast_compressor(
  *     CompressionParams::kCompressionZlib,
  *     3,                           // fast compression
@@ -91,7 +89,7 @@ namespace tec {
 class NdCompress {
 protected:
     int type_; ///< Compression algorithm identifier (from `CompressionParams`)
-    int level_; ///< Compression level (meaning depends on backend — usually -1..9 for zlib)
+    int level_; ///< Compression level (meaning depends on backend — usually [1..9] for Zlib)
     size_t min_size_; ///< Minimum payload size (in bytes) below which compression is skipped
 
 public:

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-27 01:18:05 by magnolia>
+// Time-stamp: <Last changed 2026-02-04 16:07:19 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -29,7 +29,7 @@ SOFTWARE.
  * The `tec::ActorWorker<TParams, TActor>` class is a **composite worker** that:
  * - Owns a concrete `Actor` instance.
  * - Runs it in a **dedicated thread**.
- * - Exposes synchronous **request-reply** processing via `Daemon::Payload`.
+ * - Exposes synchronous **request-reply** processing via `Payload`.
  * - Manages full **lifecycle** (`start` → `shutdown`) with **timeout-aware signals**.
  *
  * It bridges the asynchronous `Actor` interface with the synchronous `Worker`/`Daemon` model.
@@ -112,7 +112,7 @@ public:
        * @brief Constructs an `ActorWorker` with parameters and actor ownership.
        *
        * Takes ownership of a fully constructed `TActor` instance.
-       * Registers a callback to handle `Daemon::Payload*` messages synchronously.
+       * Registers a callback to handle `Payload*` messages synchronously.
        *
        * @param params Configuration for the worker and actor.
        * @param actor  Unique pointer to the concrete actor instance.
@@ -135,7 +135,7 @@ public:
         //
         // Register synchronous request handler.
         //
-        this->template register_callback<ActorWorker, Daemon::Payload*>(
+        this->template register_callback<ActorWorker, Payload*>(
             this, &ActorWorker::on_request);
     }
 
@@ -232,9 +232,9 @@ protected:
     }
 
     /**
-     * @brief Handles incoming `Daemon::Payload` requests synchronously.
+     * @brief Handles incoming `Payload` requests synchronously.
      *
-     * Called by the daemon when a message of type `Daemon::Payload*` arrives.
+     * Called by the daemon when a message of type `Payload*` arrives.
      * Forwards the request to the actor and populates the reply.
      *
      * @param msg The incoming message (contains `Daemon::Payload*`).
@@ -252,7 +252,7 @@ protected:
         TEC_ENTER("ActorWorker::on_request");
         TEC_TRACE("Payload received: {}", msg.type().name());
         //
-        auto payload = std::any_cast<Daemon::Payload*>(msg);
+        auto payload = std::any_cast<Payload*>(msg);
         Signal::OnExit on_exit(payload->ready);
         *(payload->status) = actor_->process_request(
             std::move(payload->request), std::move(payload->reply));

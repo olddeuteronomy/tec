@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-28 15:30:26 by magnolia>
+// Time-stamp: <Last changed 2026-01-29 02:27:34 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -227,7 +227,7 @@ inline std::string get_client_metadata(const TServerContext* pctx, const std::st
 }
 
 /**
- * @brief Get server's metadata on the **server** side.
+ * @brief Put server's metadata on the **server** side.
  * @tparam TServerContext gRPC ServerContext.
  */
 template <typename TServerContext>

@@ -1,25 +1,19 @@
-// Time-stamp: <Last changed 2026-01-27 00:45:24 by magnolia>
+// Time-stamp: <Last changed 2026-02-04 12:59:07 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+     http://www.apache.org/licenses/LICENSE-2.0
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
@@ -35,7 +29,6 @@ SOFTWARE.
 #include "tec/tec_actor.hpp"
 #include "tec/tec_actor_worker.hpp"
 
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                     Test Server Request/Reply
@@ -50,7 +43,6 @@ struct ChrReply {
     int ch;
 };
 
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
 *                         Test Server
@@ -63,7 +55,7 @@ struct ServerParams {
 };
 
 
-// Implement the Server.
+// Implement the Server as an Actor.
 class Server final: public tec::Actor {
 private:
     ServerParams params_;
@@ -75,22 +67,22 @@ public:
     {}
 
     void start(tec::Signal* sig_started, tec::Status* status) override {
+        // Does nothing, just set `sig_started` on exit.
         tec::Signal::OnExit on_exit{sig_started};
-        // Emulate error:
-        // status = {"cannot start the server"};
         tec::println("Server started with {} ...", *status);
     }
 
     void shutdown(tec::Signal* sig_stopped) override {
+        // Does nothing, just set `sig_stopped` on exit.
         tec::Signal::OnExit on_exit{sig_stopped};
         tec::println("Server stopped.");
     }
 
-    // Request handler -- registered by tec::ActorWorker.
+    // Request handler. Increments input character by ServerParams::inc
     tec::Status process_request(tec::Request _request, tec::Reply _reply) override {
-        // Check type compatibility.
-        // NOTE: *Request* is const!
-        // NOTE: Both _request and _reply contain *pointers* to actual data.
+        // Check type match.
+        // NOTE: Both `_request` and `_reply` contain *pointers* to actual data.
+        // NOTE: `_request` content is const!
         if( _request.type() != typeid(const ChrRequest*) ||
             _reply.type() != typeid(ChrReply*) ) {
             return {tec::Error::Kind::Unsupported};
@@ -110,12 +102,12 @@ public:
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                    Test Server Worker
+*                       Server Worker
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+// Instantiate ServerWorker.
 using ServerWorker = tec::ActorWorker<ServerParams, Server>;
-
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
@@ -124,11 +116,11 @@ using ServerWorker = tec::ActorWorker<ServerParams, Server>;
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 tec::Status test_server() {
-    ServerParams params{1};
+    ServerParams params{1}; // Increment input
 
-    // A "traditional" way to build a server worker.
-    // auto server = std::make_unique<TestServer>(params);
-    // auto  = std::make_unique<TestWorker>(params, std::move(server));
+    // An alternative way to build a server worker as a daemon.
+    // auto server = std::make_unique<Server>(params);
+    // auto daemon  = std::make_unique<ServerWorker>(params, std::move(server));
 
     // Build a server worker as a daemon.
     auto svr{ServerWorker::Builder<ServerWorker, Server>{}(params)};
@@ -140,17 +132,18 @@ tec::Status test_server() {
         return status;
     }
 
-    std::cout << "\nPress <ESC> to shutdown the server" << std::endl;
+    // Read a character and send it to the server.
+    std::cout << "\nPress <ESC><Enter> to shutdown the server" << std::endl;
     for( int ch; (ch = std::getchar()) != EOF ; )
     {
-        if( ch == 27 ) { // 'ESC' (escape) in ASCII
+        if( ch == 27 ) { // 'ESC' in ASCII
             break;
         }
         if( ch == 10 ) { // newline
             continue;
         }
 
-        // Data.
+        // Input/output data.
         ChrRequest req{ch};
         ChrReply rep{0};
 
@@ -164,7 +157,7 @@ tec::Status test_server() {
         }
     }
 
-    // We want to get the server shutdown status.
+    // If we want to get the server shutdown status.
     return svr->terminate();
 }
 

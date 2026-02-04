@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-27 12:59:24 by magnolia>
+// Time-stamp: <Last changed 2026-02-05 02:43:42 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -25,10 +25,27 @@ SOFTWARE.
 
 /**
  * @file tec_socket_client.hpp
- * @brief Generic BSD socket client implemented as Actor.
- * @note For BSD, macOS, Linux. Windows version is not implemented yet.
+ * @brief Definition of the SocketClient class template.
+ *
+ * This file contains the implementation of the SocketClient class,
+ * which is a templated actor-based client for socket communications.
+ * It handles connection establishment, data transmission (especially
+ * string-based), and lifecycle management. The class uses a parameter
+ * template to allow customization while ensuring derivation from
+ * SocketClientParams via static assertion.
+ *
+ * The SocketClient supports raw character stream processing and is
+ * extensible for other data types (e.g., NetData in separate
+ * headers). It leverages system calls for socket operations and
+ * provides virtual hooks for customization, such as setting socket
+ * options or overriding send/receive behavior.
+ *
+ * @note This class is part of the TEC library
+ *       namespace and inherits from Actor for asynchronous or
+ *       threaded operation integration.
+ *
  * @author The Emacs Cat
- * @date 2025-11-10
+ * @date 2025-12-02
  */
 
 #pragma once
@@ -57,22 +74,72 @@ SOFTWARE.
 
 namespace tec {
 
+/**
+ * @class SocketClient
+ * @brief Templated client socket actor for establishing and managing connections.
+ *
+ * The SocketClient class provides a mechanism to connect to a server using socket APIs, send and receive
+ * data (primarily strings via SocketCharStreamIn/Out), and handle actor lifecycle events like start and
+ * shutdown. It uses a template parameter for configuration, ensuring type safety through static assertion.
+ *
+ * Key features:
+ * - Resolves server addresses using getaddrinfo.
+ * - Establishes connections with fallback on multiple address candidates.
+ * - Supports sending and receiving null-terminated strings.
+ * - Provides virtual methods for customization (e.g., socket options, send/receive logic).
+ * - Integrates with Actor for signal-based start/stop and request processing.
+ *
+ * @tparam TParams The parameter type, which must derive from SocketClientParams for configuration.
+ *
+ * @note This class uses CRTP-like parameterization for params, allowing derived params classes to customize
+ *       behavior without runtime polymorphism overhead.
+ *
+ * @see Actor
+ * @see SocketClientParams
+ * @see Socket
+ */
 template <typename TParams>
 class SocketClient: public Actor {
 private:
+    /// @brief Internal buffer used for send and receive operations.
+    /// This vector holds raw character data and is resized based on params_.buffer_size.
     std::vector<char> buffer_;
 
 public:
+    /// @brief Type alias for the template parameter TParams.
+    /// This allows easy reference to the params type within the class.
     using Params = TParams;
 
 protected:
+    /// @brief Instance of the parameters used for configuration.
+    /// This holds settings like address, port, family, socktype, protocol, and buffer_size.
     Params params_;
+
+    /// @brief Socket file descriptor for the established connection.
+    /// Initialized to EOF (-1) and set upon successful connection.
     int sockfd_;
 
+    /**
+     * @brief Returns a pointer to the internal buffer.
+     * @return char* Pointer to the buffer's data.
+     */
     constexpr char* get_buffer() { return buffer_.data(); }
+
+    /**
+     * @brief Returns the size of the internal buffer.
+     * @return size_t The buffer size as specified in params_.
+     */
     constexpr size_t get_buffer_size() { return params_.buffer_size; }
 
 public:
+    /**
+     * @brief Constructs a SocketClient with the given parameters.
+     *
+     * Initializes the actor base, copies the parameters, and sets the socket descriptor to EOF.
+     * Performs a static assertion to ensure TParams derives from SocketClientParams.
+     *
+     * @param params The configuration parameters for the client.
+     */
     explicit SocketClient(const Params& params)
         : Actor()
         , params_{params}
@@ -83,13 +150,26 @@ public:
             "Not derived from tec::SocketClientParams class");
     }
 
+    /**
+     * @brief Destructor that ensures the socket is terminated if still open.
+     *
+     * Calls terminate() if sockfd_ is not EOF to cleanly close the connection.
+     */
     virtual ~SocketClient() {
         if (sockfd_ != EOF) {
             terminate();
         }
     }
 
-
+    /**
+     * @brief Starts the client by resolving the address and establishing a connection.
+     *
+     * This override of Actor::start resolves the server address using getaddrinfo, attempts to create
+     * a socket and connect to each resolved address until successful. Allocates the buffer upon success.
+     *
+     * @param sig_started Signal to trigger on exit (success or failure).
+     * @param status Pointer to Status object to report errors.
+     */
     void start(Signal* sig_started, Status* status) override {
         TEC_ENTER("SocketClient::start");
         Signal::OnExit on_exit(sig_started);
@@ -156,7 +236,14 @@ public:
         TEC_TRACE("Buffer size is {} bytes.", get_buffer_size());
     }
 
-
+    /**
+     * @brief Shuts down the client connection.
+     *
+     * This override of Actor::shutdown calls ::shutdown to stop RD/WR operations and closes the socket.
+     * Resets sockfd_ to EOF.
+     *
+     * @param sig_stopped Signal to trigger on exit.
+     */
     void shutdown(Signal* sig_stopped) override {
         TEC_ENTER("SocketClient::shutdown");
         Signal::OnExit on_exit(sig_stopped);
@@ -165,7 +252,17 @@ public:
         sockfd_ = EOF;
     }
 
-
+    /**
+     * @brief Processes incoming requests, handling SocketCharStreamIn types.
+     *
+     * Checks the request type and delegates to send_recv_string for
+     * string streams. Returns NotImplemented for other types (e.g.,
+     * future NetData support).
+     *
+     * @param request The incoming request (std::any).
+     * @param reply Optional reply object (std::any).
+     * @return Status indicating success or error.
+     */
     Status process_request(Request request, Reply reply) override {
         TEC_ENTER("SocketClient::process_request");
         if( request.type() == typeid(const SocketCharStreamIn*) ) {
@@ -183,7 +280,17 @@ public:
         return {Error::Kind::NotImplemented};
     }
 
-
+    /**
+     * @brief Convenience method to send a string request and receive a response.
+     *
+     * Wraps the input/output strings in SocketCharStreamIn/Out and
+     * calls send_recv_string. Copies the response back to str_out if
+     * provided and successful.
+     *
+     * @param str_in Pointer to the input string to send.
+     * @param str_out Pointer to the output string to receive (optional).
+     * @return Status indicating success or error.
+     */
     Status request_str(const std::string* str_in, std::string* str_out) {
         TEC_ENTER("SocketClient::request_str");
         SocketCharStreamIn request{str_in};
@@ -197,11 +304,29 @@ public:
 
 protected:
 
+    /**
+     * @brief Virtual hook to set custom socket options after connection.
+     *
+     * This method is called after successful connection but before
+     * buffer allocation (in derived classes). Default implementation
+     * does nothing.
+     *
+     * @param sockfd The socket file descriptor.
+     * @return Status indicating success (empty) or error.
+     */
     virtual Status set_socket_options(int sockfd) {
         return {};
     }
 
-
+    /**
+     * @brief Sends a string over the socket.
+     *
+     * Converts the input string to Bytes (including null terminator)
+     * and uses Socket::send. Validates the request before sending.
+     *
+     * @param request Pointer to SocketCharStreamIn containing the string.
+     * @return Status indicating success or error (e.g., Invalid if request is null).
+     */
     virtual Status send_string(const SocketCharStreamIn* request) {
         TEC_ENTER("SocketClient::send_string");
         if (request && request->str) {
@@ -215,6 +340,16 @@ protected:
         return {EFAULT, Error::Kind::Invalid};
     }
 
+    /**
+     * @brief Receives a string from the socket.
+     *
+     * Uses Socket::recv to receive into Bytes, then copies to the
+     * reply string (assuming null-terminated). Skips if reply is null
+     * (notification mode).
+     *
+     * @param reply Pointer to SocketCharStreamOut to store the received string.
+     * @return Status indicating success or error (e.g., Invalid if reply->str is null).
+     */
     virtual Status recv_string(SocketCharStreamOut* reply) {
         TEC_ENTER("SocketClient::recv_string");
         if (reply == nullptr) {
@@ -234,6 +369,16 @@ protected:
         return status;
     }
 
+    /**
+     * @brief Sends a request and receives a reply in one operation.
+     *
+     * Calls send_string followed by recv_string. Terminates the
+     * connection if send fails.
+     *
+     * @param request Pointer to SocketCharStreamIn for sending.
+     * @param reply Pointer to SocketCharStreamOut for receiving (optional).
+     * @return Status indicating overall success or error.
+     */
     virtual Status send_recv_string(const SocketCharStreamIn* request, SocketCharStreamOut* reply) {
         TEC_ENTER("SocketClient::send_recv_string");
         auto status = send_string(request);
@@ -246,6 +391,6 @@ protected:
         return status;
     }
 
-};
+}; // class SocketClient
 
-}
+} // namespace tec

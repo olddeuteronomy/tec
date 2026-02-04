@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-10-30 11:23:41 by magnolia>
+// Time-stamp: <Last changed 2026-02-03 14:39:51 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,21 +24,23 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- *   @file client.cpp
- *   @brief A simplest gRPC client.
+ * @file client.cpp
+ * @brief A simplest gRPC client.
  *
- *  Creates the gRPC client and makes some RPC calls to the server.
+ *  Creates a gRPC client and makes some RPC calls to the server.
  *
-*/
+ */
 
 #include <cstdio>
 #include <csignal>
 #include <memory>
 #include <string>
 
+// gRPC
 #include <grpc/compression.h>
 #include <grpcpp/grpcpp.h>
 
+// Protobuf
 #include "helloworld.grpc.pb.h"
 #include "helloworld.pb.h"
 
@@ -64,8 +66,12 @@ using ClientTraits = tec::grpc_client_traits<
 // Instantiate a Client.
 using BaseClient = tec::GrpcClient<ClientParams, ClientTraits>;
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*
+*                        Client implementation
+*
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-// Client implementation.
 class Client final: public BaseClient {
 public:
     Client(const ClientParams& params,
@@ -77,7 +83,7 @@ public:
     tec::Status process_request(tec::Request _request, tec::Reply _reply) override {
         // Check type compatibility.
         // NOTE: *Request* is const!
-        // NOTE: Both _request and _reply contain *pointers* to actual data.
+        // NOTE: Both _request and _reply contain **pointers** to actual data.
 
         if( _request.type() == typeid(const TestHelloRequest*) &&
             _reply.type() == typeid(TestHelloReply*) ) {
@@ -118,7 +124,6 @@ private:
     }
 
 }; // class MyClient
-
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *

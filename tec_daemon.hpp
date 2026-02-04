@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-27 00:32:14 by magnolia>
+// Time-stamp: <Last changed 2026-02-04 17:09:29 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,8 +23,8 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 /**
- * @file Daemon.hpp
- * @brief Defines a daemon interface for background processes in the tec namespace.
+ * @file tec_daemon.hpp
+ * @brief Defines the minimal contract for any long-lived service or processing component
  * @author The Emacs Cat
  * @date 2025-09-17
  */
@@ -48,29 +48,9 @@ namespace tec {
  * terminating, sending messages, requests, and signaling state changes.
  * @note Daemons are **non-copyable** and **non-movable** to ensure unique ownership.
  *
- * @par Example: worker.hpp
- * Common header -- defines `TestWorker` parameters and messages.
- * @snippet snp_worker.cpp header
- *
- * @par Example: worker.cpp
- * `TestWorker` implementation. Exposes the `TestWorker` Worker as a **Daemon**.
- * @snippet snp_worker.cpp worker
- *
- * @par Example: run.cpp
- * Run the daemon.
- * @snippet snp_worker.cpp run
- *
  * @sa Worker
  */
 class Daemon {
-public:
-    struct Payload {
-        Signal* ready;
-        Status* status;
-        Request request;
-        Reply   reply;
-    };
-
 public:
     /**
      * @brief Default constructor.
@@ -85,11 +65,14 @@ public:
      */
     virtual ~Daemon() = default;
 
-    // Deleted to prevent accidental copying/moving.
+    /**
+     * @brief Daemons are non-copyable to ensure unique ownership.
+     */
     Daemon(const Daemon&) = delete;
-    Daemon& operator=(const Daemon&) = delete;
+    /**
+     * @brief Daemons are non-movable to ensure unique ownership.
+     */
     Daemon(Daemon&&) = delete;
-    Daemon& operator=(Daemon&&) = delete;
 
     /**
      * @brief Starts the daemon's operation.

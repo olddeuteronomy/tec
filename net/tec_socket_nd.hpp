@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-23 14:55:21 by magnolia>
+// Time-stamp: <Last changed 2026-02-04 16:55:08 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -24,7 +24,7 @@ SOFTWARE.
 ----------------------------------------------------------------------*/
 
 /**
- * @file tec_socket.hpp
+ * @file tec_socket_nd.hpp
  * @brief NetData BSD socket operations.
  * @note For BSD, macOS, Linux.
  * @author The Emacs Cat

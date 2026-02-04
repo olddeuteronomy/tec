@@ -1,25 +1,19 @@
-// Time-stamp: <Last changed 2026-01-14 15:17:57 by magnolia>
+// Time-stamp: <Last changed 2026-02-05 01:48:09 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+     http://www.apache.org/licenses/LICENSE-2.0
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 
@@ -208,7 +202,7 @@ struct SocketServerParams : public SocketParams  {
     int queue_size; ///< Maximum backlog for listen().
     int opt_reuse_addr; ///< Whether to set SO_REUSEADDR (0 = no, 1 = yes).
     int opt_reuse_port; ///< Whether to set SO_REUSEPORT (if available).
-    bool use_thread_pool; ///< Use a thread pool for handling accepted connections.
+    bool use_thread_pool; ///< Use the thread pool for handling accepted connections.
     size_t thread_pool_size; ///< Number of threads in the thread pool.
 
     /**
@@ -280,7 +274,7 @@ struct Socket {
     char addr[INET6_ADDRSTRLEN]; ///< Peer address as a null-terminated string (IPv4 or IPv6).
     int port; ///< Peer port number.
     char* buffer; ///< Buffer used in send/recv operations.
-    size_t buffer_size; /// Size of the buffer.
+    size_t buffer_size; ///< Size of the buffer.
 
     /**
      * @brief Construct a Socket wrapper from an accepted or connected fd.
@@ -330,7 +324,7 @@ struct Socket {
      * @param sock    Pointer to the Socket instance.
      * @param length  Expected number of bytes (0 = read until null terminator).
      *
-     * @return Status::OK on success, or an error status with details.
+     * @return Status::Kind::Ok on success, or an error status with details.
      */
     static Status recv(Bytes& data, const Socket* sock, size_t length) {
         TEC_ENTER("Socket::recv");
@@ -396,7 +390,7 @@ struct Socket {
      * @param data  MemFile (Bytes) containing data to send.
      * @param sock  Pointer to the Socket instance.
      *
-     * @return Status::OK on success, or an error status with details.
+     * @return Status::Kind::Ok on success, or an error status with details.
      */
     static Status send(const Bytes& data, const Socket* sock) {
         TEC_ENTER("Socket::send");

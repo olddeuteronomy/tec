@@ -7,7 +7,7 @@
 
 // Worker parameters.
 struct TestParams {
-    // Add
+    // Add custom parameters.
 };
 // A compound message.
 struct Position {
@@ -16,7 +16,7 @@ struct Position {
 };
 
 // Actual Worker implementation exposed as Daemon.
-std::unique_ptr<tec::Daemon> create_daemon(const TestParams&);
+std::unique_ptr<tec::Daemon> create_test_worker(const TestParams&);
 //! [header]
 
 
@@ -63,6 +63,7 @@ public:
         auto daemon{tec::Daemon::Builder<TestWorker>{}(params)};
         return daemon;
     }
+};
 //! [worker]
 
 
@@ -76,10 +77,10 @@ public:
 #include "tec/tec_daemon.hpp"
 #include "worker.hpp"
 
-tec::Status run() {
+tec::Status run_test_worker() {
     TestParams params{};
     // Create a daemon.
-    auto daemon = create_daemon(params);
+    auto daemon = create_test_worker(params);
 
     // Start the daemon thread and check for an initialization error.
     auto status = daemon->run();

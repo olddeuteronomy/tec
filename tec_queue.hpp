@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-02 14:35:48 by magnolia>
+// Time-stamp: <Last changed 2026-02-04 16:51:47 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,8 +23,12 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 /**
- * @file SafeQueue.hpp
- * @brief Defines a thread-safe queue implementation for generic types.
+ * @file tec_queue.hpp
+ * @brief Thread-safe queue implementation.
+ *
+ * This file defines a thread-safe queue class using standard library
+ * synchronization primitives for use in multi-threaded environments.
+ *
  * @note Inspired by https://stackoverflow.com/questions/15278343/c11-thread-safe-queue.
  * @author The Emacs Cat
  * @date 2025-09-17

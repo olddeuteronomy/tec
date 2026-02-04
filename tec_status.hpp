@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-10 23:15:46 by magnolia>
+// Time-stamp: <Last changed 2026-02-03 00:12:52 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -114,9 +114,9 @@ inline constexpr const char* kind_as_string(Error::Kind k) {
  */
 template <typename TCode, typename TDesc>
 struct TStatus {
-    Error::Kind kind;          //!< The error category.
-    std::optional<TCode> code; //!< Optional error code.
-    std::optional<TDesc> desc; //!< Optional error description.
+    Error::Kind kind;          ///< The error category.
+    std::optional<TCode> code; ///< Optional error code.
+    std::optional<TDesc> desc; ///< Optional error description.
 
     /**
      * @brief Checks if the status indicates success.

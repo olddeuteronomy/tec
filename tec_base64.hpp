@@ -1,36 +1,30 @@
-// Time-stamp: <Last changed 2026-01-04 15:27:12 by magnolia>
+// Time-stamp: <Last changed 2026-02-05 00:54:47 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+     http://www.apache.org/licenses/LICENSE-2.0
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-#pragma once
 
 /**
  * @file tec_base64.hpp
- * @brief A modern, header-only Base64 encoder/decoder (C++17+).
+ * @brief A header-only Base64 encoder/decoder (C++17+).
  * @author The Emacs Cat
- * @note Inspired by Grok.
  * @date 2026-01-04
  */
+
+#pragma once
 
 #include <string>
 #include <string_view>
@@ -43,9 +37,8 @@ SOFTWARE.
 
 namespace tec {
 
-namespace base64 {
 
-constexpr char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static constexpr char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 
 inline std::string to_base64(std::string_view data) {
@@ -145,7 +138,5 @@ inline std::string from_base64(std::string_view encoded) {
 
     return result;
 }
-
-}  // namespace base64
 
 } // namespace tec

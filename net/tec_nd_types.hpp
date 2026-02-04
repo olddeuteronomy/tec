@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-07 01:42:12 by magnolia>
+// Time-stamp: <Last changed 2026-02-04 17:02:45 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,6 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
+/**
+ * @file net/tec_nd_types.hpp
+ * @brief Core type definitions and metadata for a lightweight binary serialization format
+ *
+ * dThis file defines tags, sizes, and helper functions used to describe
+ * serialized data elements in a compact, platform-independent way.
+ *
+ * @author The Emacs Cat
+ * @date 2025-09-17
+ */
+
 
 #pragma once
 

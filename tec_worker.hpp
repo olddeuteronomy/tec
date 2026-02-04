@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-27 00:35:31 by magnolia>
+// Time-stamp: <Last changed 2026-02-04 17:16:31 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -23,7 +23,7 @@ SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 /**
- * @file Worker.hpp
+ * @file tec_worker.hpp
  * @brief Defines a worker class for processing messages in the tec namespace.
  * @author The Emacs Cat
  * @date 2025-09-17
@@ -60,6 +60,17 @@ namespace tec {
  * @tparam TParams The type of parameters used to configure the worker.
  * @note Workers are **non-copyable** and **non-movable** to ensure unique ownership.
  * @see Daemon
+ * @par Example: worker.hpp
+ * Common header -- defines `TestWorker` parameters and messages.
+ * @snippet snp_worker.cpp header
+ *
+ * @par Example: worker.cpp
+ * `TestWorker` implementation. Exposes the `TestWorker` Worker as a **Daemon**.
+ * @snippet snp_worker.cpp worker
+ *
+ * @par Example: run.cpp
+ * Run the daemon.
+ * @snippet snp_worker.cpp run
  */
 template <typename TParams>
 class Worker : public Daemon {
@@ -192,9 +203,8 @@ public:
     /**
      * @brief Sends a request and **waits** for a reply in a daemon thread.
      *
-     * This method sends a request of type Request to the daemon and **waits** for a corresponding reply of type Reply.
+     * This method sends an RPC-style request of type Payload to the daemon and **waits** for a corresponding reply of type Reply.
      * It uses a signal to synchronize the operation and returns the status of the request processing.
-     * If the request cannot be sent, a runtime error status is returned.
      *
      * @param req The request object to be sent.
      * @param rep The reply object where the response will be stored.

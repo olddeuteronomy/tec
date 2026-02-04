@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2025-12-07 12:21:50 by magnolia>
+// Time-stamp: <Last changed 2026-02-04 15:21:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -140,8 +140,10 @@ struct Serializable {
 
 
 struct NdRoot: public Serializable {
+private:
     uint16_t id_;
 
+public:
     explicit NdRoot(uint16_t _id)
         : id_{_id}
     {}
