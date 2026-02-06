@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-05 00:54:47 by magnolia>
+// Time-stamp: <Last changed 2026-02-06 14:11:14 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -38,7 +38,7 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 namespace tec {
 
 
-static constexpr char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static constexpr char b64_alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 
 inline std::string to_base64(std::string_view data) {
@@ -47,7 +47,6 @@ inline std::string to_base64(std::string_view data) {
     std::size_t remainder = data.size() % 3;
 
     result.reserve((data.size() + 2) / 3 * 4);  // Pre-allocate exact size
-
     const uint8_t* in = reinterpret_cast<const uint8_t*>(data.data());
 
     // Process full 3-byte groups
@@ -56,15 +55,15 @@ inline std::string to_base64(std::string_view data) {
 
 #if __cplusplus >= 202002L
         // Use std::bit_cast for modern compilers (faster and clearer)
-        result += alphabet[std::bit_cast<uint8_t>((triplet >> 18) & 0x3F)];
-        result += alphabet[std::bit_cast<uint8_t>((triplet >> 12) & 0x3F)];
-        result += alphabet[std::bit_cast<uint8_t>((triplet >> 6)  & 0x3F)];
-        result += alphabet[std::bit_cast<uint8_t>(triplet & 0x3F)];
+        result += b64_alphabet[std::bit_cast<uint8_t>((triplet >> 18) & 0x3F)];
+        result += b64_alphabet[std::bit_cast<uint8_t>((triplet >> 12) & 0x3F)];
+        result += b64_alphabet[std::bit_cast<uint8_t>((triplet >> 6)  & 0x3F)];
+        result += b64_alphabet[std::bit_cast<uint8_t>(triplet & 0x3F)];
 #else
-        result += alphabet[(triplet >> 18) & 0x3F];
-        result += alphabet[(triplet >> 12) & 0x3F];
-        result += alphabet[(triplet >> 6)  & 0x3F];
-        result += alphabet[triplet & 0x3F];
+        result += b64_alphabet[(triplet >> 18) & 0x3F];
+        result += b64_alphabet[(triplet >> 12) & 0x3F];
+        result += b64_alphabet[(triplet >> 6)  & 0x3F];
+        result += b64_alphabet[triplet & 0x3F];
 #endif
         in += 3;
     }
@@ -72,14 +71,14 @@ inline std::string to_base64(std::string_view data) {
     // Handle remainder
     if (remainder == 1) {
         uint32_t triplet = in[0] << 16;
-        result += alphabet[(triplet >> 18) & 0x3F];
-        result += alphabet[(triplet >> 12) & 0x3F];
+        result += b64_alphabet[(triplet >> 18) & 0x3F];
+        result += b64_alphabet[(triplet >> 12) & 0x3F];
         result += "==";
     } else if (remainder == 2) {
         uint32_t triplet = (in[0] << 16) | (in[1] << 8);
-        result += alphabet[(triplet >> 18) & 0x3F];
-        result += alphabet[(triplet >> 12) & 0x3F];
-        result += alphabet[(triplet >> 6)  & 0x3F];
+        result += b64_alphabet[(triplet >> 18) & 0x3F];
+        result += b64_alphabet[(triplet >> 12) & 0x3F];
+        result += b64_alphabet[(triplet >> 6)  & 0x3F];
         result += '=';
     }
 

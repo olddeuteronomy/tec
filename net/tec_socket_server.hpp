@@ -1,30 +1,24 @@
-// Time-stamp: <Last changed 2026-01-29 12:07:25 by magnolia>
+// Time-stamp: <Last changed 2026-02-06 16:18:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+     http://www.apache.org/licenses/LICENSE-2.0
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 /**
  * @file tec_socket_server.hpp
- * @brief Generic TCP server template using actor pattern with configurable parameters.
+ * @brief Generic BSD socket server template using actor pattern with configurable parameters.
  * @note For BSD, macOS, Linux. Windows version is not tested yet.
  * @author The Emacs Cat
  * @date 2025-11-10
@@ -67,12 +61,10 @@ SOFTWARE.
 namespace tec {
 
 /**
- * @brief Generic TCP server template using actor pattern with configurable parameters.
+ * @brief Generic BSD socket server template using actor pattern with configurable parameters.
  *
  * Supports both single-threaded (synchronous) and multi-threaded (thread-pool) modes.
- * Can operate in two main modes:
- *   - kModeCharStream  → line/text oriented (default echo server behavior)
- *   - kModeNetData     → binary protocol oriented
+ * Implements the *kModeCharStream* mode -- text oriented (default echo server behavior).
  *
  * Main responsibilities:
  *   - address resolution & binding
@@ -82,6 +74,9 @@ namespace tec {
  *   - graceful shutdown with proper socket closure
  *
  * @tparam TParams Must derive from `SocketServerParams`
+ *
+ * @par Example
+ * @snippet snp_socket.cpp socketserver
  */
 template <typename TParams>
 class SocketServer : public Actor {
@@ -433,7 +428,7 @@ protected:
             TEC_TRACE("Pool IDX={}", idx);
             sock.buffer = pool_->get_buffer(idx);
             sock.buffer_size = pool_->get_buffer_size();
-            // Async processing -- enqueue client handling task to thread pool.
+            // Async processing -- enqueue a client handling task to the thread pool.
             Task<Params> task{this, sock};
             pool_->enqueue([task] {
                 details::socket_proc(task);
