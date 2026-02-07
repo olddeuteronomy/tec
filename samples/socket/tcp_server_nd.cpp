@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-04 15:58:40 by magnolia>
+// Time-stamp: <Last changed 2026-02-07 15:17:09 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -21,7 +21,6 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
 #include "tec/tec_print.hpp"
-#include "tec/tec_status.hpp"
 #include "tec/tec_trace.hpp"
 #include "tec/tec_actor_worker.hpp"
 #include "tec/net/tec_net_data.hpp"
@@ -42,13 +41,13 @@ using TCPServer = tec::SocketServerNd<TCPParams>;
 
 using DataInOut = TCPServer::DataInOut;
 
-class MyServer: public TCPServer {
+class Server final: public TCPServer {
 public:
-    MyServer(const TCPParams& params)
+    Server(const TCPParams& params)
         : TCPServer(params)
     {
         // Register NetData handler for RPC call with ID=1.
-        register_handler(this, 1, &MyServer::on_persons);
+        register_handler(this, 1, &Server::on_persons);
     }
 
 
@@ -75,8 +74,8 @@ public:
 
 };
 
-using TCPServerWorker = tec::ActorWorker<TCPParams, MyServer>;
-
+// Instantiate an ActorWorker.
+using TCPServerWorker = tec::ActorWorker<TCPParams, Server>;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
@@ -84,9 +83,7 @@ using TCPServerWorker = tec::ActorWorker<TCPParams, MyServer>;
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-
 tec::Signal sig_quit;
-
 
 tec::Status tcp_server() {
     tec::SocketServerParams params;
@@ -96,7 +93,7 @@ tec::Status tcp_server() {
     params.mode = tec::SocketServerParams::kModeNetData;
     params.compression = tec::CompressionParams::kCompressionZlib;
     params.use_thread_pool = true;
-    auto srv{TCPServerWorker::Builder<TCPServerWorker, MyServer>{}(params)};
+    auto srv{TCPServerWorker::Builder<TCPServerWorker, Server>{}(params)};
     //
     // Run it and check for the result.
     //

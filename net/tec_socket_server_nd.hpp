@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-23 15:22:26 by magnolia>
+// Time-stamp: <Last changed 2026-02-07 14:55:29 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -326,7 +326,7 @@ protected:
         }
         else if (status.code == EBADMSG) {
             //
-            // Not a NetData header -- try with raw char stream processing.
+            // Not a valid NetData --- fallback to raw string handling.
             //
             SocketServer<Params>::on_string(s);
             return;
@@ -346,7 +346,7 @@ protected:
      *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     /**
-     * @brief Default handler (ID=0) — echoes the received message back
+     * @brief Default handler (ID=0) --- echoes the received message back
      * @param dio Context containing input/output NetData and status
      */
     virtual void echo(DataInOut dio)
