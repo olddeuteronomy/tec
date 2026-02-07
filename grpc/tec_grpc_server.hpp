@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-01-28 16:44:51 by magnolia>
+// Time-stamp: <Last changed 2026-02-08 00:24:33 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -39,6 +39,7 @@ SOFTWARE.
 #pragma once
 
 #include "tec/tec_def.hpp" // IWYU pragma: keep
+#include "tec/tec_signal.hpp"
 #include "tec/tec_utils.hpp" // IWYU pragma: keep
 #include "tec/tec_trace.hpp"
 #include "tec/tec_actor.hpp" // IWYU pragma: keep
@@ -267,9 +268,9 @@ public:
             auto errmsg = format("gRPC Server cannot start on \"{}\"", params_.addr_uri);
             TEC_TRACE("!!! Error: {}.", errmsg);
             *status = {errmsg, Error::Kind::NetErr};
+            sig_started->set();
             return;
         }
-
         TEC_TRACE("server listening on \"{}\".", params_.addr_uri);
 
         // Notify caller that server is up
