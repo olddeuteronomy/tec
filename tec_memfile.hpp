@@ -1,25 +1,19 @@
-// Time-stamp: <Last changed 2026-01-10 13:24:58 by magnolia>
+// Time-stamp: <Last changed 2026-02-12 01:52:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+     http://www.apache.org/licenses/LICENSE-2.0
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 /**
@@ -28,7 +22,6 @@ SOFTWARE.
  * @author The Emacs Cat
  * @date 2025-12-17
  */
-
 
 #pragma once
 
@@ -93,16 +86,12 @@ public:
      *
      * @see as_hex()
      */
-    inline static constexpr _Char2 to_hex_chars(int c) noexcept {
+    inline static constexpr _Char2 to_hex_chars(unsigned char ch) noexcept {
         constexpr char table[] = "0123456789ABCDEF";
-        c &= 0xFF;
-        if (0x20 < c && c < 0x7F) {
-            // ASCII characters, except SPC.
-            return {' ', char(c)};
-        }
-        else {
-            // Non-printable.
-            return { table[(c >> 4)], table[c & 0x0F] };
+        if (0x20 < ch && ch < 0x7F) {
+            return {' ', static_cast<char>(ch)};
+        } else {
+            return {table[ch >> 4], table[ch & 0x0F]};
         }
     }
 
@@ -151,14 +140,31 @@ public:
         buffer_.resize(0);
     }
 
+    /**
+     * @brief Constructs a MemFile with a specified block size for preallocation.
+     *
+     * Initializes the internal buffer with the given block size as capacity,
+     * but sets the initial size to 0. This allows for efficient appending
+     * without frequent reallocations.
+     *
+     * @param block_size The initial capacity and block size for allocation.
+     */
     explicit MemFile(size_t block_size)
         : buffer_(block_size, 0)
         , blk_size_{block_size}
         , pos_{0}
     {
         buffer_.resize(0);
-}
+    }
 
+    /**
+     * @brief Constructs a MemFile from a std::string.
+     *
+     * Uses a default block size for allocation and writes the contents
+     * of the provided string into the buffer.
+     *
+     * @param s The string to initialize the buffer with.
+     */
     explicit MemFile(const std::string& s)
         : buffer_(kDefaultBlockSize, 0)
         , blk_size_{kDefaultBlockSize}
@@ -168,6 +174,15 @@ public:
         write(s.data(), s.size());
     }
 
+    /**
+     * @brief Constructs a MemFile from a raw memory buffer.
+     *
+     * Uses a default block size for allocation and writes the specified
+     * length of data from the source pointer into the buffer.
+     *
+     * @param src Pointer to the source data.
+     * @param len Length of the data to copy.
+     */
     MemFile(const void* src, size_t len)
         : buffer_(kDefaultBlockSize, 0)
         , blk_size_{kDefaultBlockSize}
@@ -180,11 +195,29 @@ public:
     virtual ~MemFile() = default;
 
 
+    /**
+     * @brief Copies data from another MemFile instance.
+     *
+     * Rewinds the current position and writes the entire contents
+     * of the source MemFile into this one.
+     *
+     * @param src The source MemFile to copy from.
+     */
     void copy_from(const MemFile& src) {
         rewind();
         write(src.data(), src.size());
     }
 
+    /**
+     * @brief Moves data from another MemFile instance.
+     *
+     * Transfers ownership of the buffer and state from the source,
+     * optionally shrinking the buffer to a specified size if smaller
+     * than the current size.
+     *
+     * @param src The rvalue reference to the source MemFile.
+     * @param size_to_shrink Optional size to resize the buffer to (default 0, no shrink).
+     */
     void move_from(MemFile&& src, size_t size_to_shrink=0) {
         blk_size_ = src.blk_size_;
         pos_ = src.pos_;
@@ -194,22 +227,61 @@ public:
         }
     }
 
+    /**
+     * @brief Returns a const reference to the internal string buffer.
+     *
+     * @return Const reference to the buffer.
+     */
     const std::string& str() const noexcept {
         return buffer_;
     }
 
+    /**
+     * @brief Returns a const pointer to the buffer's data.
+     *
+     * Assumes the buffer is non-empty; uses at(0) to access, which may throw
+     * if empty. This avoids certain compiler warnings related to empty strings.
+     *
+     * @return Const pointer to the data.
+     */
     const void* data() const {
         // To prevent silly GCC warning?
         return &buffer_.at(0);
     }
+
+    /**
+     * @brief Returns a mutable pointer to the buffer's data.
+     *
+     * Assumes the buffer is non-empty; uses at(0) to access, which may throw
+     * if empty. This avoids certain compiler warnings related to empty strings.
+     *
+     * @return Mutable pointer to the data.
+     */
     void* data() {
         // To prevent silly GCC warning?
         return &buffer_.at(0);
     }
 
+    /**
+     * @brief Returns a const pointer to a specific position in the buffer.
+     *
+     * No bounds checking is performed; caller must ensure pos is valid.
+     *
+     * @param pos The position offset.
+     * @return Const pointer to the position.
+     */
     const char* ptr(long pos) const {
         return buffer_.data() + pos;
     }
+
+    /**
+     * @brief Returns a mutable pointer to a specific position in the buffer.
+     *
+     * No bounds checking is performed; caller must ensure pos is valid.
+     *
+     * @param pos The position offset.
+     * @return Mutable pointer to the position.
+     */
     char* ptr(long pos) {
         return buffer_.data() + pos;
     }
@@ -384,7 +456,7 @@ public:
     std::string as_hex() const {
         std::ostringstream os;
         if (size() > 0) {
-            for (auto c: buffer_) {
+            for (unsigned char c: buffer_) {
                 auto ch = to_hex_chars(c);
                 os << ch.c0 << ch.c1;
 

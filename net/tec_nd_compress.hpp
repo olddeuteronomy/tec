@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-04 16:43:18 by magnolia>
+// Time-stamp: <Last changed 2026-02-11 16:47:05 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -167,7 +167,7 @@ public:
         }
 #endif
         // No compression required.
-        TEC_TRACE("OFF");
+        TEC_TRACE("OFF.");
         nd.header.set_compression(CompressionParams::kNoCompression);
         return {};
     }
@@ -200,9 +200,12 @@ public:
      * @endcode
      */
     virtual Status uncompress(NetData& nd) const {
+        TEC_ENTER("NdCompress::uncompress");
         int compression = nd.header.get_compression();
+        nd.rewind();
         if (compression == CompressionParams::kNoCompression) {
             // Nothing to do.
+            TEC_TRACE("OFF.");
             return {};
         }
 #if defined (ZLIB_VERSION)

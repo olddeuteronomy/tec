@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2026-01-10 12:50:55 by magnolia>
+# Time-stamp: <Last changed 2026-02-10 14:08:07 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -12,6 +12,9 @@
 #
 # To build a release (-O2, no debug info)
 #    make -k -B -j4 REL=1
+#
+# To build a release with Zlib (-O2, no debug info)
+#    make -k -B -j4 REL=1 ZLIB=1
 #
 ###############################################################################
 

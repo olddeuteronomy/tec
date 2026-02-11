@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-04 17:09:29 by magnolia>
+// Time-stamp: <Last changed 2026-02-08 14:26:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -127,7 +127,6 @@ public:
      *
      * This method sends a request of type Request to the daemon and **waits** for a corresponding reply of type TReply.
      * It uses a signal to synchronize the operation and returns the status of the request processing.
-     * If the request cannot be sent, a runtime error status is returned.
      *
      * @param req The request object to be sent.
      * @param rep The reply object where the response will be stored.

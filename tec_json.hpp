@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-05 00:48:35 by magnolia>
+// Time-stamp: <Last changed 2026-02-11 16:32:24 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -78,7 +78,7 @@ struct Json {
      * @param name Optional field name (null-terminated string)
      */
     inline static void print_name(std::ostringstream& os, const char* name) {
-        if(name) {
+        if (name) {
             os << "\"" << name << "\"" << infix;
         }
     }
@@ -98,7 +98,7 @@ struct Json {
     }
 
     /**
-     * @brief Serialize a Blob object as a hex-encoded JSON string.
+     * @brief Serialize a Blob object as a base64-encoded JSON string.
      *
      * @param val  The byte container
      * @param name Optional JSON key name
@@ -107,8 +107,7 @@ struct Json {
     static std::string json(const Blob& val, const char* name = nullptr) {
         std::ostringstream os;
         print_name(os, name);
-        os << "\"" << base64::to_base64(val.str()) << "\"";
-        // os <<  "\"" << val.as_hex() << "\"";
+        os << "\"" << base64::encode(val.str()) << "\"";
         return os.str();
     }
 
@@ -119,7 +118,7 @@ struct Json {
      * @param name Optional JSON key name
      * @return JSON boolean literal
      */
-    static std::string json_bool(long val, const char* name = nullptr) {
+    static std::string json_bool(const bool& val, const char* name = nullptr) {
         constexpr static char t[]{"true"};
         constexpr static char f[]{"false"};
         std::ostringstream os;
@@ -179,7 +178,7 @@ struct Json {
         print_name(os, name);
         bool first{true};
         os << "{";
-        for( const auto& [k, v]: m) {
+        for (const auto& [k, v]: m) {
             if(first) {
                 os << k << infix << v;
                 first = false;
@@ -251,8 +250,8 @@ struct Json {
         }
         else if constexpr (std::is_same_v<T, bool>) {
             // To prevent a silly valgrind 3.22 warning "Use of unititialized memory".
-            long v = val & 0xF;
-            return json_bool(v, name);
+            // long v = val & 0xF;
+            return json_bool(val, name);
         }
         else {
             // Any scalar
