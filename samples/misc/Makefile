@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2026-01-27 14:03:04 by magnolia>
+# Time-stamp: <Last changed 2026-02-14 16:30:22 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -53,7 +53,7 @@ else
 endif
 
 # Compilation parameters
-CPPFLAGS := -std=c++17 -Wall -pthread
+CPPFLAGS := -Wall -std=c++17 -Wall -pthread
 ifdef MINGW
 	MINGWFLAGS := -static-libgcc -static-libstdc++ -static
 endif

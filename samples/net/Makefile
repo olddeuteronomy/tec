@@ -1,5 +1,5 @@
 ###############################################################################
-# Time-stamp: <Last changed 2026-02-10 14:08:07 by magnolia>
+# Time-stamp: <Last changed 2026-02-14 16:28:44 by magnolia>
 #
 # To force rebuild with `g++' (default):
 #    make -k -B -j4
@@ -36,7 +36,7 @@ ifdef CLANG
 	TARGET_SUFFIX = _clang$(EXE_SUFFIX)
 else
 ifdef MINGW
-# mingw++ compiler is optional
+# mingw++ build is experimental
 	CXX = x86_64-w64-mingw32-g++
 	TARGET_SUFFIX = _win$(EXE_SUFFIX)
 else
@@ -56,7 +56,7 @@ else
 endif
 
 # Compilation parameters
-CPPFLAGS := -std=c++17 -Wall -pthread
+CPPFLAGS := -Wall -std=c++17 -Wall -pthread
 ifdef REL
 	CPPFLAGS += -O2
 else

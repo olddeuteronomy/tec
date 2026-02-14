@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-06 14:13:16 by magnolia>
+// Time-stamp: <Last changed 2026-02-14 13:05:15 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -99,29 +99,23 @@ inline std::ostream& operator<<(std::ostream& os, const uuid_t& uuid) {
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /**
- * @brief Convert GUID to hex string (in lowercase, by default).
+ * @brief Convert GUID to hex string (in lowercase).
  */
-inline std::string to_string(const uuid_t& uuid, bool uppercase = false)
+inline std::string to_string(const uuid_t& uuid)
 {
     std::ostringstream os;
     os << uuid;
     std::string result = os.str();
-    // If we need uppercase.
-    if (uppercase) {
-        for (char& c : result) {
-            if (c >= 'a' && c <= 'f') c -= 32;
-        }
-    }
     return result;
 }
 
 /**
- * @brief Generate new GUID as hex string (in lowercase, by default).
+ * @brief Generate new GUID as hex string (in lowercase).
  * @snippet snp_guid.cpp guid
  */
-inline std::string generate(bool uppercase = false)
+inline std::string generate()
 {
-    return to_string(generate_v4(), uppercase);
+    return to_string(generate_v4());
 }
 
 

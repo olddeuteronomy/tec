@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-11 15:23:51 by magnolia>
+// Time-stamp: <Last changed 2026-02-14 13:07:51 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -96,8 +96,9 @@ inline bool is_valid(std::string_view data) {
  */
 inline std::string encode(std::string_view data) {
     std::string out;
+    int val = 0;
+    int valb = -6;
     out.reserve(((data.size() + 2) / 3) * 4);
-    int val = 0, valb = -6;
     for (unsigned char c : data) {
         val = (val << 8) + c;
         valb += 8;
@@ -106,15 +107,16 @@ inline std::string encode(std::string_view data) {
             valb -= 6;
         }
     }
-    if (valb > -6) out.push_back(chars[((val << 8) >> (valb + 8)) & 0x3F]);
-    while (out.size() % 4) out.push_back('=');
+    if (valb > -6)
+        out.push_back(chars[((val << 8) >> (valb + 8)) & 0x3F]);
+    while (out.size() % 4)
+        out.push_back('=');
     return out;
 }
 
 
 /**
  * Decodes a Base64 string into a vector of bytes.
- * Ignores non-alphabet characters (like newlines) if is_valid is not used.
  */
 inline std::vector<uint8_t> decode(std::string_view data) {
     std::vector<uint8_t> out;

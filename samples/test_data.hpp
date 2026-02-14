@@ -1,3 +1,4 @@
+// Time-stamp: <Last changed 2026-02-14 14:46:27 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -21,7 +22,6 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 #include <list>
 #include <unordered_map>
 
-#include "tec/tec_memfile.hpp"
 #include "tec/tec_serialize.hpp"
 #include "tec/tec_json.hpp"
 #include "tec/net/tec_net_data.hpp"
@@ -54,6 +54,7 @@ struct Person: tec::Serializable {
         , surname{_surname}
     {}
 
+    // Data section.
     short age;
     std::string name;
     std::string surname;
@@ -93,15 +94,14 @@ struct Person: tec::Serializable {
 };
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
 *          TestData (covers almost all serializable types)
-*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 struct TestData: tec::NdRoot {
     using json = tec::Json;
     static constexpr auto sep{tec::Json::sep};
 
+    // Data section.
     std::list<int> list;
     short i16;
     int i32;
@@ -210,13 +210,8 @@ struct TestData: tec::NdRoot {
     }
 };
 
-
-
-
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*
 *                         GetPersons RPC structs
-*
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 //
@@ -226,6 +221,7 @@ struct GetPersonsIn: public tec::NdRoot {
     using json = tec::Json;
     static constexpr auto sep{tec::Json::sep};
 
+    // Input data.
     int max_count;
 
     GetPersonsIn()
@@ -262,10 +258,11 @@ struct GetPersonsOut: public tec::NdRoot {
     using json = tec::Json;
     static constexpr auto sep{tec::Json::sep};
 
+    // Output data.
     std::list<Person> persons;
 
     GetPersonsOut()
-        : tec::NdRoot(1) // Reply ID=1 (Reply ID MUST BE EQUAL Request ID).
+        : tec::NdRoot(1) // Reply ID=1 (Reply ID MUST BE EQUAL TO Request ID).
     {}
 
      tec::NetData& store(tec::NetData& nd) const override {

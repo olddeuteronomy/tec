@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-07 14:30:05 by magnolia>
+// Time-stamp: <Last changed 2026-02-14 16:01:21 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -36,7 +36,7 @@ using TCPParams = tec::SocketClientParams;
 using TCPClient = tec::SocketClient<TCPParams>;
 using TCPClientWorker = tec::ActorWorker<TCPParams, TCPClient>;
 
-// #define USE_DAEMON 1
+#define USE_DAEMON 1
 
 tec::Status tcp_client() {
     // By default, it can connect to either IPv4 or IPv6 tec::SocketServer.
@@ -49,10 +49,10 @@ tec::Status tcp_client() {
     //     params.family = AF_INET4;
 
 #ifdef USE_DAEMON
-    // Use Daemon interface.
+    // Use the synchronous Daemon interface.
     auto cli{TCPClientWorker::Builder<TCPClientWorker, TCPClient>{}(params)};
 #else
-    // A pure client.
+    // An async client.
     auto cli{std::make_unique<TCPClient>(params)};
 #endif
 
@@ -71,12 +71,12 @@ tec::Status tcp_client() {
     // Send an RPC request.
 
 #ifdef USE_DAEMON
-    // Use Daemon interface to send an RPC request.
+    // Use the Daemon interface to send an RPC request.
     tec::SocketCharStreamIn req{&str_send};
     tec::SocketCharStreamOut rep{&str_recv};
     status = cli->request(&req, &rep);
 #else
-    // Use direct call.
+    // Use async call.
     status = cli->request_str(&str_send, &str_recv);
 #endif
 

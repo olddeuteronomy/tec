@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-07 15:17:09 by magnolia>
+// Time-stamp: <Last changed 2026-02-14 16:13:52 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -27,7 +27,7 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 #include "tec/net/tec_compression.hpp"
 #include "tec/net/tec_socket_server_nd.hpp"
 
-#include "tec/samples/socket/test_data.hpp"
+#include "../test_data.hpp"
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,12 +56,12 @@ public:
         //
         // Get request. (Not used in this sample.)
         //
-        GetPersonsIn request;
+        test::GetPersonsIn request;
         *dio.nd_in >> request;
         //
         // Generate a reply...
         //
-        GetPersonsOut reply;
+        test::GetPersonsOut reply;
         reply.persons.push_back({67, "John", "Dow"});
         reply.persons.push_back({52, "Boris", "Applegate"});
         reply.persons.push_back({29, "Lucy", "Skywalker"});

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-07 16:26:07 by magnolia>
+// Time-stamp: <Last changed 2026-02-14 16:00:28 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -27,7 +27,7 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 #include "tec/net/tec_net_data.hpp"
 #include "tec/net/tec_socket_client_nd.hpp"
 
-#include "test_data.hpp"
+#include "../test_data.hpp"
 
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -77,14 +77,14 @@ tec::Status tcp_client() {
     //     params.family = AF_INET4;
 
     // Data to process.
-    GetPersonsIn persons_in;
-    GetPersonsOut persons_out;
+    test::GetPersonsIn persons_in;
+    test::GetPersonsOut persons_out;
 
 #ifdef USE_DAEMON
-    // Use Daemon interface.
+    // Use the synchronous Daemon interface.
     auto cli{TCPClientWorker::Builder<TCPClientWorker, TCPClient>{}(params)};
 #else
-    // A pure client.
+    // An async client.
     auto cli{std::make_unique<TCPClient>(params)};
 #endif
 
@@ -110,7 +110,7 @@ tec::Status tcp_client() {
     tec::NetData::StreamOut rep{&nd_out};
     status = cli->request(&req, &rep);
 #else
-    // Use direct call.
+    // Use async call.
     status = cli->request_nd(&nd_in, &nd_out);
 #endif
 
