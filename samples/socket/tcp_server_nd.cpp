@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-14 16:13:52 by magnolia>
+// Time-stamp: <Last changed 2026-02-17 01:48:45 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -46,13 +46,12 @@ public:
     Server(const TCPParams& params)
         : TCPServer(params)
     {
-        // Register NetData handler for RPC call with ID=1.
-        register_handler(this, 1, &Server::on_persons);
+        // Register NetData RPC GetPersons handler. See ../test_data.hpp.
+        register_handler(this, test::RPCID::GetPersons, &Server::on_persons);
     }
 
-
     virtual void on_persons(DataInOut dio) {
-        TEC_ENTER("MyServer::on_persons");
+        TEC_ENTER("Server::on_persons");
         //
         // Get request. (Not used in this sample.)
         //

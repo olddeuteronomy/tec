@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-14 16:00:28 by magnolia>
+// Time-stamp: <Last changed 2026-02-17 01:51:12 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -32,7 +32,7 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                     Test BSD socket client
+*                    Test BSD socket NetData client
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
@@ -56,8 +56,6 @@ void print(const T& p, tec::NetData& nd) {
         << "\n"
         ;
 
-    // If compiled with `g++ -O2` v.13.3, valgrind v.3.22 may report
-    // "Use of uninitialised value of size 8" false positive warning.
     nd.rewind();
     std::cout << tec::dump::as_table(nd.bytes().as_hex()) << "\n";
 }

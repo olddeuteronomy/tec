@@ -1,25 +1,19 @@
-// Time-stamp: <Last changed 2026-02-16 14:20:46 by magnolia>
+// Time-stamp: <Last changed 2026-02-16 23:48:49 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
-Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
+Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+     http://www.apache.org/licenses/LICENSE-2.0
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
 /**
@@ -32,7 +26,6 @@ SOFTWARE.
 #pragma once
 
 #include <cstdint>
-#include <ostream>
 #include <string>
 #include <type_traits>
 
@@ -41,11 +34,18 @@ SOFTWARE.
 
 namespace tec {
 
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ *                       Binary serialization
+ *
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 /**
  * @brief Forward declaration of the network data buffer class.
  *
  * `NetData` is used as the streaming medium for binary serialization/deserialization.
+ *
+ * @see NetData
  */
 class NetData;
 
@@ -61,12 +61,6 @@ struct Serializable {
 
     Serializable() = default;
     virtual ~Serializable() = default;
-
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     *
-     *                       Binary serialization
-     *
-     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     /**
      * @brief Serialize this object into a binary stream.
@@ -91,17 +85,6 @@ struct Serializable {
      * @return Reference to the modified stream (for chaining)
      */
     virtual NetData& load(NetData& s) = 0;
-
-    // /**
-    //  * @brief Convert this object to a JSON string representation.
-    //  *
-    //  * The returned string should be valid JSON and, when possible, human-readable
-    //  * (pretty-printed). It is typically used for debugging, logging, or saving
-    //  * configuration/state in text form.
-    //  *
-    //  * @return A std::string containing the JSON representation of the object.
-    //  */
-    // virtual std::string to_json() const = 0;
 };
 
 /**
@@ -120,23 +103,43 @@ struct Serializable {
 template <typename T>
 inline constexpr bool is_serializable_v = std::is_base_of<Serializable, T>::value;
 
-/**
- * @brief A unique `id` used for RPC calls.
- */
+
+/// @brief Type alias for RPC identifiers, represented as a 16-bit unsigned integer.
 using rpcid_t = uint16_t;
 
 /**
- * @brief
+ * @brief Root class for serializable objects used in RPC communications.
+ *
+ * This struct serves as the base class for all serializable objects involved in
+ * RPC (Remote Procedure Call) communications. It provides a unique identifier
+ * for each RPC instance, ensuring proper tracking, dispatching and serialization.
+ *
+ * @note This class inherits from Serializable to enable serialization capabilities.
  */
 struct NdRoot: public Serializable {
 private:
     rpcid_t id_;
 
 public:
+    /**
+     * @brief Constructs an NdRoot instance with the specified RPC identifier.
+     *
+     * This explicit constructor initializes the object with a given RPC ID.
+     *
+     * @param _id The RPC identifier to assign to this object.
+     */
     explicit NdRoot(rpcid_t _id)
         : id_{_id}
     {}
 
+    /**
+     * @brief Retrieves the RPC identifier.
+     *
+     * This constexpr member function returns the stored RPC ID. It is marked
+     * as constexpr to allow evaluation at compile-time when possible.
+     *
+     * @return The RPC identifier.
+     */
     constexpr rpcid_t id() const { return id_; }
 };
 
@@ -178,37 +181,7 @@ struct JsonSerializable {
      * @return A std::string containing the JSON representation of the object.
      */
     virtual std::string to_json() const = 0;
-
-    // /**
-    //  * @brief Overloads << to serialize TObject to JSON via TJson functor.
-    //  *
-    //  * @tparam TJson Functor for JSON serialization of TObject.
-    //  * @tparam TObject Type to serialize.
-    //  *
-    //  * @param os Output stream.
-    //  * @param obj Object to serialize.
-    //  * @return Reference to os.
-    //  */
-    // template <typename TJson, typename TObject>
-    // friend std::ostream& operator << (std::ostream& os, const TObject& obj) {
-    //     return os << TJson{}(obj);
-    // };
 };
-
-/**
- * @brief Overloads << to serialize TObject to JSON via TJson functor.
- *
- * @tparam TJson Functor for JSON serialization of TObject.
- * @tparam TObject Type to serialize.
- *
- * @param os Output stream.
- * @param obj Object to serialize.
- * @return Reference to os.
- */
-// template <typename TJson, typename TObject>
-// std::ostream& operator << (std::ostream& os, const TObject& obj) {
-//     return os << TJson{}(obj);
-// };
 
 /**
  * @brief Variable template to check at compile-time whether a type is JSON serializable.

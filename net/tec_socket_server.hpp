@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-06 16:18:24 by magnolia>
+// Time-stamp: <Last changed 2026-02-17 01:04:18 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -227,22 +227,32 @@ protected:
     /**
      * @brief Sets common socket options (SO_REUSEADDR, SO_REUSEPORT)
      * @param fd Socket file descriptor to configure
-     * @return Status indicating success or specific socket error
+     * @return Status indicating success or specific socket error.
+               Default implementation always returns OK.
      */
     virtual Status set_socket_options(int fd) {
         TEC_ENTER("SocketServer::set_socket_options");
-        // Avoid "Address already in use" error
+
+        // Avoid "Address already in use" error.
         if( ::setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
                          &params_.opt_reuse_addr, sizeof(int)) < 0 ) {
-            return {errno, "setsockopt SO_REUSEADDR failed", Error::Kind::NetErr};
+#ifdef _TEC_TRACE_ON
+            Status status{errno, "setsockopt SO_REUSEADDR failed", Error::Kind::NetErr};
+            TEC_TRACE("{}.", status);
+#endif
         }
         TEC_TRACE("SO_REUSEADDR is {}.", params_.opt_reuse_addr);
+
+        // Reuse the port.
         if (::setsockopt(fd, SOL_SOCKET, SO_REUSEPORT,
                        &params_.opt_reuse_port, sizeof(int)) < 0) {
-            ::close(fd);
-            return {errno, "setsockopt SO_REUSEPORT", Error::Kind::NetErr};
+#ifdef _TEC_TRACE_ON
+            Status status{errno, "setsockopt SO_REUSEPORT failed", Error::Kind::NetErr};
+            TEC_TRACE("{}.", status);
+#endif
         }
         TEC_TRACE("SO_REUSEPORT is {}.", params_.opt_reuse_port);
+
         return {};
     }
 
@@ -251,23 +261,28 @@ protected:
      * @param client_fd Accepted client socket fd
      * @param client_addr Peer address structure (IPv4 or IPv6)
      * @return Filled Socket structure with IP, port and buffer info
+     * @note Socket::port == -1 indicates address or port detection failure.
+     * @note Override this method in a derived class to enable other protocols.
      */
     virtual Socket get_socket_info(int client_fd, sockaddr_storage* client_addr) {
-        // Get socket address and port for IP protocol.
         char client_ip[INET6_ADDRSTRLEN];
         client_ip[0] = '\0';
-        int client_port{0};
+        int client_port{-1};
+
         if (client_addr->ss_family == AF_INET) {
+            // IPv4
             struct sockaddr_in *s = (struct sockaddr_in*)&client_addr;
             ::inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof(client_ip));
             client_port = ::ntohs(s->sin_port);
         }
         else if (client_addr->ss_family == AF_INET6) {
+            // IPv6
             struct sockaddr_in6 *s = (struct sockaddr_in6*)&client_addr;
             ::inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof(client_ip));
             client_port = ::ntohs(s->sin6_port);
         }
 
+        // Uses the single thread buffer by default.
         return {client_fd, client_ip, client_port, get_buffer(), get_buffer_size()};
     }
 
@@ -315,8 +330,8 @@ protected:
             // Set options.
             auto option_status = set_socket_options(fd);
             if (!option_status) {
+                // On failure.
                 ::close(fd);
-                // TODO: should we continue with the next socket here?
                 ::freeaddrinfo(servinfo);
                 return option_status;
             }
@@ -399,16 +414,28 @@ protected:
 
         while (!stop_polling_) {
             int clientfd{-1};
-
+            //
+            // Waiting for incoming connection.
+            //
             sockaddr_storage client_addr;
             TEC_TRACE("Waiting for incoming connection...");
             if (!accept_connection(&clientfd, &client_addr)) {
                 continue;
             }
-
+            //
+            // Obtain socket info.
+            //
             Socket sock = get_socket_info(clientfd, &client_addr);
-            TEC_TRACE("Accepted connection from {}:{}.", sock.addr, sock.port);
-
+            if (sock.port == -1) {
+                // Failed -- close input connection and continue polling.
+                ::close(clientfd);
+                continue;
+            } else {
+                TEC_TRACE("Accepted connection from {}:{}.", sock.addr, sock.port);
+            }
+            //
+            // Process incoming connection.
+            //
             process_socket(sock);
         }
         polling_stopped_.set();
@@ -423,9 +450,10 @@ protected:
     virtual void process_socket(Socket sock) {
         TEC_ENTER("process_socket");
         if (pool_) {
-            // Round-robin.
+            // The thread pool uses the *round-robin* algorithm to assign a buffer for a socket.
             size_t idx = pool_->get_next_worker_index();
-            TEC_TRACE("Pool IDX={}", idx);
+            TEC_TRACE("Pool worker IDX={}.", idx);
+            // Trick -- substitute `sock.buffer` with a per-thread buffer.
             sock.buffer = pool_->get_buffer(idx);
             sock.buffer_size = pool_->get_buffer_size();
             // Async processing -- enqueue a client handling task to the thread pool.
