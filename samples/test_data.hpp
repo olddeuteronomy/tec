@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-14 14:46:27 by magnolia>
+// Time-stamp: <Last changed 2026-02-16 14:23:22 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -43,7 +43,7 @@ constexpr const char test_string[]{
 *                             Persons
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-struct Person: tec::Serializable {
+struct Person: tec::Serializable, tec::JsonSerializable {
     using json = tec::Json;
     static constexpr const char* sep{tec::Json::sep};
 
@@ -78,8 +78,7 @@ struct Person: tec::Serializable {
     }
 
     friend std::ostream& operator << (std::ostream& os, const Person& p) {
-        os << tec::Json{}(p);
-        return os;
+        return os << json{}(p);
     }
 
     std::string to_json() const override {
@@ -97,7 +96,7 @@ struct Person: tec::Serializable {
 *          TestData (covers almost all serializable types)
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-struct TestData: tec::NdRoot {
+struct TestData: tec::NdRoot, tec::JsonSerializable {
     using json = tec::Json;
     static constexpr auto sep{tec::Json::sep};
 
@@ -184,10 +183,8 @@ struct TestData: tec::NdRoot {
         return nd;
     }
 
-
     friend std::ostream& operator << (std::ostream& os, const TestData& p) {
-        os << tec::Json{}(p);
-        return os;
+        return os << tec::Json{}(p);
     }
 
     std::string to_json() const override {
@@ -214,10 +211,14 @@ struct TestData: tec::NdRoot {
 *                         GetPersons RPC structs
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+struct RPCID {
+    constexpr static tec::rpcid_t GetPersons{1};
+};
+
 //
 // Request
 //
-struct GetPersonsIn: public tec::NdRoot {
+struct GetPersonsIn: tec::NdRoot, tec::JsonSerializable {
     using json = tec::Json;
     static constexpr auto sep{tec::Json::sep};
 
@@ -225,7 +226,7 @@ struct GetPersonsIn: public tec::NdRoot {
     int max_count;
 
     GetPersonsIn()
-        : tec::NdRoot(1)  // Request ID=1
+        : tec::NdRoot(RPCID::GetPersons)  // Request ID.
         , max_count{0}       // Get all records.
         {}
 
@@ -238,8 +239,7 @@ struct GetPersonsIn: public tec::NdRoot {
     }
 
     friend std::ostream& operator << (std::ostream& os, const GetPersonsIn& p) {
-        os << json{}(p);
-        return os;
+        return os << json{}(p);
     }
 
     std::string to_json() const override {
@@ -254,7 +254,7 @@ struct GetPersonsIn: public tec::NdRoot {
 //
 // Reply
 //
-struct GetPersonsOut: public tec::NdRoot {
+struct GetPersonsOut: tec::NdRoot, tec::JsonSerializable {
     using json = tec::Json;
     static constexpr auto sep{tec::Json::sep};
 
@@ -262,7 +262,7 @@ struct GetPersonsOut: public tec::NdRoot {
     std::list<Person> persons;
 
     GetPersonsOut()
-        : tec::NdRoot(1) // Reply ID=1 (Reply ID MUST BE EQUAL TO Request ID).
+        : tec::NdRoot(RPCID::GetPersons) // Reply ID MUST BE EQUAL TO Request ID.
     {}
 
      tec::NetData& store(tec::NetData& nd) const override {
@@ -274,8 +274,7 @@ struct GetPersonsOut: public tec::NdRoot {
     }
 
     friend std::ostream& operator << (std::ostream& os, const GetPersonsOut& p) {
-        os << json{}(p);
-        return os;
+        return os << json{}(p);
     }
 
     std::string to_json() const override {

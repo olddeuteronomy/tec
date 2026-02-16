@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-12 00:36:21 by magnolia>
+// Time-stamp: <Last changed 2026-02-16 14:23:59 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -21,6 +21,8 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 #include <iostream>
 
 #include "tec/tec_dump.hpp"
+// #include "tec/tec_json.hpp"
+#include "tec/tec_serialize.hpp"
 #include "tec/net/tec_net_data.hpp"
 #include "tec/net/tec_nd_compress.hpp"
 

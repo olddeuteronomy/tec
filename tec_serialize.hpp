@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-04 15:21:46 by magnolia>
+// Time-stamp: <Last changed 2026-02-16 14:20:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
 /**
  * @file tec_serialize.hpp
  * @brief The base interface for serializable objects.
@@ -33,6 +32,7 @@ SOFTWARE.
 #pragma once
 
 #include <cstdint>
+#include <ostream>
 #include <string>
 #include <type_traits>
 
@@ -40,29 +40,6 @@ SOFTWARE.
 
 
 namespace tec {
-
-/**
- * @brief Forward declaration of the base interface for serializable objects.
- *
- * All types that can be serialized (both binary and JSON) must inherit from this class.
- */
-struct Serializable;
-
-/**
- * @brief Variable template to check at compile-time whether a type is serializable.
- *
- * A type `T` is considered serializable if it publicly inherits from `tec::Serializable`.
- *
- * @tparam T Type to test
- *
- * @code{.cpp}
- * struct MyComponent : tec::Serializable { ... };
- * static_assert(tec::is_serializable_v<MyComponent>);
- * static_assert(!tec::is_serializable_v<int>);
- * @endcode
- */
-template <typename T>
-inline constexpr bool is_serializable_v = std::is_base_of<Serializable, T>::value;
 
 
 /**
@@ -75,15 +52,10 @@ class NetData;
 /**
  * @brief Base interface for objects that support binary and JSON serialization.
  *
- * This is a pure abstract interface (CRTP is not required). Derived classes must
+ * This is a pure abstract interface. Derived classes must
  * implement all pure virtual methods to be instantiable.
  *
- * The design separates concerns:
- * - Binary serialization uses `store()` / `load()` with a `NetData` stream.
- * - Textual (human-readable) serialization uses `to_json()`.
- *
- * @note The class is non-copyable by default (you may relax this in derived classes
- *       if needed).
+ * @note All types that can be binary serialized must inherit from this class.
  */
 struct Serializable {
 
@@ -120,39 +92,134 @@ struct Serializable {
      */
     virtual NetData& load(NetData& s) = 0;
 
-    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     *
-     *                       JSON serialization
-     *
-     *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    // /**
+    //  * @brief Convert this object to a JSON string representation.
+    //  *
+    //  * The returned string should be valid JSON and, when possible, human-readable
+    //  * (pretty-printed). It is typically used for debugging, logging, or saving
+    //  * configuration/state in text form.
+    //  *
+    //  * @return A std::string containing the JSON representation of the object.
+    //  */
+    // virtual std::string to_json() const = 0;
+};
+
+/**
+ * @brief Variable template to check at compile-time whether a type is serializable.
+ *
+ * A type `T` is considered serializable if it publicly inherits from `tec::Serializable`.
+ *
+ * @tparam T Type to test
+ *
+ * @code{.cpp}
+ * struct MyComponent : tec::Serializable { ... };
+ * static_assert(tec::is_serializable_v<MyComponent>);
+ * static_assert(!tec::is_serializable_v<int>);
+ * @endcode
+ */
+template <typename T>
+inline constexpr bool is_serializable_v = std::is_base_of<Serializable, T>::value;
+
+/**
+ * @brief A unique `id` used for RPC calls.
+ */
+using rpcid_t = uint16_t;
+
+/**
+ * @brief
+ */
+struct NdRoot: public Serializable {
+private:
+    rpcid_t id_;
+
+public:
+    explicit NdRoot(rpcid_t _id)
+        : id_{_id}
+    {}
+
+    constexpr rpcid_t id() const { return id_; }
+};
+
+/**
+ * @brief Variable template to check at compile-time whether a type is
+ *        a root object for binary serizalization.
+ *
+ * A type `T` is considered *a root object* if it publicly inherits from `tec::NdRoot`.
+ *
+ * @tparam T Type to test
+ */
+template <typename T>
+inline constexpr bool is_root_v = std::is_base_of<NdRoot, T>::value;
+
+/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ *                       JSON serialization
+ *
+ *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+/**
+ * @brief Base interface for objects that support JSON serialization.
+ *
+ * This is a pure abstract interface. Derived classes must
+ * implement all pure virtual methods to be instantiable.
+ */
+struct JsonSerializable {
+
+    JsonSerializable() = default;
+    virtual ~JsonSerializable() = default;
 
     /**
      * @brief Convert this object to a JSON string representation.
      *
-     * The returned string should be valid JSON and, when possible, human-readable
-     * (pretty-printed). It is typically used for debugging, logging, or saving
+     * The returned string should be valid JSON.
+     * It is typically used for debugging, logging, or saving
      * configuration/state in text form.
      *
      * @return A std::string containing the JSON representation of the object.
      */
     virtual std::string to_json() const = 0;
+
+    // /**
+    //  * @brief Overloads << to serialize TObject to JSON via TJson functor.
+    //  *
+    //  * @tparam TJson Functor for JSON serialization of TObject.
+    //  * @tparam TObject Type to serialize.
+    //  *
+    //  * @param os Output stream.
+    //  * @param obj Object to serialize.
+    //  * @return Reference to os.
+    //  */
+    // template <typename TJson, typename TObject>
+    // friend std::ostream& operator << (std::ostream& os, const TObject& obj) {
+    //     return os << TJson{}(obj);
+    // };
 };
 
+/**
+ * @brief Overloads << to serialize TObject to JSON via TJson functor.
+ *
+ * @tparam TJson Functor for JSON serialization of TObject.
+ * @tparam TObject Type to serialize.
+ *
+ * @param os Output stream.
+ * @param obj Object to serialize.
+ * @return Reference to os.
+ */
+// template <typename TJson, typename TObject>
+// std::ostream& operator << (std::ostream& os, const TObject& obj) {
+//     return os << TJson{}(obj);
+// };
 
-struct NdRoot: public Serializable {
-private:
-    uint16_t id_;
-
-public:
-    explicit NdRoot(uint16_t _id)
-        : id_{_id}
-    {}
-
-    uint16_t id() const { return id_; }
-};
-
+/**
+ * @brief Variable template to check at compile-time whether a type is JSON serializable.
+ *
+ * A type `T` is considered serializable if it publicly inherits from
+ * `tec::JsonSerializable`.
+ *
+ * @tparam T Type to test
+ */
 template <typename T>
-inline constexpr bool is_root_v = std::is_base_of<NdRoot, T>::value;
+inline constexpr bool is_json_serializable_v = std::is_base_of<JsonSerializable, T>::value;
 
 
 } // namespace tec

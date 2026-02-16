@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-14 13:05:15 by magnolia>
+// Time-stamp: <Last changed 2026-02-15 02:23:11 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -29,7 +29,7 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 #include <array>
 #include <cstdint>
 #include <string>
-# include <iomanip>
+#include <iomanip>
 #include <sstream>
 #include <cstring>
 

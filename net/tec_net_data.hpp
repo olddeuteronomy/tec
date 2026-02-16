@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-11 16:17:56 by magnolia>
+// Time-stamp: <Last changed 2026-02-16 15:42:51 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -63,15 +63,15 @@ public:
      */
     NetData() = default;
 
-    // /**
-    //  * @brief Disabled - use explicit `copy_from()`
-    //  */
-    // NetData(const NetData&) = delete;
+    /**
+     * @brief Copy constructor -- use explicit `copy_from()`
+     */
+    NetData(const NetData&) = delete;
 
-    // /**
-    //  * @brief Disabled - use explicit `move_from()`
-    //  */
-    // NetData(NetData&&) = delete;
+    /**
+     * @brief Disabled -- use explicit `move_from()`
+     */
+    NetData(NetData&&) = delete;
 
     /**
      * @brief Virtual destructor
@@ -143,15 +143,6 @@ public:
      */
     Bytes& bytes() {
         return data_;
-    }
-
-    /**
-     * @brief Returns mutable pointer to the beginning of serialized data
-     * @warning Direct manipulation may corrupt serialization format
-     * @return mutable pointer to raw data
-     */
-    void* data() {
-        return data_.data();
     }
 
 public:
