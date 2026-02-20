@@ -1,7 +1,7 @@
 #!/bin/bash
 
-prog=out/tcp_client_clang
-# prog=out/tcp_client_nd_clang
+# prog=out/tcp_client_clang
+prog=out/tcp_client_nd_clang
 nruns=5000
 sec_to_sleep=0.05
 

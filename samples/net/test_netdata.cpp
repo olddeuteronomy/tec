@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-16 23:49:11 by magnolia>
+// Time-stamp: <Last changed 2026-02-20 16:31:39 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -81,7 +81,7 @@ int main() {
 
     // Restore data.
     test::TestData data_out;
-    nd_out.rewind(); // To be sure we're reading from the beginning.
+    nd_out.rewind(); // To ensure we're reading from the beginning.
     nd_out >> data_out;
     print_data(data_out);
 

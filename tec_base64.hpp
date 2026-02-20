@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-14 13:07:51 by magnolia>
+// Time-stamp: <Last changed 2026-02-20 15:52:46 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -19,7 +19,7 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 
 /**
  * @file tec_base64.hpp
- * @brief A header-only Base64 encoder/decoder (C++17+).
+ * @brief A header-only Base64 encoder/decoder.
  * @author The Emacs Cat
  * @date 2026-01-04
  */

@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['sbyte_0',['SByte',['../structtec_1_1NdTypes_1_1Tags.html#a13122c27896885f9b19bdbcef7fa0b4e',1,'tec::NdTypes::Tags']]],
+  ['scalar_1',['Scalar',['../structtec_1_1NdTypes_1_1Meta.html#af26e28a08e36909c5a467bc5811786a4',1,'tec::NdTypes::Meta']]],
+  ['schar_2',['SChar',['../structtec_1_1NdTypes_1_1Tags.html#a4eaeb27bdbe1832e333428cd03013180',1,'tec::NdTypes::Tags']]],
+  ['sep_3',['sep',['../structtec_1_1Json.html#ade21fcf894df8aab2745795a846f783f',1,'tec::Json']]],
+  ['sequence_4',['Sequence',['../structtec_1_1NdTypes_1_1Meta.html#adcbd7cb98eb026f34b6aebc02b25daf4',1,'tec::NdTypes::Meta']]],
+  ['server_5f_5',['server_',['../classtec_1_1GrpcServer.html#ad955caeccb01e9c5d417ac617af3419f',1,'tec::GrpcServer']]],
+  ['shutdown_5ftimeout_6',['shutdown_timeout',['../structtec_1_1GrpcServerParams.html#a205d4a2385da1f3e8f75e436851f52ca',1,'tec::GrpcServerParams']]],
+  ['signed_7',['Signed',['../structtec_1_1NdTypes_1_1Meta.html#a49cf7ebaea5ed9fa0f67e9b61f4a21ce',1,'tec::NdTypes::Meta']]],
+  ['size_8',['size',['../structtec_1_1NdTypes_1_1Header.html#afc1b6cbe3ddb79fac2796011a8c55c4a',1,'tec::NdTypes::Header::size'],['../structtec_1_1NdTypes_1_1ElemHeader.html#a1f8cd8ea5f85233c7565c5524b5aa3dd',1,'tec::NdTypes::ElemHeader::size']]],
+  ['size_5funcompressed_9',['size_uncompressed',['../structtec_1_1NdTypes_1_1Header.html#a67d321fdf863cc3917514216f5f9b071',1,'tec::NdTypes::Header']]],
+  ['sock_10',['sock',['../structtec_1_1SocketServerNd_1_1DataInOut.html#a1666f067f86c6866a0d9de47917fe833',1,'tec::SocketServerNd::DataInOut']]],
+  ['sockfd_5f_11',['sockfd_',['../classtec_1_1SocketClient.html#aa004520232c72301b7242220316b2f02',1,'tec::SocketClient']]],
+  ['socktype_12',['socktype',['../structtec_1_1SocketParams.html#a3d3e46f9102293dceb9f135dd61f7ec4',1,'tec::SocketParams']]],
+  ['start_5ftimeout_13',['start_timeout',['../structtec_1_1GrpcServerParams.html#a743386d00a919a72c24c8c21bbbbafbc',1,'tec::GrpcServerParams']]],
+  ['status_14',['status',['../structtec_1_1NdTypes_1_1Header.html#a704951c984137ed6d9150e906493ab93',1,'tec::NdTypes::Header::status'],['../structtec_1_1SocketServerNd_1_1DataInOut.html#a547d1f85f34c1a87d26ced8a70986faf',1,'tec::SocketServerNd::DataInOut::status']]],
+  ['stop_5f_15',['stop_',['../classtec_1_1ThreadPool.html#a81547771380fb6faf0282100b3bec050',1,'tec::ThreadPool']]],
+  ['stop_5fpolling_5f_16',['stop_polling_',['../classtec_1_1SocketServer.html#a7530e44df5a96cde916d74db78f185c4',1,'tec::SocketServer']]],
+  ['str_17',['str',['../structtec_1_1SocketCharStreamIn.html#a81658c661c17cd751a966af7174681e2',1,'tec::SocketCharStreamIn::str'],['../structtec_1_1SocketCharStreamOut.html#a0128ecb94f6870ad6f68fcea23e7e385',1,'tec::SocketCharStreamOut::str']]],
+  ['stub_5f_18',['stub_',['../classtec_1_1GrpcClient.html#a7c5d603203f54749fedc8419c185fbde',1,'tec::GrpcClient']]]
+];

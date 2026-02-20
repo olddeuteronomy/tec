@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-19 15:52:56 by magnolia>
+// Time-stamp: <Last changed 2026-02-20 15:58:13 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -16,7 +16,6 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
    limitations under the License.
 ------------------------------------------------------------------------
 ----------------------------------------------------------------------*/
-
 /**
  * @file tec_json.hpp
  * @brief Simple JSON serialization.
