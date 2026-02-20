@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-17 01:04:18 by magnolia>
+// Time-stamp: <Last changed 2026-02-19 15:52:21 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -201,6 +201,12 @@ public:
         polling_thread.join();
         TEC_TRACE("Closing server socket...");
         polling_stopped_.wait();
+        //
+        // Wait until all tasks in the thread pool finished.
+        //
+        if (params_.use_thread_pool) {
+            pool_.reset(nullptr);
+        }
         TEC_TRACE("Server stopped.");
         sig_stopped->set();
     }

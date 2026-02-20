@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-17 01:48:45 by magnolia>
+// Time-stamp: <Last changed 2026-02-19 17:07:37 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -90,7 +90,7 @@ tec::Status tcp_server() {
     // params.addr = tec::SocketParams::kAnyAddrIP6;
     // params.family = AF_INET6;
     params.mode = tec::SocketServerParams::kModeNetData;
-    params.compression = tec::CompressionParams::kCompressionZlib;
+    // params.compression = tec::CompressionParams::kCompressionZlib;
     params.use_thread_pool = true;
     auto srv{TCPServerWorker::Builder<TCPServerWorker, Server>{}(params)};
     //

@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-03 00:12:52 by magnolia>
+// Time-stamp: <Last changed 2026-02-19 15:40:12 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2022-2025 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -64,7 +64,7 @@ struct Error {
         Invalid,     //!< Invalid data or state.
         System,      //!< System-level error.
         NotImplemented, //!< Not implemented.
-        Unsupported  //!< The feature is upsupported.
+        Unsupported  //!< The feature is unsupported.
     };
 
     /**

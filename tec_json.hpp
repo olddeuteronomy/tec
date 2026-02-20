@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-11 16:32:24 by magnolia>
+// Time-stamp: <Last changed 2026-02-19 15:52:56 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -53,7 +53,7 @@ namespace tec {
  * - `tec::Blob` (as Base64-encoded string)
  * - Any type satisfying `is_container_v<T>` → JSON array
  * - Any type satisfying `is_map_v<T>` → JSON object
- * - Any type derived from `tec::Serializable` → nested object via `to_json()`
+ * - Any type derived from `tec::JsonSerializable` → nested object via `to_json()`
  *
  * @note This is not a full JSON library — it's designed for debugging, logging,
  *       network messages, and configuration where performance and simplicity matter.
@@ -249,8 +249,6 @@ struct Json {
             return json_container(val, name);
         }
         else if constexpr (std::is_same_v<T, bool>) {
-            // To prevent a silly valgrind 3.22 warning "Use of unititialized memory".
-            // long v = val & 0xF;
             return json_bool(val, name);
         }
         else {

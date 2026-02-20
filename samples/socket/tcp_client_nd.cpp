@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-17 01:51:12 by magnolia>
+// Time-stamp: <Last changed 2026-02-19 16:57:08 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -66,7 +66,7 @@ void print(const T& p, tec::NetData& nd) {
 tec::Status tcp_client() {
     // By default, it can connect to either IPv4 or IPv6 tec::SocketServer.
     TCPParams params;
-    params.compression = tec::CompressionParams::kCompressionZlib;
+    // params.compression = tec::CompressionParams::kCompressionZlib;
     // To use IPv6 only:
     //     params.addr = tec::SocketParams::kLocalAddrIP6;
     //     params.family = AF_INET6;
