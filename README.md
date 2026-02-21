@@ -83,7 +83,7 @@ ranges, std::format, etc.) to maximize compatibility.
 For missing standard library utilities (e.g. `std::format`,
 `std::print`), TEC provides very simple replacements such as:
 `tec::format`, `tec::print`, `tec::println`
-(see [tec_print.hpp](doc/html/tec__print_8hpp.html) for more details).
+(see [tec_print.hpp](https://olddeuteronomy.github.io/tec/html/tec__print_8hpp.html) for more details).
 
 You can still compile TEC with C++20 or C++23 compilers — the library
 remains fully header-only and template-based, so it adapts to
@@ -154,13 +154,13 @@ public:
     };
 };
 ```
-See the complete definition of [Daemon](doc/html/classtec_1_1Daemon.html).
+See the complete definition of [Daemon](https://olddeuteronomy.github.io/tec/html/classtec_1_1Daemon.html).
 
 See also
 
-- [Message/Request/Reply](doc/html/tec__message_8hpp.html),
-- [Status](doc/html/structtec_1_1TStatus.html),
-- [Signal](doc/html/classtec_1_1Signal.html).
+- [Message/Request/Reply](https://olddeuteronomy.github.io/tec/html/tec__message_8hpp.html),
+- [Status](https://olddeuteronomy.github.io/tec/html/structtec_1_1TStatus.html),
+- [Signal](https://olddeuteronomy.github.io/tec/html/classtec_1_1Signal.html).
 
 Most higher-level classes in TEC implement or compose `Daemon`.
 
@@ -172,7 +172,7 @@ Most higher-level classes in TEC implement or compose `Daemon`.
 <p align="center"><img src="img/Worker.png"></p>
 
 Implements the Daemon interface to manage a worker thread that
-processes messages from a [SafeQueue](doc/html/classtec_1_1SafeQueue.html).
+processes messages from a [SafeQueue](https://olddeuteronomy.github.io/tec/html/classtec_1_1SafeQueue.html).
 It supports registering callbacks for specific message types, provides
 default initialization and exit callbacks, and manages thread
 lifecycle with signals for running, initialization, and termination.
@@ -183,18 +183,18 @@ Key features:
 - Simple, predictable execution model
 - Often used as a building block inside more complex components
 
-Extends [Daemon](doc/html/classtec_1_1Daemon.html) with:
+Extends [Daemon](https://olddeuteronomy.github.io/tec/html/classtec_1_1Daemon.html) with:
 
 - `register_callback` --- supports registering callbacks
 - `on_init` --- initialization (may start threads, open resources, etc.)
 - `on_exit` --- graceful shutdown
 
-See the complete definition of [Worker](doc/html/classtec_1_1Worker.html).
+See the complete definition of [Worker](https://olddeuteronomy.github.io/tec/html/classtec_1_1Worker.html).
 
 See also:
 
-- [Daemon](doc/html/classtec_1_1Daemon.html)
-- [SafeQueue](doc/html/classtec_1_1SafeQueue.html).
+- [Daemon](https://olddeuteronomy.github.io/tec/html/classtec_1_1Daemon.html)
+- [SafeQueue](https://olddeuteronomy.github.io/tec/html/classtec_1_1SafeQueue.html).
 
 #### Example: TestWorker Common Header
 ```cpp
@@ -345,7 +345,7 @@ public:
 }; // class Actor
 ```
 
-See the complete definition of [Actor](doc/html/classtec_1_1Actor.html).
+See the complete definition of [Actor](https://olddeuteronomy.github.io/tec/html/classtec_1_1Actor.html).
 
 All concrete actors must inherit from this class and implement:
 
@@ -428,9 +428,11 @@ interface).
 It bridges the asynchronous `Actor` interface with the synchronous
 `Worker`/`Daemon` model.
 
-See the complete definition of [ActorWorker](doc/html/classtec_1_1ActorWorker.html).
+See the complete definition of [ActorWorker](https://olddeuteronomy.github.io/tec/html/classtec_1_1ActorWorker.html).
 
 ```cpp
+// tec_actor_worker.hpp
+
 template <typename TParams, typename TActor>
 class ActorWorker : public Worker<TParams> {
 protected:
@@ -520,10 +522,10 @@ TEC with TCP, gRPC, and other services.
 
 See also
 
-- [Payload](doc/html/structtec_1_1Payload.html)
-- [Actor](doc/html/classtec_1_1Actor.html)
-- [Worker](doc/html/classtec_1_1Worker.html)
-- [Daemon](doc/html/classtec_1_1Daemon.html)
+- [Payload](https://olddeuteronomy.github.io/tec/html/structtec_1_1Payload.html)
+- [Actor](https://olddeuteronomy.github.io/tec/html/classtec_1_1Actor.html)
+- [Worker](https://olddeuteronomy.github.io/tec/html/classtec_1_1Worker.html)
+- [Daemon](https://olddeuteronomy.github.io/tec/html/classtec_1_1Daemon.html)
 
 See [test_server.cpp](https://github.com/olddeuteronomy/tec/blob/main/samples/worker/test_server.cpp)
 source code example.
@@ -548,13 +550,12 @@ Key features:
 - Supports strings, blobs, containers, POD types, custom structs via specialization
 - Very low overhead compared to protobuf / JSON for simple structs
 
-See the complete definition of [NetData](doc/html/classtec_1_1NetData.html).
+See the complete definition of [NetData](https://olddeuteronomy.github.io/tec/html/classtec_1_1NetData.html).
 
 See also
 
-- [NdTypes](doc/html/structtec_1_1NdTypes.html) -- core type
-  definitions and metadata for the NetData binary serialization
-  format.
+- [NdTypes](https://olddeuteronomy.github.io/tec/html/structtec_1_1NdTypes.html) -- core type
+  definitions and metadata for the NetData binary serialization format.
 
 #### Example: NetData Definitions
 
@@ -831,6 +832,9 @@ struct GetPersonsOut: tec::NdRoot, tec::JsonSerializable {
 } // namespace test
 ```
 
+See the complete [example](https://github.com/olddeuteronomy/tec/blob/main/samples/test_data.hpp).
+
+
 #### Example: The Use of NetData
 ```cpp
 #include <cstdio>
@@ -896,10 +900,13 @@ int main() {
 }
 ```
 
+See the complete [example](https://github.com/olddeuteronomy/tec/blob/main/samples/net/test_netdata.cpp).
+
 See also:
 
-- [NdCompress](doc/html/classtec_1_1NdCompress.html) --- Compression
+- [NdCompress](https://olddeuteronomy.github.io/tec/html/classtec_1_1NdCompress.html) --- Compression
   wrapper for NetData objects with pluggable backends.
+
 
 ##### NetData Dump
 
@@ -947,7 +954,7 @@ offset|00  02  04  06  08  10  12  14  16  18  20  22  24  26  28  30
 
 See also:
 
-- [JSON](doc/html/structtec_1_1Json.html) --- Utility class for
+- [JSON](https://olddeuteronomy.github.io/tec/html/structtec_1_1Json.html) --- Utility class for
   generating minimal, valid JSON strings at compile-time and runtime.
 
 
@@ -955,21 +962,21 @@ See also:
 
 <p align="center"><img src="img/SocketParams.png"></p>
 
-- [SocketParams](doc/html/structtec_1_1SocketParams.html) --- Common
+- [SocketParams](https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketParams.html) --- Common
   parameters used for both client and server socket configuration.
 
 See also
 
-- [SocketServerParams](doc/html/structtec_1_1SocketServerParams.html)
-- [SocketClientParams](doc/html/structtec_1_1SocketClientParams.html)
+- [SocketServerParams](https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketServerParams.html)
+- [SocketClientParams](https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketClientParams.html)
 
 <p align="center"><img src="img/Socket.png"></p>
 
-- [Socket]() --- Lightweight wrapper around a connected socket file
+- [Socket](https://olddeuteronomy.github.io/tec/html/structtec_1_1Socket.html) --- Lightweight wrapper around a connected socket file
   descriptor.
-- [SocketNd](doc/html/structtec_1_1SocketNd.html) --- Specialized
+- [SocketNd](https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketNd.html) --- Specialized
   socket wrapper optimized for sending/receiving
-  [NetData](doc/html/classtec_1_1NetData.html) protocol messages.
+  [NetData](https://olddeuteronomy.github.io/tec/html/classtec_1_1NetData.html) protocol messages.
 
 
 
@@ -991,11 +998,11 @@ Main responsibilities:
 - dispatching client sockets either synchronously or via thread pool
 - graceful shutdown with proper socket closure
 
-See the complete definition of [SocketServer](doc/html/classtec_1_1SocketServer.html).
+See the complete definition of [SocketServer](https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketServer.html).
 
 See also:
 
-- [SocketServerNd](doc/html/classtec_1_1SocketServerNd.html) --- a derived
+- [SocketServerNd](https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketServerNd.html) --- a derived
   class implementing the *NetData* mode --- binary protocol oriented.
 
 #### Example: TCP echo server
@@ -1085,14 +1092,15 @@ Key features:
 - Provides virtual methods for customization (e.g., socket options, send/receive logic).
 - Integrates with Actor for signal-based start/stop and request processing.
 
-See the complete definition of [SocketClient](doc/html/classtec_1_1SocketClient.html).
+See the complete definition of [SocketClient](https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketClient.html).
 
 See also:
 
-- [SocketCharStreamIn](doc/html/structtec_1_1SocketCharStreamIn.html) ---
+- [SocketCharStreamIn](https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketCharStreamIn.html) ---
   Input descriptor for character stream mode.
-- [SocketCharStreamOut](doc/html/structtec_1_1SocketCharStreamOut.html) ---
+- [SocketCharStreamOut](https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketCharStreamOut.html) ---
   Output descriptor for character stream mode.
+
 
 #### Example: Socket Client
 
@@ -1176,9 +1184,9 @@ NetData-protocol-aware BSD socket server with request dispatching and optional c
 
 <p align="center"><img src="img/SocketServerNd.png"></p>
 
-[SocketServerNd](doc/html/classtec_1_1SocketServerNd.html) extends
-[SocketServer](doc/html/classtec_1_1SocketServer.html) to handle the
-[NetData](doc/html/classtec_1_1NetData.html) message framing protocol
+[SocketServerNd](https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketServerNd.html) extends
+[SocketServer](https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketServer.html) to handle the
+[NetData](https://olddeuteronomy.github.io/tec/html/classtec_1_1NetData.html) message framing protocol
 (header + payload) and provides:
 
 - typed handler registration by NetData::ID
@@ -1187,12 +1195,13 @@ NetData-protocol-aware BSD socket server with request dispatching and optional c
 - structured error reply mechanism
 - fallback to raw string handling when message is not valid NetData
 
-See the complete definition of [SocketServerNd](doc/html/classtec_1_1SocketServerNd.html).
+See the complete definition of [SocketServerNd](https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketServerNd.html).
 
 See also:
 
-- [NetData](doc/html/classtec_1_1NetData.html)
-- [NdCompress](doc/html/classtec_1_1NdCompress.html)
+- [NetData](https://olddeuteronomy.github.io/tec/html/classtec_1_1NetData.html)
+- [NdCompress](https://olddeuteronomy.github.io/tec/html/classtec_1_1NdCompress.html)
+
 
 #### Example: NetData Server
 
@@ -1311,18 +1320,18 @@ See the complete [example](https://github.com/olddeuteronomy/tec/blob/main/sampl
 
 See also:
 
-- [DataInOut](doc/html/structtec_1_1SocketServerNd_1_1DataInOut.html)
+- [DataInOut](https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketServerNd_1_1DataInOut.html)
 
 
 ### SocketClientNd
 
-Templated client socket [Actor](doc/html/classtec_1_1Actor.html) for
-[NetData](doc/html/classtec_1_1NetData.html) stream handling.
+Templated client socket [Actor](https://olddeuteronomy.github.io/tec/html/classtec_1_1Actor.html) for
+[NetData](https://olddeuteronomy.github.io/tec/html/classtec_1_1NetData.html) stream handling.
 
 <p align="center"><img src="img/SocketClientNd.png"></p>
 
-The [SocketClientNd](doc/html/classtec_1_1SocketClientNd.html) class extends
-[SocketClient](doc/html/classtec_1_1SocketClient.html) to support
+The [SocketClientNd](https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketClientNd.html) class extends
+[SocketClient](https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketClient.html) to support
 NetData-based requests and replies. It handles binary data
 transmission with optional compression, providing overrides for
 request processing and virtual methods for send/receive and data
@@ -1336,16 +1345,16 @@ Key features:
   [NetData::StreamOut](doc/html/structtec_1_1NetData_1_1StreamOut.html)
   for structured data exchange.
 - Supports compression/uncompression based on parameters.
-- Delegates to base class for non-NetData requests.
-- Integrates with [SocketNd](doc/html/structtec_1_1SocketNd.html) for
+- Integrates with [SocketNd](https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketNd.html) for
   low-level NetData socket operations.
 
-See the complete documentation of [SocketClientNd](doc/html/classtec_1_1SocketClientNd.html).
+See the complete documentation of [SocketClientNd](https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketClientNd.html).
 
 See also:
 
-- [NetData](doc/html/classtec_1_1NetData.html)
-- [NdCompress](doc/html/classtec_1_1NdCompress.html)
+- [NetData](https://olddeuteronomy.github.io/tec/html/classtec_1_1NetData.html)
+- [NdCompress](https://olddeuteronomy.github.io/tec/html/classtec_1_1NdCompress.html)
+
 
 #### Example: NetData Client
 
@@ -1466,23 +1475,23 @@ Parameters:
 
 TEC bundles several small utilities and helpers:
 
-- [tec_base64.hpp](doc/html/tec__base64_8hpp.html) --- A header-only Base64 encoder/decoder.
-- [tec_container.hpp](doc/html/tec__container_8hpp.html) -- Generic container and map traits.
-- [tec_dump.hpp](doc/html/tec__dump_8hpp.html) --- Debugging/inspecting helpers.
-- [tec_guid.hpp](doc/html/tec__guid_8hpp.html) --- GUID generation utilities.
-- [tec_json.hpp](doc/html/tec__json_8hpp.html) --- Simple JSON serialization.
-- [tec_memfile.hpp](doc/html/tec__memfile_8hpp.html) --- A byte buffer class with stream-like read/write semantics.
-- [tec_message.hpp](doc/html/tec__message_8hpp.html) --- Defines a flexible message type and helper functions.
-- [tec_print.hpp](doc/html/tec__print_8hpp.html) --- Provides variadic print and format utilities.
-- [tec_queue.hpp](doc/html/tec__queue_8hpp.html) --- Thread-safe queue implementation.
-- [tec_serialize.hpp](doc/html/tec__serialize_8hpp.html) --- he base interface for serializable objects.
-- [tec_signal.hpp](doc/html/tec__signal_8hpp.html) --- Defines a thread-safe signal implementation using mutex and condition variable.
-- [tec_status.hpp](doc/html/tec__status_8hpp.html) --- Defines error handling types and utilities.
-- [tec_thread_pool.hpp](doc/html/tec__thread__pool_8hpp.html) --- Simple, non-stealing thread pool implementation using a single shared task queue.
-- [tec_timestamp.hpp](doc/html/tec__timestamp_8hpp.html) --- A point in time since UNIX epoch.
-- [tec_trace.hpp](doc/html/tec__trace_8hpp.html) --- Provides a thread-safe tracing utility for debugging.
-- [tec_utils.hpp](doc/html/tec__utils_8hpp.html) --- Provides time-related utilities and system information functions.
-- [net/tec_nd_compress.hpp](doc/html/tec__nd__compress_8hpp.html) --- Compression wrapper for NetData objects with pluggable backends.
+- [tec_base64.hpp](https://olddeuteronomy.github.io/tec/html/tec__base64_8hpp.html) --- A header-only Base64 encoder/decoder.
+- [tec_container.hpp](https://olddeuteronomy.github.io/tec/html/tec__container_8hpp.html) -- Generic container and map traits.
+- [tec_dump.hpp](https://olddeuteronomy.github.io/tec/html/tec__dump_8hpp.html) --- Debugging/inspecting helpers.
+- [tec_guid.hpp](https://olddeuteronomy.github.io/tec/html/tec__guid_8hpp.html) --- GUID generation utilities.
+- [tec_json.hpp](https://olddeuteronomy.github.io/tec/html/tec__json_8hpp.html) --- Simple JSON serialization.
+- [tec_memfile.hpp](https://olddeuteronomy.github.io/tec/html/tec__memfile_8hpp.html) --- A byte buffer class with stream-like read/write semantics.
+- [tec_message.hpp](https://olddeuteronomy.github.io/tec/html/tec__message_8hpp.html) --- Defines a flexible message type and helper functions.
+- [tec_print.hpp](https://olddeuteronomy.github.io/tec/html/tec__print_8hpp.html) --- Provides variadic print and format utilities.
+- [tec_queue.hpp](https://olddeuteronomy.github.io/tec/html/tec__queue_8hpp.html) --- Thread-safe queue implementation.
+- [tec_serialize.hpp](https://olddeuteronomy.github.io/tec/html/tec__serialize_8hpp.html) --- he base interface for serializable objects.
+- [tec_signal.hpp](https://olddeuteronomy.github.io/tec/html/tec__signal_8hpp.html) --- Defines a thread-safe signal implementation using mutex and condition variable.
+- [tec_status.hpp](https://olddeuteronomy.github.io/tec/html/tec__status_8hpp.html) --- Defines error handling types and utilities.
+- [tec_thread_pool.hpp](https://olddeuteronomy.github.io/tec/html/tec__thread__pool_8hpp.html) --- Simple, non-stealing thread pool implementation using a single shared task queue.
+- [tec_timestamp.hpp](https://olddeuteronomy.github.io/tec/html/tec__timestamp_8hpp.html) --- A point in time since UNIX epoch.
+- [tec_trace.hpp](https://olddeuteronomy.github.io/tec/html/tec__trace_8hpp.html) --- Provides a thread-safe tracing utility for debugging.
+- [tec_utils.hpp](https://olddeuteronomy.github.io/tec/html/tec__utils_8hpp.html) --- Provides time-related utilities and system information functions.
+- [net/tec_nd_compress.hpp](https://olddeuteronomy.github.io/tec/html/tec__nd__compress_8hpp.html) --- Compression wrapper for NetData objects with pluggable backends.
 
 
 
@@ -1522,7 +1531,7 @@ servers/clients, message queues, background workers, etc.).
 
 Configuration parameters for gRPC server instances.
 
-See the complete documentation of [GrpcServerParams](doc/html/structtec_1_1GrpcServerParams.html).
+See the complete documentation of [GrpcServerParams](https://olddeuteronomy.github.io/tec/html/structtec_1_1GrpcServerParams.html).
 
 
 ### GrpcClientParams
@@ -1531,7 +1540,7 @@ Configuration parameters for gRPC client instances.
 
 Defines default timeouts and configuration options for gRPC client operations.
 
-See the complete documentation of [GrpcClientParams](doc/html/structtec_1_1GrpcClientParams.html).
+See the complete documentation of [GrpcClientParams](https://olddeuteronomy.github.io/tec/html/structtec_1_1GrpcClientParams.html).
 
 
 ### GrpcServer
@@ -1553,12 +1562,13 @@ Concrete servers should inherit from this class and implement
 `process_request()` if synchronous request handling is needed, or
 override `start()` / use async service registration patterns.
 
-See the complete documentation of [GrpcServer](doc/html/classtec_1_1GrpcServer.html).
+See the complete documentation of [GrpcServer](https://olddeuteronomy.github.io/tec/html/classtec_1_1GrpcServer.html).
 
 See also:
 
-- [Actor](doc/html/classtec_1_1Actor.html)
-- [GrpcServerParams](doc/html/structtec_1_1GrpcServerParams.html)
+- [Actor](https://olddeuteronomy.github.io/tec/html/classtec_1_1Actor.html)
+- [GrpcServerParams](https://olddeuteronomy.github.io/tec/html/structtec_1_1GrpcServerParams.html)
+
 
 #### Example: GrpcServer Declarations
 
@@ -1764,12 +1774,12 @@ with timeout, and creating a service stub.
 Concrete clients should inherit from this class and implement
 `process_request()` to perform actual RPC calls.
 
-See the complete documentation of [GrpcClient](doc/html/classtec_1_1GrpcClient.html).
+See the complete documentation of [GrpcClient](https://olddeuteronomy.github.io/tec/html/classtec_1_1GrpcClient.html).
 
 See also:
 
-- [Actor](doc/html/classtec_1_1Actor.html)
-- [GrpcClientParams](doc/html/structtec_1_1GrpcClientParams.html).
+- [Actor](https://olddeuteronomy.github.io/tec/html/classtec_1_1Actor.html)
+- [GrpcClientParams](https://olddeuteronomy.github.io/tec/html/structtec_1_1GrpcClientParams.html).
 
 #### Example: GrpcClient Declarations
 
@@ -1804,6 +1814,7 @@ std::unique_ptr<tec::Daemon> build_client(const ClientParams&);
 ```
 
 See the complete [example](https://github.com/olddeuteronomy/tec/blob/main/samples/grpc/client.hpp).
+
 
 #### Example: GrpcClient Implementation
 
@@ -1916,6 +1927,7 @@ std::unique_ptr<tec::Daemon> build_client(const ClientParams& params) {
 ```
 
 See the complete [example](https://github.com/olddeuteronomy/tec/blob/main/samples/grpc/client.cpp).
+
 
 #### Example: Run GrpcClient
 
@@ -2042,10 +2054,10 @@ limitations under the License.
 
 ### zlib
 
-<pre>
 The following applies if zlib is optionally enabled in the TEC
 library's build configuration:
 
+<pre>
 Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler.
 
 Licensed under the zlib License. See the full terms at
@@ -2053,6 +2065,7 @@ Licensed under the zlib License. See the full terms at
 </pre>
 
 ### gRPC
+
 The following applies if gRPC is optionally used in the TEC library:
 
 <pre>

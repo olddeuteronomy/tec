@@ -1,0 +1,32 @@
+zlib
+----
+
+The following applies if zlib is optionally enabled in the TEC
+library's build configuration:
+
+Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler.
+
+Licensed under the zlib License. See the full terms at
+https://zlib.net/zlib_license.html
+
+
+gRPC
+----
+
+The following applies if gRPC is optionally used in the TEC library:
+
+Copyright (C) 2014-2023 The gRPC Authors.
+
+Licensed under the Apache License, Version 2.0.
+You may obtain a copy at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+See the full license terms at
+
+  https://github.com/grpc/grpc/blob/master/LICENSE
+
+Certain components (e.g., Objective-C podspecs) may use BSD 3-Clause
+License (Copyright 2016 Google Inc.), and roots.pem uses Mozilla
+Public License 2.0. Consult the full LICENSE for details on
+redistribution.

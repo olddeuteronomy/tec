@@ -12,13 +12,12 @@ build/
 # MacOS Cache
 .DS_Store
 
-# Comment this line to include doc/ directory
-# doc/
+# Exclude documentation
+html/
 
 # Test
 # --------------------------------------------
 README.html
-# README.md
 
 # Prerequisites
 *.d
