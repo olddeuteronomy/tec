@@ -1077,7 +1077,7 @@ Templated client socket actor for establishing and managing connections.
 
 <p align="center"><img src="img/SocketClient.png"></p>
 
-The [SocketClient](doc/html/classtec_1_1SocketClient.html) class
+The [SocketClient](https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketClient.html) class
 provides a mechanism to connect to a server using socket APIs, send
 and receive data (primarily strings via SocketCharStreamIn/Out), and
 handle actor lifecycle events like start and shutdown. It uses a
