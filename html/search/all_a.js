@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['i16_0',['I16',['../structtec_1_1NdTypes_1_1Tags.html#afe2fcfb16e98f1cc8d7df54c366dbabe',1,'tec::NdTypes::Tags']]],
+  ['i32_1',['I32',['../structtec_1_1NdTypes_1_1Tags.html#a9d5ed78fb0962faf27086dd46645195c',1,'tec::NdTypes::Tags']]],
+  ['i64_2',['I64',['../structtec_1_1NdTypes_1_1Tags.html#a765f87e7a2b90c52df9a62a22486a3ca',1,'tec::NdTypes::Tags']]],
+  ['i8_3',['I8',['../structtec_1_1NdTypes_1_1Tags.html#a4ef24206be8b42248a0e62d78bc302f4',1,'tec::NdTypes::Tags']]],
+  ['ibool_4',['IBool',['../structtec_1_1NdTypes_1_1Tags.html#a51ebd536a3eaaf02c16fb4e40db68de2',1,'tec::NdTypes::Tags']]],
+  ['id_5',['id',['../classtec_1_1Worker.html#a074ed67b3f69e481ab206bdd5e0e4376',1,'tec::Worker::id()'],['../structtec_1_1NdTypes.html#a108abdd55da1f1e9f2ca58f4393e7eb9',1,'tec::NdTypes::ID'],['../structtec_1_1NdTypes_1_1Header.html#add522d754a25f61e358cca82eeee7417',1,'tec::NdTypes::Header::id'],['../structtec_1_1NdRoot.html#a9d68bf13c809ab9a0ec0c82590a85514',1,'tec::NdRoot::id()']]],
+  ['id_5ft_6',['id_t',['../classtec_1_1Worker.html#a51d94b3c2b2f4c73155596c931dca5d0',1,'tec::Worker']]],
+  ['implementation_7',['implementation',['../md_README.html#autotoc_md11',1,'Example: Actor implementation'],['../md_README.html#autotoc_md40',1,'Example: GrpcClient Implementation'],['../md_README.html#autotoc_md36',1,'Example: GrpcServer Implementation'],['../md_README.html#autotoc_md8',1,'Example: TestWorker Implementation']]],
+  ['in_20concurrent_20environments_8',['TEC: Header-Only, Template-Based C++ Library for Multithreaded Execution in Concurrent Environments',['../md_README.html',1,'']]],
+  ['infix_9',['infix',['../structtec_1_1Json.html#a48ab26657db6ec81fbf607b332a724b9',1,'tec::Json']]],
+  ['introduction_10',['Introduction',['../md_README.html#autotoc_md2',1,'']]],
+  ['invalid_11',['Invalid',['../structtec_1_1Error.html#aa8e779eed4e02e4f62add303fba422b1a4bbb8f967da6d1a610596d7257179c2b',1,'tec::Error']]],
+  ['ioerr_12',['IOErr',['../structtec_1_1Error.html#aa8e779eed4e02e4f62add303fba422b1addb366bed358ab901c9b0719e1a36f98',1,'tec::Error']]],
+  ['is_5fcontainer_13',['is_container',['../structtec_1_1is__container.html',1,'tec']]],
+  ['is_5fcontainer_3c_20t_2c_20std_3a_3avoid_5ft_3c_20decltype_28std_3a_3adeclval_3c_20t_20_3e_28_29_2ebegin_28_29_29_2c_20decltype_28std_3a_3adeclval_3c_20t_20_3e_28_29_2eend_28_29_29_2c_20decltype_28std_3a_3adeclval_3c_20t_20_3e_28_29_2esize_28_29_29_20_3e_20_3e_14',['is_container&lt; T, std::void_t&lt; decltype(std::declval&lt; T &gt;().begin()), decltype(std::declval&lt; T &gt;().end()), decltype(std::declval&lt; T &gt;().size()) &gt; &gt;',['../structtec_1_1is__container_3_01T_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_01T_01_4_071cb86b6fcdfe192f892c67fe7a98f3c1.html',1,'tec']]],
+  ['is_5fcontainer_5fv_15',['is_container_v',['../tec__container_8hpp.html#ac36788591d2dc329335ea059d558030c',1,'tec']]],
+  ['is_5fjson_5fserializable_5fv_16',['is_json_serializable_v',['../tec__serialize_8hpp.html#a78bb0cd4f765e992c0ec240a73686f3d',1,'tec']]],
+  ['is_5fmap_17',['is_map',['../structtec_1_1is__map.html',1,'tec']]],
+  ['is_5fmap_3c_20t_2c_20std_3a_3avoid_5ft_3c_20decltype_28std_3a_3adeclval_3c_20t_20_3e_28_29_2ebegin_28_29_29_2c_20decltype_28std_3a_3adeclval_3c_20t_20_3e_28_29_2eend_28_29_29_2c_20decltype_28std_3a_3adeclval_3c_20t_20_3e_28_29_2esize_28_29_29_2c_20decltype_28std_3a_3adeclval_3c_20t_20_3e_28_29_2ebucket_5fcount_28_29_29_20_3e_20_3e_18',['is_map&lt; T, std::void_t&lt; decltype(std::declval&lt; T &gt;().begin()), decltype(std::declval&lt; T &gt;().end()), decltype(std::declval&lt; T &gt;().size()), decltype(std::declval&lt; T &gt;().bucket_count()) &gt; &gt;',['../structtec_1_1is__map_3_01T_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_01T_01_4_07_08_8b890c01f4f4d199b539114c126aad99d2.html',1,'tec']]],
+  ['is_5fmap_5fv_19',['is_map_v',['../tec__container_8hpp.html#a461458adaea86fa09f986224d7de4916',1,'tec']]],
+  ['is_5fnull_20',['is_null',['../tec__message_8hpp.html#a2fe7b6215773dd57dca952ca0c1c3f9b',1,'tec']]],
+  ['is_5froot_5fv_21',['is_root_v',['../tec__serialize_8hpp.html#aa23baf0a54a6bb518595ffa1a78c164d',1,'tec']]],
+  ['is_5fserializable_5fv_22',['is_serializable_v',['../tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b',1,'tec']]],
+  ['is_5fvalid_23',['is_valid',['../tec__base64_8hpp.html#ab048ce73065d4b5115cc7d5c2d7bc484',1,'tec::base64::is_valid()'],['../structtec_1_1NdTypes_1_1Header.html#a36ce8b9bd8d85cd3a32118fc483077b5',1,'tec::NdTypes::Header::is_valid()']]]
+];
