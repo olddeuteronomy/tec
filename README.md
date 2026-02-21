@@ -271,7 +271,7 @@ protected:
 // Expose actual Worker implementation as Daemon.
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-std::unique_ptr<tec::Daemon> create_test_worker(const TestParams&)  {
+std::unique_ptr<tec::Daemon> create_test_worker(const TestParams& params)  {
     auto daemon{tec::Daemon::Builder<TestWorker>{}(params)};
     return daemon;
 }
