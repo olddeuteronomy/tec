@@ -4,6 +4,7 @@
 ## Contents
 
 - [Introduction](#introduction)
+  - [Typical Applications](#typical-applications)
   - [Why C++17](#why-c17)
 - [Core Abstractions](#core-abstractions)
   - [Daemon](#daemon)
@@ -72,6 +73,39 @@ platform-specific code.
 Note that TEC has **no external dependencies** (the use of *gRPC* and
 *Zlib* is optional), ensuring it can be dropped into any project without
 requiring third-party libraries or tools.
+
+### Typical Applications
+
+TEC is a versatile library well-suited for scenarios demanding
+efficiency, portability, and minimal overhead. Its header-only design
+ensures seamless integration without compilation dependencies, making
+it ideal for rapid prototyping and deployment across platforms. Below
+are some common applications:
+
+- **Embedded Systems**: Leveraging its lightweight nature for
+    resource-constrained environments like IoT devices,
+    microcontrollers, and real-time systems where low overhead is
+    crucial.
+- **Networking Tools**: Building efficient TCP servers and clients
+    with minimal memory usage, suitable for communication protocols in
+    distributed applications.
+- **System Utilities**: Implementing daemons and background processes
+    via the universal Daemon API (DAPI), enabling cross-platform service
+    management.
+
+TEC excels in creating **lightweight microservices**, which can be easily
+containerized. Its header-only structure simplifies inclusion in
+projects, allowing for quick builds and deployments in environments
+like Docker or Kubernetes. This makes it possible to develop scalable,
+efficient services with reduced image sizes and faster startup times.
+
+For **modeling large distributed systems**, TEC's low memory
+footprint—particularly for TCP servers and clients (see
+[TestResults](#test-results))—combined with its universal Daemon API,
+facilitates simulation and implementation of complex, interconnected
+architectures. This enables handling high volumes of connections with
+minimal resource consumption, ideal for cloud-based or edge computing
+scenarios.
 
 ### Why C++17
 
@@ -282,7 +316,8 @@ std::unique_ptr<tec::Daemon> create_test_worker(const TestParams& params)  {
 Key points:
 
 - The actual TestWorker implementation is **decoupled** from the application code.
-- The compilation units `worker.cpp` and `run_test_worker.cpp` are **independent**.
+- The compilation units `worker.cpp` and `run_test_worker.cpp` are
+  **independent** from each other.
 
 ```cpp
 // run_test_worker.cpp
@@ -1462,13 +1497,13 @@ Parameters:
 - `tcp_server` / `tcp_server_nd`
 
 | Mode       | Compression | Thread Pool | Memory (when idle) | Startup Time |
-|------------| :---------: | :---------: | :----------------: | :----------: |
-| CharStream | N/A         | Off         | 258 K              | ~1 ms        |
-| CharStream | N/A         | 8 threads   | 508 K              | ~1 ms        |
-| NetData    | Off         | Off         | 262 K              | ~1 ms        |
-| NetData    | Off         | 8 threads   | 578 K              | ~1 ms        |
-| NetData    | Zlib        | Off         | 300 K              | ~1 ms        |
-| NetData    | Zlib        | 8 threads   | 778 K              | ~1 ms        |
+|------------|:-----------:|:-----------:|:------------------:|:------------:|
+| CharStream | N/A         | Off         | 258 KB             | ~1 ms        |
+| CharStream | N/A         | 8 threads   | 508 KB             | ~1 ms        |
+| NetData    | Off         | Off         | 262 KB             | ~1 ms        |
+| NetData    | Off         | 8 threads   | 578 KB             | ~1 ms        |
+| NetData    | Zlib        | Off         | 300 KB             | ~1 ms        |
+| NetData    | Zlib        | 8 threads   | 778 KB             | ~1 ms        |
 
 
 ## Additional Utilities
