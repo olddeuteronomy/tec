@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-08 01:25:17 by magnolia>
+// Time-stamp: <Last changed 2026-02-25 00:41:51 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -18,6 +18,7 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 ----------------------------------------------------------------------*/
 
 // stdlib++
+#include <atomic>
 #include <memory>
 #include <csignal>
 #include <string>
@@ -71,7 +72,7 @@ using helloworld::HelloRequest;
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-static int count{0};
+static std::atomic_int count{0};
 
 // Implement gRPC service - logic and data behind the server's behavior.
 class TestService final : public Greeter::Service {

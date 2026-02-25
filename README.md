@@ -1670,7 +1670,7 @@ using helloworld::HelloRequest;
 *                        Implement gRPC Service
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
-static int count{0};
+static std::atomic_int count{0};
 
 // Implement gRPC service -- logic and data behind the server's behavior.
 class TestService final : public Greeter::Service {
@@ -1704,9 +1704,9 @@ using ServerTraits = tec::grpc_server_traits<
     >;
 
 // Instantiate gRPC Server.
-class Server: public tec::GrpcServer<ServerParams, ServerTraits> {
+class Server final : public tec::GrpcServer<ServerParams, ServerTraits> {
 public:
-    Server(const ServerParams& params)
+    explicit Server(const ServerParams& params)
         : tec::GrpcServer<ServerParams, ServerTraits>{params, grpc::InsecureServerCredentials()}
     {}
 };
@@ -2069,7 +2069,7 @@ make -k -B -j4 CLANG=1 REL=1 ZLIB=1
 ## LICENSE
 
 <pre>
-Copyright (C) 2020-2026 The Emacs Cat.
+Copyright 2020-2026 The Emacs Cat.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -2082,6 +2082,10 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+See the full license terms at
+
+  <a href="https://github.com/olddeuteronomy/tec/blob/main/LICENSE">https://github.com/olddeuteronomy/tec/blob/main/LICENSE</a>
 </pre>
 
 
@@ -2096,7 +2100,8 @@ library's build configuration:
 Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler.
 
 Licensed under the zlib License. See the full terms at
-<a href="https://zlib.net/zlib_license.html">https://zlib.net/zlib_license.html</a>.
+
+  <a href="https://zlib.net/zlib_license.html">https://zlib.net/zlib_license.html</a>.
 </pre>
 
 ### gRPC
@@ -2104,7 +2109,7 @@ Licensed under the zlib License. See the full terms at
 The following applies if gRPC is optionally used in the TEC library:
 
 <pre>
-Copyright (C) 2014-2023 The gRPC Authors.
+Copyright 2014-2023 The gRPC Authors.
 
 Licensed under the Apache License, Version 2.0.
 You may obtain a copy at
