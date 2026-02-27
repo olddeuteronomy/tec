@@ -17,7 +17,7 @@ var searchData=
   ['kdefaultserverflags_14',['kDefaultServerFlags',['../structtec_1_1SocketParams.html#af9e2ac5c8437bd23e0c7da0caf52a70c',1,'tec::SocketParams']]],
   ['kdefaultsocktype_15',['kDefaultSockType',['../structtec_1_1SocketParams.html#a4af0fc7466ccb1519d124415cb477dc6',1,'tec::SocketParams']]],
   ['kdefaultversion_16',['kDefaultVersion',['../structtec_1_1NdTypes_1_1Header.html#a34337cc4c625959d9899fce7f12af032',1,'tec::NdTypes::Header']]],
-  ['kind_17',['kind',['../structtec_1_1Error.html#aa8e779eed4e02e4f62add303fba422b1',1,'tec::Error::Kind'],['../structtec_1_1TStatus.html#a26115729a7a562e60d83cd81fb2c9134',1,'tec::TStatus::kind']]],
+  ['kind_17',['kind',['../structtec_1_1TStatus.html#a26115729a7a562e60d83cd81fb2c9134',1,'tec::TStatus::kind'],['../structtec_1_1Error.html#aa8e779eed4e02e4f62add303fba422b1',1,'tec::Error::Kind']]],
   ['kind_5fas_5fstring_18',['kind_as_string',['../tec__status_8hpp.html#a5e19ea69d134eaea86b1a6df9f130d33',1,'tec']]],
   ['klocaladdr_19',['kLocalAddr',['../structtec_1_1SocketParams.html#a916ec7919751a4d4a7be8ed5cea66e70',1,'tec::SocketParams']]],
   ['klocaladdrip6_20',['kLocalAddrIP6',['../structtec_1_1SocketParams.html#a9e0ddbc49d87af2376f46577ac7f1691',1,'tec::SocketParams']]],

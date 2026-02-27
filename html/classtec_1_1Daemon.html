@@ -145,12 +145,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6ad6418dbf4658bf4ae6a4989304bb63" id="r_a6ad6418dbf4658bf4ae6a4989304bb63"><td class="memItemLeft" align="right" valign="top"><a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">virtual</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">void</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtec_1_1Daemon.html#a6ad6418dbf4658bf4ae6a4989304bb63">send</a> (<a class="el" href="tec__message_8hpp.html#a9a5f12105ec8d63130dc96ee5dac4e98">Message</a> &amp;&amp;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">msg</a>)=0</td></tr>
 <tr class="memdesc:a6ad6418dbf4658bf4ae6a4989304bb63"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sends a control message to the daemon.  <br /></td></tr>
 <tr class="separator:a6ad6418dbf4658bf4ae6a4989304bb63"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acb36f19ed5e583cec126c8f9066f09e1" id="r_acb36f19ed5e583cec126c8f9066f09e1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">virtual</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> <a class="el" href="classtec_1_1Signal.html">Signal</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtec_1_1Daemon.html#acb36f19ed5e583cec126c8f9066f09e1">sig_running</a> () <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> =0</td></tr>
-<tr class="memdesc:acb36f19ed5e583cec126c8f9066f09e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the signal indicating the daemon is running.  <br /></td></tr>
-<tr class="separator:acb36f19ed5e583cec126c8f9066f09e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9705043905f37d76dfaa98f599f9dce1" id="r_a9705043905f37d76dfaa98f599f9dce1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">virtual</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> <a class="el" href="classtec_1_1Signal.html">Signal</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtec_1_1Daemon.html#a9705043905f37d76dfaa98f599f9dce1">sig_inited</a> () <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> =0</td></tr>
-<tr class="memdesc:a9705043905f37d76dfaa98f599f9dce1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the signal indicating the daemon is initialized.  <br /></td></tr>
-<tr class="separator:a9705043905f37d76dfaa98f599f9dce1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1c73c037c08c490c5f0c84017c49ba2" id="r_ab1c73c037c08c490c5f0c84017c49ba2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">virtual</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> <a class="el" href="classtec_1_1Signal.html">Signal</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtec_1_1Daemon.html#ab1c73c037c08c490c5f0c84017c49ba2">sig_terminated</a> () <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> =0</td></tr>
 <tr class="memdesc:ab1c73c037c08c490c5f0c84017c49ba2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the signal indicating the daemon is terminated.  <br /></td></tr>
 <tr class="separator:ab1c73c037c08c490c5f0c84017c49ba2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -432,66 +426,6 @@ template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b76
 
 </div>
 </div>
-<a id="a9705043905f37d76dfaa98f599f9dce1" name="a9705043905f37d76dfaa98f599f9dce1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9705043905f37d76dfaa98f599f9dce1">&#9670;&#160;</a></span>sig_inited()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">virtual</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> <a class="el" href="classtec_1_1Signal.html">Signal</a> &amp; tec::Daemon::sig_inited </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Retrieves the signal indicating the daemon is initialized. </p>
-<p>Returns a reference to the signal that indicates the daemon has completed initialization, possibly with an error. Must be implemented by derived classes. </p><dl class="section return"><dt>Returns</dt><dd>const <a class="el" href="classtec_1_1Signal.html" title="A thread-safe signal mechanism for inter-thread synchronization.">Signal</a>&amp; The initialization signal. </dd></dl>
-
-<p>Implemented in <a class="el" href="classtec_1_1Worker.html#a8816cb621927e022169ae88e3866602d">tec::Worker&lt; TParams &gt;</a>, and <a class="el" href="classtec_1_1Worker.html#a8816cb621927e022169ae88e3866602d">tec::Worker&lt; Params &gt;</a>.</p>
-
-</div>
-</div>
-<a id="acb36f19ed5e583cec126c8f9066f09e1" name="acb36f19ed5e583cec126c8f9066f09e1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acb36f19ed5e583cec126c8f9066f09e1">&#9670;&#160;</a></span>sig_running()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">virtual</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> <a class="el" href="classtec_1_1Signal.html">Signal</a> &amp; tec::Daemon::sig_running </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Retrieves the signal indicating the daemon is running. </p>
-<p>Returns a reference to the signal that indicates the daemon has started and is operational. Must be implemented by derived classes. </p><dl class="section return"><dt>Returns</dt><dd>const <a class="el" href="classtec_1_1Signal.html" title="A thread-safe signal mechanism for inter-thread synchronization.">Signal</a>&amp; The running signal. </dd></dl>
-
-<p>Implemented in <a class="el" href="classtec_1_1Worker.html#a272b1a500666190bed171bf1334d45f0">tec::Worker&lt; TParams &gt;</a>, and <a class="el" href="classtec_1_1Worker.html#a272b1a500666190bed171bf1334d45f0">tec::Worker&lt; Params &gt;</a>.</p>
-
-</div>
-</div>
 <a id="ab1c73c037c08c490c5f0c84017c49ba2" name="ab1c73c037c08c490c5f0c84017c49ba2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab1c73c037c08c490c5f0c84017c49ba2">&#9670;&#160;</a></span>sig_terminated()</h2>
 
@@ -547,6 +481,7 @@ template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b76
 
 <p>Terminates the daemon's operation. </p>
 <p>Stops the daemon's background process or thread. Must be implemented by derived classes. </p><dl class="section return"><dt>Returns</dt><dd>Status The result of the termination operation. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="classtec_1_1Daemon.html#ab1c73c037c08c490c5f0c84017c49ba2" title="Retrieves the signal indicating the daemon is terminated.">sig_terminated()</a> </dd></dl>
 
 <p>Implemented in <a class="el" href="classtec_1_1Worker.html#a75e64e50e073447ba68ad08b56f41b06">tec::Worker&lt; TParams &gt;</a>, and <a class="el" href="classtec_1_1Worker.html#a75e64e50e073447ba68ad08b56f41b06">tec::Worker&lt; Params &gt;</a>.</p>
 

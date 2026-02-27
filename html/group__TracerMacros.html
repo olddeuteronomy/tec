@@ -102,15 +102,24 @@ $(document).ready(function(){initNavTree('group__TracerMacros.html',''); initRes
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:ga22ceef691c93794829defef074037bef" id="r_ga22ceef691c93794829defef074037bef"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__TracerMacros.html#ga22ceef691c93794829defef074037bef">TEC_ENTER</a>(name)</td></tr>
-<tr class="memdesc:ga22ceef691c93794829defef074037bef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disabled tracing macro for entry logging.  <br /></td></tr>
+<tr class="memdesc:ga22ceef691c93794829defef074037bef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logs an entry message for a named context (e.g., function).  <br /></td></tr>
 <tr class="separator:ga22ceef691c93794829defef074037bef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga67aa54721d30874b83d38521efed1748" id="r_ga67aa54721d30874b83d38521efed1748"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__TracerMacros.html#ga67aa54721d30874b83d38521efed1748">TEC_TRACE</a>(...)</td></tr>
-<tr class="memdesc:ga67aa54721d30874b83d38521efed1748"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disabled tracing macro for formatted messages.  <br /></td></tr>
+<tr class="memdesc:ga67aa54721d30874b83d38521efed1748"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logs a formatted trace message.  <br /></td></tr>
 <tr class="separator:ga67aa54721d30874b83d38521efed1748"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Macros for enabling and controlling tracing functionality. </p>
-<p>These macros provide a convenient interface for tracing when _TEC_TRACE_ON is defined. They are disabled otherwise to avoid performance overhead. </p>
+<p>These macros provide a convenient interface for tracing when _TEC_TRACE_ON is defined. They are disabled otherwise to avoid performance overhead. </p><dl class="section user"><dt>Example</dt><dd><div class="fragment"><div class="line"><span class="keywordtype">void</span> func_name(<span class="keywordtype">int</span> param) {</div>
+<div class="line">    <a class="code hl_define" href="group__TracerMacros.html#ga22ceef691c93794829defef074037bef">TEC_ENTER</a>(<span class="stringliteral">&quot;func_name&quot;</span>);</div>
+<div class="line">    <a class="code hl_define" href="group__TracerMacros.html#ga67aa54721d30874b83d38521efed1748">TEC_TRACE</a>(<span class="stringliteral">&quot;called with `param`={}&quot;</span>, param);</div>
+<div class="line">    <a class="code hl_class" href="structtec_1_1TStatus.html">tec::Status</a> status = call_some_func(param);</div>
+<div class="line">    <a class="code hl_define" href="group__TracerMacros.html#ga67aa54721d30874b83d38521efed1748">TEC_TRACE</a>(<span class="stringliteral">&quot;call_some_func({}) returned {}.&quot;</span>, param, status);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__TracerMacros_html_ga22ceef691c93794829defef074037bef"><div class="ttname"><a href="group__TracerMacros.html#ga22ceef691c93794829defef074037bef">TEC_ENTER</a></div><div class="ttdeci">#define TEC_ENTER(name)</div><div class="ttdoc">Logs an entry message for a named context (e.g., function).</div><div class="ttdef"><b>Definition</b> tec_trace.hpp:211</div></div>
+<div class="ttc" id="agroup__TracerMacros_html_ga67aa54721d30874b83d38521efed1748"><div class="ttname"><a href="group__TracerMacros.html#ga67aa54721d30874b83d38521efed1748">TEC_TRACE</a></div><div class="ttdeci">#define TEC_TRACE(...)</div><div class="ttdoc">Logs a formatted trace message.</div><div class="ttdef"><b>Definition</b> tec_trace.hpp:222</div></div>
+<div class="ttc" id="astructtec_1_1TStatus_html"><div class="ttname"><a href="structtec_1_1TStatus.html">tec::TStatus&lt; int, std::string &gt;</a></div></div>
+</div><!-- fragment --> </dd></dl>
 <h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="ga22ceef691c93794829defef074037bef" name="ga22ceef691c93794829defef074037bef"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga22ceef691c93794829defef074037bef">&#9670;&#160;</a></span>TEC_ENTER</h2>
@@ -128,8 +137,14 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Disabled tracing macro for entry logging. </p>
-<p>Does nothing when _TEC_TRACE_ON is not defined. </p>
+<p>Logs an entry message for a named context (e.g., function). </p>
+<p>Creates a Tracer object and calls its enter() method to log a timestamped entry message. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">name</td><td>The name of the context to trace (e.g., function name). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>Does nothing when _TEC_TRACE_ON is not defined. </dd></dl>
 
 </div>
 </div>
@@ -149,8 +164,15 @@ Macros</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Disabled tracing macro for formatted messages. </p>
-<p>Does nothing when _TEC_TRACE_ON is not defined. </p>
+<p>Logs a formatted trace message. </p>
+<p>Calls the trace() method on a Tracer object to log a timestamped message with the provided format string and arguments. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">format_string</td><td>The format string containing "{}" placeholders. </td></tr>
+    <tr><td class="paramname">args</td><td>The arguments to include in the trace message. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>Does nothing when _TEC_TRACE_ON is not defined. </dd></dl>
 
 </div>
 </div>

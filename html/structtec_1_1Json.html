@@ -139,7 +139,7 @@ Static Public Member Functions</h2></td></tr>
 <tr class="separator:ae941d891d18c1b9a0f9358d382208363"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb29ce37adf7dd280143de4078318da1" id="r_acb29ce37adf7dd280143de4078318da1"><td class="memTemplParams" colspan="2">template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">TObject</a> &gt; </td></tr>
 <tr class="memitem:acb29ce37adf7dd280143de4078318da1"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">static</a> std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structtec_1_1Json.html#acb29ce37adf7dd280143de4078318da1">json_object</a> (<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">TObject</a> &amp;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">obj</a>, <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">char</a> *<a class="el" href="tec__message_8hpp.html#acd425e566f8f5b08fa56c961b30c2ca0">name</a>)</td></tr>
-<tr class="memdesc:acb29ce37adf7dd280143de4078318da1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize a <a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary and JSON serialization.">tec::Serializable</a>-derived object as a nested JSON object.  <br /></td></tr>
+<tr class="memdesc:acb29ce37adf7dd280143de4078318da1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize a <a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary serialization.">tec::Serializable</a>-derived object as a nested JSON object.  <br /></td></tr>
 <tr class="separator:acb29ce37adf7dd280143de4078318da1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49c18ef5750c610f1b4f29f702d14bee" id="r_a49c18ef5750c610f1b4f29f702d14bee"><td class="memTemplParams" colspan="2">template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">T</a> &gt; </td></tr>
 <tr class="memitem:a49c18ef5750c610f1b4f29f702d14bee"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">static</a> std::string&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structtec_1_1Json.html#a49c18ef5750c610f1b4f29f702d14bee">json</a> (<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">T</a> &amp;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">val</a>, <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">const</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">char</a> *<a class="el" href="tec__message_8hpp.html#acd425e566f8f5b08fa56c961b30c2ca0">name</a>)</td></tr>
@@ -159,7 +159,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Utility class for generating minimal, valid JSON strings at compile-time and runtime. </p>
-<p><code><a class="el" href="structtec_1_1Json.html" title="Utility class for generating minimal, valid JSON strings at compile-time and runtime.">Json</a></code> provides a lightweight, header-only way to convert basic C++ types, containers, and <code><a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary and JSON serialization.">tec::Serializable</a></code> objects into JSON-formatted strings.</p>
+<p><code><a class="el" href="structtec_1_1Json.html" title="Utility class for generating minimal, valid JSON strings at compile-time and runtime.">Json</a></code> provides a lightweight, header-only way to convert basic C++ types, containers, and <code><a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary serialization.">tec::Serializable</a></code> objects into JSON-formatted strings.</p>
 <p>It is intentionally minimal — no external dependencies, no parsing, only serialization. The output is valid JSON but not pretty-printed (compact form).</p>
 <p>Supports:</p><ul>
 <li>Fundamental types (<code>int</code>, <code>float</code>, <code>bool</code>, etc.)</li>
@@ -195,7 +195,7 @@ Static Public Attributes</h2></td></tr>
 <div class="line">};</div>
 <div class="ttc" id="astructtec_1_1Json_html"><div class="ttname"><a href="structtec_1_1Json.html">tec::Json</a></div><div class="ttdoc">Utility class for generating minimal, valid JSON strings at compile-time and runtime.</div><div class="ttdef"><b>Definition</b> tec_json.hpp:62</div></div>
 <div class="ttc" id="astructtec_1_1Json_html_ade21fcf894df8aab2745795a846f783f"><div class="ttname"><a href="structtec_1_1Json.html#ade21fcf894df8aab2745795a846f783f">tec::Json::sep</a></div><div class="ttdeci">static constexpr char sep[]</div><div class="ttdoc">Separator used between array/object elements.</div><div class="ttdef"><b>Definition</b> tec_json.hpp:65</div></div>
-<div class="ttc" id="astructtec_1_1Serializable_html"><div class="ttname"><a href="structtec_1_1Serializable.html">tec::Serializable</a></div><div class="ttdoc">Base interface for objects that support binary and JSON serialization.</div><div class="ttdef"><b>Definition</b> tec_serialize.hpp:60</div></div>
+<div class="ttc" id="astructtec_1_1Serializable_html"><div class="ttname"><a href="structtec_1_1Serializable.html">tec::Serializable</a></div><div class="ttdoc">Base interface for objects that support binary serialization.</div><div class="ttdef"><b>Definition</b> tec_serialize.hpp:60</div></div>
 <div class="ttc" id="atec__message_8hpp_html_acd425e566f8f5b08fa56c961b30c2ca0"><div class="ttname"><a href="tec__message_8hpp.html#acd425e566f8f5b08fa56c961b30c2ca0">tec::name</a></div><div class="ttdeci">auto name(const Message &amp;msg) noexcept</div><div class="ttdoc">Retrieves the type name of a message's content for registering the corresponding message handler.</div><div class="ttdef"><b>Definition</b> tec_message.hpp:84</div></div>
 </div><!-- fragment --> </div><h2 class="groupheader">Member Function Documentation</h2>
 <a id="afc72ec63ae4edbc3cc00f62b02e6895e" name="afc72ec63ae4edbc3cc00f62b02e6895e"></a>
@@ -328,7 +328,7 @@ template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b76
 
 <p>Generic JSON serializer with automatic type dispatching. </p>
 <p>Dispatches to the most appropriate specialization based on type traits:</p><ol type="1">
-<li><code><a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary and JSON serialization.">tec::Serializable</a></code> → <code><a class="el" href="structtec_1_1Json.html#acb29ce37adf7dd280143de4078318da1" title="Serialize a tec::Serializable-derived object as a nested JSON object.">json_object()</a></code></li>
+<li><code><a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary serialization.">tec::Serializable</a></code> → <code><a class="el" href="structtec_1_1Json.html#acb29ce37adf7dd280143de4078318da1" title="Serialize a tec::Serializable-derived object as a nested JSON object.">json_object()</a></code></li>
 <li>Unordered map-like → <code><a class="el" href="structtec_1_1Json.html#ae941d891d18c1b9a0f9358d382208363" title="Serialize unordered map-like containers as JSON objects.">json_map()</a></code></li>
 <li>Container → <code><a class="el" href="structtec_1_1Json.html#afa6c303e33946329e501e1b91c76b078" title="Serialize any container (with .begin()/.end()) as a JSON array.">json_container()</a></code></li>
 <li>Scalar types → direct <code>operator&lt;&lt;</code></li>
@@ -542,11 +542,11 @@ template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b76
 </table>
 </div><div class="memdoc">
 
-<p>Serialize a <a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary and JSON serialization.">tec::Serializable</a>-derived object as a nested JSON object. </p>
+<p>Serialize a <a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary serialization.">tec::Serializable</a>-derived object as a nested JSON object. </p>
 <p>Calls the object's <code>to_json()</code> method and wraps it in braces.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
-    <tr><td class="paramname">TObject</td><td>Type derived from <a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary and JSON serialization.">tec::Serializable</a> </td></tr>
+    <tr><td class="paramname">TObject</td><td>Type derived from <a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary serialization.">tec::Serializable</a> </td></tr>
   </table>
   </dd>
 </dl>

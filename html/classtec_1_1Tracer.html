@@ -131,7 +131,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3b6deb8fd45ba47356198fd5f6cb1b65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a> = MilliSec&gt;<br />
+<div class="textblock"><div class="compoundTemplParams">template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a> = _TEC_TRACE_RES&gt;<br />
 class tec::Tracer&lt; Duration &gt;</div><p>A thread-safe tracer for logging entry, exit, and custom messages. </p>
 <p>Logs messages to an output stream with timestamps, typically for debugging. Tracing is enabled only when the _TEC_TRACE_ON macro is defined. The tracer is thread-safe, using a global mutex for synchronized output. </p><dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
@@ -153,8 +153,8 @@ class tec::Tracer&lt; Duration &gt;</div><p>A thread-safe tracer for logging ent
 <div class="line"><span class="comment">//</span></div>
 <div class="line"><span class="comment">// [681236363] * do_something entered.</span></div>
 <div class="line"><span class="comment">// [681236365] do_something: open_files returned [Success].</span></div>
-<div class="ttc" id="agroup__TracerMacros_html_ga22ceef691c93794829defef074037bef"><div class="ttname"><a href="group__TracerMacros.html#ga22ceef691c93794829defef074037bef">TEC_ENTER</a></div><div class="ttdeci">#define TEC_ENTER(name)</div><div class="ttdoc">Disabled tracing macro for entry logging.</div><div class="ttdef"><b>Definition</b> tec_trace.hpp:191</div></div>
-<div class="ttc" id="agroup__TracerMacros_html_ga67aa54721d30874b83d38521efed1748"><div class="ttname"><a href="group__TracerMacros.html#ga67aa54721d30874b83d38521efed1748">TEC_TRACE</a></div><div class="ttdeci">#define TEC_TRACE(...)</div><div class="ttdoc">Disabled tracing macro for formatted messages.</div><div class="ttdef"><b>Definition</b> tec_trace.hpp:198</div></div>
+<div class="ttc" id="agroup__TracerMacros_html_ga22ceef691c93794829defef074037bef"><div class="ttname"><a href="group__TracerMacros.html#ga22ceef691c93794829defef074037bef">TEC_ENTER</a></div><div class="ttdeci">#define TEC_ENTER(name)</div><div class="ttdoc">Logs an entry message for a named context (e.g., function).</div><div class="ttdef"><b>Definition</b> tec_trace.hpp:211</div></div>
+<div class="ttc" id="agroup__TracerMacros_html_ga67aa54721d30874b83d38521efed1748"><div class="ttname"><a href="group__TracerMacros.html#ga67aa54721d30874b83d38521efed1748">TEC_TRACE</a></div><div class="ttdeci">#define TEC_TRACE(...)</div><div class="ttdoc">Logs a formatted trace message.</div><div class="ttdef"><b>Definition</b> tec_trace.hpp:222</div></div>
 <div class="ttc" id="astructtec_1_1TStatus_html"><div class="ttname"><a href="structtec_1_1TStatus.html">tec::TStatus&lt; int, std::string &gt;</a></div></div>
 <div class="ttc" id="atec__status_8hpp_html"><div class="ttname"><a href="tec__status_8hpp.html">tec_status.hpp</a></div><div class="ttdoc">Defines error handling types and utilities for the tec namespace.</div></div>
 <div class="ttc" id="atec__trace_8hpp_html"><div class="ttname"><a href="tec__trace_8hpp.html">tec_trace.hpp</a></div><div class="ttdoc">Provides a thread-safe tracing utility for debugging in the tec namespace.</div></div>
@@ -169,7 +169,7 @@ class tec::Tracer&lt; Duration &gt;</div><p>A thread-safe tracer for logging ent
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a>  = MilliSec&gt; </div>
+template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a>  = _TEC_TRACE_RES&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -216,7 +216,7 @@ template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b76
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a>  = MilliSec&gt; </div>
+template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a>  = _TEC_TRACE_RES&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -247,7 +247,7 @@ template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b76
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a>  = MilliSec&gt; </div>
+template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a>  = _TEC_TRACE_RES&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -277,7 +277,7 @@ template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b76
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a>  = MilliSec&gt; </div>
+template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a>  = _TEC_TRACE_RES&gt; </div>
 <div class="memtemplate">
 template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">T</a> , typename... Targs&gt; </div>
 <table class="mlabels">
@@ -340,7 +340,7 @@ template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b76
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a>  = MilliSec&gt; </div>
+template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">Duration</a>  = _TEC_TRACE_RES&gt; </div>
 <div class="memtemplate">
 template&lt;<a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">typename</a> <a class="el" href="tec__serialize_8hpp.html#a48191722ef5b2b489b5b767b4a2c693b">T</a> &gt; </div>
 <table class="mlabels">

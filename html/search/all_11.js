@@ -14,6 +14,7 @@ var searchData=
   ['process_5frequest_11',['process_request',['../classtec_1_1SocketServer.html#a1d325c53ffb277546610ab6668654e0f',1,'tec::SocketServer::process_request()'],['../classtec_1_1SocketClientNd.html#a74f3302de1d18b67d0eff88dd3586e85',1,'tec::SocketClientNd::process_request()'],['../classtec_1_1SocketClient.html#aa4f59c1af5015b328afc5629ecdf36df',1,'tec::SocketClient::process_request()'],['../classtec_1_1GrpcServer.html#ad218e97d4652d7071c9d1cb50d9b87fa',1,'tec::GrpcServer::process_request()'],['../classtec_1_1GrpcClient.html#a385f111add47206f3a36931beb5d85f4',1,'tec::GrpcClient::process_request()'],['../classtec_1_1Actor.html#aa6cbf3c06e7ebbccdadaa2a5ed851739',1,'tec::Actor::process_request()']]],
   ['process_5fsocket_12',['process_socket',['../classtec_1_1SocketServer.html#a01f602c6fbfa6744afff4ff84cb06651',1,'tec::SocketServer']]],
   ['protocol_13',['protocol',['../structtec_1_1SocketParams.html#a5c8741f879af508075b32de24db5f8ed',1,'tec::SocketParams']]],
-  ['ptr_14',['ptr',['../classtec_1_1MemFile.html#a30ff659f498842bf28a388006499ae59',1,'tec::MemFile::ptr(long pos) const'],['../classtec_1_1MemFile.html#a3d9d45d1b7adaa9dc3b903b1e6dd8d15',1,'tec::MemFile::ptr(long pos)']]],
-  ['purpose_20building_20blocks_15',['General Purpose Building Blocks',['../md_README.html#autotoc_md13',1,'']]]
+  ['ptr_14',['ptr',['../classtec_1_1MemFile.html#a3d9d45d1b7adaa9dc3b903b1e6dd8d15',1,'tec::MemFile::ptr(long pos)'],['../classtec_1_1MemFile.html#a30ff659f498842bf28a388006499ae59',1,'tec::MemFile::ptr(long pos) const']]],
+  ['pull_20requests_15',['Pull Requests',['../md_CONTRIBUTING.html#autotoc_md5',1,'']]],
+  ['purpose_20building_20blocks_16',['General Purpose Building Blocks',['../md_README.html#autotoc_md25',1,'']]]
 ];

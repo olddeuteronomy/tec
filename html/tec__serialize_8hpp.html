@@ -110,7 +110,7 @@ $(document).ready(function(){initNavTree('tec__serialize_8hpp.html',''); initRes
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structtec_1_1Serializable.html">tec::Serializable</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base interface for objects that support binary and JSON serialization.  <a href="structtec_1_1Serializable.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base interface for objects that support binary serialization.  <a href="structtec_1_1Serializable.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structtec_1_1NdRoot.html">tec::NdRoot</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Root class for serializable objects used in RPC communications.  <a href="structtec_1_1NdRoot.html#details">More...</a><br /></td></tr>
@@ -235,7 +235,7 @@ template&lt;typename T &gt; </div>
 </div><div class="memdoc">
 
 <p>Variable template to check at compile-time whether a type is serializable. </p>
-<p>A type <code>T</code> is considered serializable if it publicly inherits from <code><a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary and JSON serialization.">tec::Serializable</a></code>.</p>
+<p>A type <code>T</code> is considered serializable if it publicly inherits from <code><a class="el" href="structtec_1_1Serializable.html" title="Base interface for objects that support binary serialization.">tec::Serializable</a></code>.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">T</td><td>Type to test</td></tr>
@@ -245,7 +245,7 @@ template&lt;typename T &gt; </div>
 <div class="fragment"><div class="line"><span class="keyword">struct </span>MyComponent : <a class="code hl_struct" href="structtec_1_1Serializable.html">tec::Serializable</a> { ... };</div>
 <div class="line"><span class="keyword">static_assert</span>(tec::is_serializable_v&lt;MyComponent&gt;);</div>
 <div class="line"><span class="keyword">static_assert</span>(!tec::is_serializable_v&lt;int&gt;);</div>
-<div class="ttc" id="astructtec_1_1Serializable_html"><div class="ttname"><a href="structtec_1_1Serializable.html">tec::Serializable</a></div><div class="ttdoc">Base interface for objects that support binary and JSON serialization.</div><div class="ttdef"><b>Definition</b> tec_serialize.hpp:60</div></div>
+<div class="ttc" id="astructtec_1_1Serializable_html"><div class="ttname"><a href="structtec_1_1Serializable.html">tec::Serializable</a></div><div class="ttdoc">Base interface for objects that support binary serialization.</div><div class="ttdef"><b>Definition</b> tec_serialize.hpp:60</div></div>
 </div><!-- fragment --> 
 </div>
 </div>

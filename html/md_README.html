@@ -93,11 +93,12 @@ $(document).ready(function(){initNavTree('md_README.html',''); initResizable(); 
   <div class="headertitle"><div class="title">TEC: Header-Only, Template-Based C++ Library for Multithreaded Execution in Concurrent Environments</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="autotoc_md0"></a></p>
-<h1><a class="anchor" id="autotoc_md1"></a>
+<div class="textblock"><p><a class="anchor" id="autotoc_md11"></a></p>
+<h1><a class="anchor" id="autotoc_md12"></a>
 Contents</h1>
 <ul>
 <li>Introduction<ul>
+<li>Typical Applications</li>
 <li>Why C++17</li>
 </ul>
 </li>
@@ -170,23 +171,34 @@ Contents</h1>
 <li>LICENSE</li>
 <li>NOTICE</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md2"></a>
+<h1><a class="anchor" id="autotoc_md13"></a>
 Introduction</h1>
 <p>The TEC library is a lightweight and fast C++ framework designed for efficient performance in resource-constrained environments. It is entirely <b>header-only</b> and <b>template-based</b>, allowing seamless integration without additional compilation steps or external dependencies. The library enables safe, efficient execution in multithreaded and concurrent systems.</p>
 <p>The library is highly extendable, with most members being virtual to facilitate customization through inheritance and overriding. It includes robust multithreading support to handle concurrent operations safely and efficiently.</p>
 <p>Additionally, TEC provides a lightweight <em>binary serialization</em> mechanism for compact data packing and unpacking, ideal for network transmission or storage.</p>
 <p>It also features a platform-independent, <em>BSD socket-based</em> networking toolkit that enables cross-platform socket communication without platform-specific code.</p>
 <p>Note that TEC has <b>no external dependencies</b> (the use of <em>gRPC</em> and <em>Zlib</em> is optional), ensuring it can be dropped into any project without requiring third-party libraries or tools.</p>
-<h2><a class="anchor" id="autotoc_md3"></a>
+<h2><a class="anchor" id="autotoc_md14"></a>
+Typical Applications</h2>
+<p>TEC is a small and versatile library well-suited for scenarios demanding efficiency, portability, and minimal overhead. Below are some common applications:</p>
+<ul>
+<li><b>Networking Tools</b>: Building efficient BSD socket based servers and clients with minimal memory usage, suitable for communication protocols in distributed applications.</li>
+<li><b>System Utilities</b>: Implementing daemons and background processes via the universal Daemon API (DAPI), enabling cross-platform service management.</li>
+<li><b>gRPC Ecosystem</b>: The TEC library streamlines the development of gRPC servers and clients by leveraging the universal TEC's Daemon API (DAPI). Developers can focus on business logic while DAPI provides an interface for invoking services, pub/sub messaging, state management, and other distributed system primitives.</li>
+<li><b>Embedded Systems</b>: Leveraging its lightweight nature for resource-constrained environments like IoT devices, microcontrollers, and real-time systems where low overhead is crucial.</li>
+</ul>
+<p>TEC excels in creating <b>lightweight microservices</b>, which can be easily containerized. Its header-only structure simplifies inclusion in projects, allowing for quick builds and deployments in environments like Docker or Kubernetes. This makes it possible to develop scalable, efficient services with reduced image sizes and faster startup times.</p>
+<p>For <b>modeling large distributed systems</b>, TEC's low memory footprint—particularly for TCP servers and clients (see TestResults)—combined with its universal Daemon API, facilitates simulation and implementation of complex, interconnected architectures. This enables handling high volumes of connections with minimal resource consumption, suitable for cloud-based or edge computing scenarios.</p>
+<h2><a class="anchor" id="autotoc_md15"></a>
 Why C++17</h2>
 <p>Historically, TEC targets C++17 because it matches the current minimum supported standard of gRPC's official C++ implementation. The TEC library deliberately avoids C++20+ features (concepts, modules, ranges, std::format, etc.) to maximize compatibility.</p>
 <p>For missing standard library utilities (e.g. <code>std::format</code>, <code>std::print</code>), TEC provides very simple replacements such as: <code><a class="el" href="tec__print_8hpp.html#a9a8ea0398a13ec330d72d207d0bb46b2" title="Formats a single argument into a string.">tec::format</a></code>, <code><a class="el" href="tec__print_8hpp.html#ab2c82cf31ed8c45bbf639d23db90ddaf" title="Outputs a single argument to the specified stream.">tec::print</a></code>, <code><a class="el" href="tec__print_8hpp.html#ac49b732037c57831802a8060d1d483da" title="Outputs a single argument to the specified stream with a newline.">tec::println</a></code> (see <a href="https://olddeuteronomy.github.io/tec/html/tec__print_8hpp.html">tec_print.hpp</a> for more details).</p>
 <p>You can still compile TEC with C++20 or C++23 compilers — the library remains fully header-only and template-based, so it adapts to newer language features when you use them in your own code.</p>
-<h1><a class="anchor" id="autotoc_md4"></a>
+<h1><a class="anchor" id="autotoc_md16"></a>
 Core Abstractions</h1>
 <p>While TEC was born to improve <a class="el" href="dir_68db02de3583aeddd1f808b74ff83520.html">gRPC</a> ergonomics, its <em>abstractions</em> turned out to be very useful in many other multithreaded contexts.</p>
 <p>TEC provides a small but powerful set of cooperating class templates that model different concurrency and service patterns.</p>
-<h2><a class="anchor" id="autotoc_md5"></a>
+<h2><a class="anchor" id="autotoc_md17"></a>
 Daemon</h2>
 <p><code>Daemon</code> is an <b>abstract base interface</b> that defines the minimal contract for any long-lived service or processing component.</p>
 <p>A daemon is a process or thread that runs continuously in the background and handles periodic service messages and requests. This interface defines the minimum set of methods and signals that a derived class must implement, including starting, terminating, sending messages, requests (RPC-style communication), and signaling state changes.</p>
@@ -209,8 +221,6 @@ Daemon</h2>
 <div class="line">    <span class="keyword">virtual</span> Status run() = 0;</div>
 <div class="line">    <span class="keyword">virtual</span> Status terminate() = 0;</div>
 <div class="line"> </div>
-<div class="line">    <span class="keyword">virtual</span> <span class="keyword">const</span> Signal&amp; sig_running() <span class="keyword">const</span> = 0;</div>
-<div class="line">    <span class="keyword">virtual</span> <span class="keyword">const</span> Signal&amp; sig_inited() <span class="keyword">const</span> = 0;</div>
 <div class="line">    <span class="keyword">virtual</span> <span class="keyword">const</span> Signal&amp; sig_terminated() <span class="keyword">const</span> = 0;</div>
 <div class="line"> </div>
 <div class="line">    <span class="keyword">virtual</span> <span class="keywordtype">void</span> send(Message&amp;&amp; msg) = 0</div>
@@ -241,7 +251,7 @@ Daemon</h2>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1Signal.html">Signal</a>.</li>
 </ul>
 <p>Most higher-level classes in TEC implement or compose <code>Daemon</code>.</p>
-<h2><a class="anchor" id="autotoc_md6"></a>
+<h2><a class="anchor" id="autotoc_md18"></a>
 Worker</h2>
 <p><code>Worker</code> is a ready-to-use synchronous message-processing daemon.</p>
 <p><img src="img/Worker.png" alt="" class="inline"/></p>
@@ -264,7 +274,7 @@ Worker</h2>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1Daemon.html">Daemon</a></li>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1SafeQueue.html">SafeQueue</a>.</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md7"></a>
+<h3><a class="anchor" id="autotoc_md19"></a>
 Example: TestWorker Common Header</h3>
 <div class="fragment"><div class="line"><span class="comment">// worker.hpp</span></div>
 <div class="line"> </div>
@@ -284,7 +294,7 @@ Example: TestWorker Common Header</h3>
 <div class="line"><span class="comment">// Reference to the actual Worker implementation exposed as Daemon.</span></div>
 <div class="line">std::unique_ptr&lt;tec::Daemon&gt; create_test_worker(<span class="keyword">const</span> TestParams&amp;);</div>
 <div class="ttc" id="atec__daemon_8hpp_html"><div class="ttname"><a href="tec__daemon_8hpp.html">tec_daemon.hpp</a></div><div class="ttdoc">Defines the minimal contract for any long-lived service or processing component.</div></div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md8"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md20"></a>
 Example: TestWorker Implementation</h3>
 <div class="fragment"><div class="line"><span class="comment">// worker.cpp</span></div>
 <div class="line"> </div>
@@ -343,15 +353,15 @@ Example: TestWorker Implementation</h3>
 <div class="line">    <span class="keywordflow">return</span> daemon;</div>
 <div class="line">}</div>
 <div class="ttc" id="aclasstec_1_1Worker_html"><div class="ttname"><a href="classtec_1_1Worker.html">tec::Worker</a></div><div class="ttdoc">A class implementing message processing as a daemon.</div><div class="ttdef"><b>Definition</b> tec_worker.hpp:70</div></div>
-<div class="ttc" id="astructtec_1_1Daemon_1_1Builder_html"><div class="ttname"><a href="structtec_1_1Daemon_1_1Builder.html">tec::Daemon::Builder</a></div><div class="ttdoc">Factory for creating daemon instances.</div><div class="ttdef"><b>Definition</b> tec_daemon.hpp:170</div></div>
+<div class="ttc" id="astructtec_1_1Daemon_1_1Builder_html"><div class="ttname"><a href="structtec_1_1Daemon_1_1Builder.html">tec::Daemon::Builder</a></div><div class="ttdoc">Factory for creating daemon instances.</div><div class="ttdef"><b>Definition</b> tec_daemon.hpp:155</div></div>
 <div class="ttc" id="atec__message_8hpp_html_a9a5f12105ec8d63130dc96ee5dac4e98"><div class="ttname"><a href="tec__message_8hpp.html#a9a5f12105ec8d63130dc96ee5dac4e98">tec::Message</a></div><div class="ttdeci">std::any Message</div><div class="ttdoc">Type alias for a message that can hold any object.</div><div class="ttdef"><b>Definition</b> tec_message.hpp:43</div></div>
 <div class="ttc" id="atec__worker_8hpp_html"><div class="ttname"><a href="tec__worker_8hpp.html">tec_worker.hpp</a></div><div class="ttdoc">Defines a worker class for processing messages in the tec namespace.</div></div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md9"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md21"></a>
 Example: Run TestWorker</h3>
 <p>Key points:</p>
 <ul>
 <li>The actual TestWorker implementation is <b>decoupled</b> from the application code.</li>
-<li>The compilation units <code>worker.cpp</code> and <code>run_test_worker.cpp</code> are <b>independent</b>.</li>
+<li>The compilation units <code>worker.cpp</code> and <code>run_test_worker.cpp</code> are <b>independent</b> from each other.</li>
 </ul>
 <div class="fragment"><div class="line"><span class="comment">// run_test_worker.cpp</span></div>
 <div class="line"> </div>
@@ -384,7 +394,7 @@ Example: Run TestWorker</h3>
 <div class="line">}</div>
 <div class="ttc" id="astructtec_1_1TStatus_html"><div class="ttname"><a href="structtec_1_1TStatus.html">tec::TStatus&lt; int, std::string &gt;</a></div></div>
 </div><!-- fragment --><p>See <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/worker/test_worker.cpp">test_worker.cpp</a> source code example.</p>
-<h2><a class="anchor" id="autotoc_md10"></a>
+<h2><a class="anchor" id="autotoc_md22"></a>
 Actor</h2>
 <p><code>Actor</code> models an <b>asynchronous service</b> with clear lifecycle (<code>start</code>/<code>shutdown</code>) and <b>request-reply</b> semantics. <code>Actor</code> serves as the foundation for all actor implementations in the TEC framework.</p>
 <p><img src="img/Actor.png" alt="" class="inline"/></p>
@@ -411,7 +421,7 @@ Actor</h2>
 <li><code>process_request</code> –&ndash; core message handling logic.</li>
 </ul>
 <p>Actors are typically long-lived services (e.g., TCP and gRPC servers) that run in their own thread or event loop until explicitly shut down.</p>
-<h3><a class="anchor" id="autotoc_md11"></a>
+<h3><a class="anchor" id="autotoc_md23"></a>
 Example: Actor implementation</h3>
 <div class="fragment"><div class="line"><span class="comment">// Server parameters.</span></div>
 <div class="line"><span class="keyword">struct </span>ServerParams {</div>
@@ -475,7 +485,7 @@ Example: Actor implementation</h3>
 <div class="ttc" id="atec__message_8hpp_html_a5de784b32e4bb620c4495a0413e118e7"><div class="ttname"><a href="tec__message_8hpp.html#a5de784b32e4bb620c4495a0413e118e7">tec::Reply</a></div><div class="ttdeci">std::any Reply</div><div class="ttdoc">Type alias for a reply object that can hold any object.</div><div class="ttdef"><b>Definition</b> tec_message.hpp:55</div></div>
 <div class="ttc" id="atec__message_8hpp_html_ac905c839f081b87377f26c0f2a0824d0"><div class="ttname"><a href="tec__message_8hpp.html#ac905c839f081b87377f26c0f2a0824d0">tec::Request</a></div><div class="ttdeci">std::any Request</div><div class="ttdoc">Type alias for a request object that can hold any object.</div><div class="ttdef"><b>Definition</b> tec_message.hpp:49</div></div>
 <div class="ttc" id="atec__print_8hpp_html_ac49b732037c57831802a8060d1d483da"><div class="ttname"><a href="tec__print_8hpp.html#ac49b732037c57831802a8060d1d483da">tec::println</a></div><div class="ttdeci">void println(std::ostream *out, const T &amp;arg)</div><div class="ttdoc">Outputs a single argument to the specified stream with a newline.</div><div class="ttdef"><b>Definition</b> tec_print.hpp:90</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md12"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md24"></a>
 ActorWorker</h2>
 <p><code>ActorWorker</code> combines the <b>actor model</b> (asynchronous lifecycle) with the <b>worker model</b> (synchronous RPC request handling via <code>Daemon</code> interface).</p>
 <p><img src="img/ActorWorker.png" alt="" class="inline"/></p>
@@ -580,9 +590,9 @@ ActorWorker</h2>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1Daemon.html">Daemon</a></li>
 </ul>
 <p>See <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/worker/test_server.cpp">test_server.cpp</a> source code example.</p>
-<h1><a class="anchor" id="autotoc_md13"></a>
+<h1><a class="anchor" id="autotoc_md25"></a>
 General Purpose Building Blocks</h1>
-<h2><a class="anchor" id="autotoc_md14"></a>
+<h2><a class="anchor" id="autotoc_md26"></a>
 NetData</h2>
 <p><code>NetData</code> provides efficient serialization and deserialization of various C++ types including scalars, strings, blobs, containers, maps and user-defined serializable objects. The format consists of ElemHeader + payload for each element, allowing flexible and relatively compact binary representation suitable for network transmission.</p>
 <p><img src="img/NetData.png" alt="" class="inline"/></p>
@@ -598,7 +608,7 @@ NetData</h2>
 <ul>
 <li><a href="https://olddeuteronomy.github.io/tec/html/structtec_1_1NdTypes.html">NdTypes</a> &ndash; core type definitions and metadata for the NetData binary serialization format.</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md15"></a>
+<h3><a class="anchor" id="autotoc_md27"></a>
 Example: NetData Definitions</h3>
 <div class="fragment"><div class="line"><span class="comment">// samples/test_data.hpp</span></div>
 <div class="line"> </div>
@@ -876,14 +886,14 @@ Example: NetData Definitions</h3>
 <div class="ttc" id="astructtec_1_1Json_html"><div class="ttname"><a href="structtec_1_1Json.html">tec::Json</a></div><div class="ttdoc">Utility class for generating minimal, valid JSON strings at compile-time and runtime.</div><div class="ttdef"><b>Definition</b> tec_json.hpp:62</div></div>
 <div class="ttc" id="astructtec_1_1Json_html_ade21fcf894df8aab2745795a846f783f"><div class="ttname"><a href="structtec_1_1Json.html#ade21fcf894df8aab2745795a846f783f">tec::Json::sep</a></div><div class="ttdeci">static constexpr char sep[]</div><div class="ttdoc">Separator used between array/object elements.</div><div class="ttdef"><b>Definition</b> tec_json.hpp:65</div></div>
 <div class="ttc" id="astructtec_1_1NdRoot_html"><div class="ttname"><a href="structtec_1_1NdRoot.html">tec::NdRoot</a></div><div class="ttdoc">Root class for serializable objects used in RPC communications.</div><div class="ttdef"><b>Definition</b> tec_serialize.hpp:119</div></div>
-<div class="ttc" id="astructtec_1_1Serializable_html"><div class="ttname"><a href="structtec_1_1Serializable.html">tec::Serializable</a></div><div class="ttdoc">Base interface for objects that support binary and JSON serialization.</div><div class="ttdef"><b>Definition</b> tec_serialize.hpp:60</div></div>
+<div class="ttc" id="astructtec_1_1Serializable_html"><div class="ttname"><a href="structtec_1_1Serializable.html">tec::Serializable</a></div><div class="ttdoc">Base interface for objects that support binary serialization.</div><div class="ttdef"><b>Definition</b> tec_serialize.hpp:60</div></div>
 <div class="ttc" id="atec__json_8hpp_html"><div class="ttname"><a href="tec__json_8hpp.html">tec_json.hpp</a></div><div class="ttdoc">Simple JSON serialization.</div></div>
 <div class="ttc" id="atec__message_8hpp_html_acd425e566f8f5b08fa56c961b30c2ca0"><div class="ttname"><a href="tec__message_8hpp.html#acd425e566f8f5b08fa56c961b30c2ca0">tec::name</a></div><div class="ttdeci">auto name(const Message &amp;msg) noexcept</div><div class="ttdoc">Retrieves the type name of a message's content for registering the corresponding message handler.</div><div class="ttdef"><b>Definition</b> tec_message.hpp:84</div></div>
 <div class="ttc" id="atec__net__data_8hpp_html"><div class="ttname"><a href="tec__net__data_8hpp.html">tec_net_data.hpp</a></div><div class="ttdoc">Lightweight binary serialization optimized for network communication.</div></div>
 <div class="ttc" id="atec__serialize_8hpp_html"><div class="ttname"><a href="tec__serialize_8hpp.html">tec_serialize.hpp</a></div><div class="ttdoc">The base interface for serializable objects.</div></div>
 <div class="ttc" id="atec__serialize_8hpp_html_a5200d83c9fc1eacce6e511854c1a7d44"><div class="ttname"><a href="tec__serialize_8hpp.html#a5200d83c9fc1eacce6e511854c1a7d44">tec::rpcid_t</a></div><div class="ttdeci">uint16_t rpcid_t</div><div class="ttdoc">Type alias for RPC identifiers, represented as a 16-bit unsigned integer.</div><div class="ttdef"><b>Definition</b> tec_serialize.hpp:108</div></div>
 </div><!-- fragment --><p>See the complete <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/test_data.hpp">example</a>.</p>
-<h3><a class="anchor" id="autotoc_md16"></a>
+<h3><a class="anchor" id="autotoc_md28"></a>
 Example: The Use of NetData</h3>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;cstdio&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;iostream&gt;</span></div>
@@ -965,7 +975,7 @@ Example: The Use of NetData</h3>
 <ul>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1NdCompress.html">NdCompress</a> &mdash; Compression wrapper for NetData objects with pluggable backends.</li>
 </ul>
-<h4><a class="anchor" id="autotoc_md17"></a>
+<h4><a class="anchor" id="autotoc_md29"></a>
 NetData Dump</h4>
 <pre>
 // print_data(const test::TestData&amp; data) --- JSON output.
@@ -1011,7 +1021,7 @@ offset|00  02  04  06  08  10  12  14  16  18  20  22  24  26  28  30
 <ul>
 <li><a href="https://olddeuteronomy.github.io/tec/html/structtec_1_1Json.html">JSON</a> &mdash; Utility class for generating minimal, valid JSON strings at compile-time and runtime.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md18"></a>
+<h2><a class="anchor" id="autotoc_md30"></a>
 BSD Socket Wrappers</h2>
 <p><img src="img/SocketParams.png" alt="" class="inline"/></p>
 <ul>
@@ -1027,9 +1037,9 @@ BSD Socket Wrappers</h2>
 <li><a href="https://olddeuteronomy.github.io/tec/html/structtec_1_1Socket.html">Socket</a> &mdash; Lightweight wrapper around a connected socket file descriptor.</li>
 <li><a href="https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketNd.html">SocketNd</a> &mdash; Specialized socket wrapper optimized for sending/receiving <a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1NetData.html">NetData</a> protocol messages.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md19"></a>
+<h1><a class="anchor" id="autotoc_md31"></a>
 Networking Layer</h1>
-<h2><a class="anchor" id="autotoc_md20"></a>
+<h2><a class="anchor" id="autotoc_md32"></a>
 SocketServer</h2>
 <p>Generic BSD socket server template using actor pattern with configurable parameters.</p>
 <p>Supports both single-threaded (synchronous) and multi-threaded (thread-pool) modes. Implements the <em>CharStream</em> mode &ndash; text oriented (default echo server behavior).</p>
@@ -1047,7 +1057,7 @@ SocketServer</h2>
 <ul>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketServerNd.html">SocketServerNd</a> &mdash; a derived class implementing the <em>NetData</em> mode &mdash; binary protocol oriented.</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md21"></a>
+<h3><a class="anchor" id="autotoc_md33"></a>
 Example: TCP echo server</h3>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;csignal&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;sys/socket.h&gt;</span></div>
@@ -1121,11 +1131,11 @@ Example: TCP echo server</h3>
 <div class="ttc" id="atec__print_8hpp_html"><div class="ttname"><a href="tec__print_8hpp.html">tec_print.hpp</a></div><div class="ttdoc">Provides variadic print and format utilities for the tec namespace. Implemented for compatibility wit...</div></div>
 <div class="ttc" id="atec__socket__server_8hpp_html"><div class="ttname"><a href="tec__socket__server_8hpp.html">tec_socket_server.hpp</a></div><div class="ttdoc">Generic BSD socket server template using actor pattern with configurable parameters.</div></div>
 </div><!-- fragment --><p>See the complete <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/socket/tcp_server.cpp">example</a>.</p>
-<h2><a class="anchor" id="autotoc_md22"></a>
+<h2><a class="anchor" id="autotoc_md34"></a>
 SocketClient</h2>
 <p>Templated client socket actor for establishing and managing connections.</p>
 <p><img src="img/SocketClient.png" alt="" class="inline"/></p>
-<p>The <a href="doc/html/classtec_1_1SocketClient.html">SocketClient</a> class provides a mechanism to connect to a server using socket APIs, send and receive data (primarily strings via SocketCharStreamIn/Out), and handle actor lifecycle events like start and shutdown. It uses a template parameter for configuration, ensuring type safety through static assertion.</p>
+<p>The <a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1SocketClient.html">SocketClient</a> class provides a mechanism to connect to a server using socket APIs, send and receive data (primarily strings via SocketCharStreamIn/Out), and handle actor lifecycle events like start and shutdown. It uses a template parameter for configuration, ensuring type safety through static assertion.</p>
 <p>Key features:</p>
 <ul>
 <li>Resolves server addresses using getaddrinfo.</li>
@@ -1140,7 +1150,7 @@ SocketClient</h2>
 <li><a href="https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketCharStreamIn.html">SocketCharStreamIn</a> &mdash; Input descriptor for character stream mode.</li>
 <li><a href="https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketCharStreamOut.html">SocketCharStreamOut</a> &mdash; Output descriptor for character stream mode.</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md23"></a>
+<h3><a class="anchor" id="autotoc_md35"></a>
 Example: Socket Client</h3>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;string&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;sys/socket.h&gt;</span></div>
@@ -1217,7 +1227,7 @@ Example: Socket Client</h3>
 <div class="ttc" id="atec__def_8hpp_html"><div class="ttname"><a href="tec__def_8hpp.html">tec_def.hpp</a></div><div class="ttdoc">Common definitions and utilities for the tec namespace.</div></div>
 <div class="ttc" id="atec__socket__client_8hpp_html"><div class="ttname"><a href="tec__socket__client_8hpp.html">tec_socket_client.hpp</a></div><div class="ttdoc">Definition of the SocketClient class template.</div></div>
 </div><!-- fragment --><p>See the complete <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/socket/tcp_client.cpp">example</a>.</p>
-<h2><a class="anchor" id="autotoc_md24"></a>
+<h2><a class="anchor" id="autotoc_md36"></a>
 SocketServerNd</h2>
 <p>NetData-protocol-aware BSD socket server with request dispatching and optional compression.</p>
 <p><img src="img/SocketServerNd.png" alt="" class="inline"/></p>
@@ -1235,7 +1245,7 @@ SocketServerNd</h2>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1NetData.html">NetData</a></li>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1NdCompress.html">NdCompress</a></li>
 </ul>
-<h3><a class="anchor" id="autotoc_md25"></a>
+<h3><a class="anchor" id="autotoc_md37"></a>
 Example: NetData Server</h3>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;csignal&gt;</span></div>
 <div class="line"> </div>
@@ -1346,7 +1356,7 @@ Example: NetData Server</h3>
 <div class="line">    <span class="keywordflow">return</span> result.code.value_or(0);</div>
 <div class="line">}</div>
 <div class="ttc" id="aclasstec_1_1SocketServerNd_html"><div class="ttname"><a href="classtec_1_1SocketServerNd.html">tec::SocketServerNd</a></div><div class="ttdoc">NetData-protocol-aware TCP server with request dispatching and optional compression.</div><div class="ttdef"><b>Definition</b> tec_socket_server_nd.hpp:66</div></div>
-<div class="ttc" id="agroup__TracerMacros_html_ga22ceef691c93794829defef074037bef"><div class="ttname"><a href="group__TracerMacros.html#ga22ceef691c93794829defef074037bef">TEC_ENTER</a></div><div class="ttdeci">#define TEC_ENTER(name)</div><div class="ttdoc">Disabled tracing macro for entry logging.</div><div class="ttdef"><b>Definition</b> tec_trace.hpp:191</div></div>
+<div class="ttc" id="agroup__TracerMacros_html_ga22ceef691c93794829defef074037bef"><div class="ttname"><a href="group__TracerMacros.html#ga22ceef691c93794829defef074037bef">TEC_ENTER</a></div><div class="ttdeci">#define TEC_ENTER(name)</div><div class="ttdoc">Logs an entry message for a named context (e.g., function).</div><div class="ttdef"><b>Definition</b> tec_trace.hpp:211</div></div>
 <div class="ttc" id="astructtec_1_1SocketParams_html_ab08294f8ec6392ee60cc13564e20ecc9"><div class="ttname"><a href="structtec_1_1SocketParams.html#ab08294f8ec6392ee60cc13564e20ecc9">tec::SocketParams::compression</a></div><div class="ttdeci">int compression</div><div class="ttdoc">Compression algorithm to use (see CompressionParams).</div><div class="ttdef"><b>Definition</b> tec_socket.hpp:109</div></div>
 <div class="ttc" id="astructtec_1_1SocketServerParams_html_a156e68a5c0150b626f968626d69b3b4e"><div class="ttname"><a href="structtec_1_1SocketServerParams.html#a156e68a5c0150b626f968626d69b3b4e">tec::SocketServerParams::kModeNetData</a></div><div class="ttdeci">static constexpr int kModeNetData</div><div class="ttdoc">Treat incoming data as length-prefixed binary network messages.</div><div class="ttdef"><b>Definition</b> tec_socket.hpp:182</div></div>
 <div class="ttc" id="astructtec_1_1SocketServerParams_html_a30e4b239ca0736a420fb7f0b401ac500"><div class="ttname"><a href="structtec_1_1SocketServerParams.html#a30e4b239ca0736a420fb7f0b401ac500">tec::SocketServerParams::mode</a></div><div class="ttdeci">int mode</div><div class="ttdoc">Data handling mode (character stream or binary network data).</div><div class="ttdef"><b>Definition</b> tec_socket.hpp:201</div></div>
@@ -1358,7 +1368,7 @@ Example: NetData Server</h3>
 <ul>
 <li><a href="https://olddeuteronomy.github.io/tec/html/structtec_1_1SocketServerNd_1_1DataInOut.html">DataInOut</a></li>
 </ul>
-<h2><a class="anchor" id="autotoc_md26"></a>
+<h2><a class="anchor" id="autotoc_md38"></a>
 SocketClientNd</h2>
 <p>Templated client socket <a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1Actor.html">Actor</a> for <a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1NetData.html">NetData</a> stream handling.</p>
 <p><img src="img/SocketClientNd.png" alt="" class="inline"/></p>
@@ -1375,7 +1385,7 @@ SocketClientNd</h2>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1NetData.html">NetData</a></li>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1NdCompress.html">NdCompress</a></li>
 </ul>
-<h3><a class="anchor" id="autotoc_md27"></a>
+<h3><a class="anchor" id="autotoc_md39"></a>
 Example: NetData Client</h3>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &lt;memory&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;string&gt;</span></div>
@@ -1467,7 +1477,7 @@ Example: NetData Client</h3>
 <div class="ttc" id="astructtec_1_1NetData_1_1StreamOut_html"><div class="ttname"><a href="structtec_1_1NetData_1_1StreamOut.html">tec::NetData::StreamOut</a></div><div class="ttdoc">Helper type for ADL customization of output operations.</div><div class="ttdef"><b>Definition</b> tec_net_data.hpp:493</div></div>
 <div class="ttc" id="atec__socket__client__nd_8hpp_html"><div class="ttname"><a href="tec__socket__client__nd_8hpp.html">tec_socket_client_nd.hpp</a></div><div class="ttdoc">Definition of the SocketClientNd class template.</div></div>
 </div><!-- fragment --><p>See the complete <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/socket/tcp_client_nd.cpp">example</a>.</p>
-<h1><a class="anchor" id="autotoc_md28"></a>
+<h1><a class="anchor" id="autotoc_md40"></a>
 Test Results</h1>
 <p>Parameters:</p>
 <ul>
@@ -1483,19 +1493,19 @@ Test Results</h1>
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Mode   </th><th class="markdownTableHeadCenter">Compression   </th><th class="markdownTableHeadCenter">Thread Pool   </th><th class="markdownTableHeadCenter">Memory (when idle)   </th><th class="markdownTableHeadCenter">Startup Time    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">CharStream   </td><td class="markdownTableBodyCenter">N/A   </td><td class="markdownTableBodyCenter">Off   </td><td class="markdownTableBodyCenter">258 K   </td><td class="markdownTableBodyCenter">~1 ms    </td></tr>
+<td class="markdownTableBodyNone">CharStream   </td><td class="markdownTableBodyCenter">N/A   </td><td class="markdownTableBodyCenter">Off   </td><td class="markdownTableBodyCenter">258 KB   </td><td class="markdownTableBodyCenter">~1 ms    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">CharStream   </td><td class="markdownTableBodyCenter">N/A   </td><td class="markdownTableBodyCenter">8 threads   </td><td class="markdownTableBodyCenter">508 K   </td><td class="markdownTableBodyCenter">~1 ms    </td></tr>
+<td class="markdownTableBodyNone">CharStream   </td><td class="markdownTableBodyCenter">N/A   </td><td class="markdownTableBodyCenter">8 threads   </td><td class="markdownTableBodyCenter">508 KB   </td><td class="markdownTableBodyCenter">~1 ms    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">NetData   </td><td class="markdownTableBodyCenter">Off   </td><td class="markdownTableBodyCenter">Off   </td><td class="markdownTableBodyCenter">262 K   </td><td class="markdownTableBodyCenter">~1 ms    </td></tr>
+<td class="markdownTableBodyNone">NetData   </td><td class="markdownTableBodyCenter">Off   </td><td class="markdownTableBodyCenter">Off   </td><td class="markdownTableBodyCenter">262 KB   </td><td class="markdownTableBodyCenter">~1 ms    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">NetData   </td><td class="markdownTableBodyCenter">Off   </td><td class="markdownTableBodyCenter">8 threads   </td><td class="markdownTableBodyCenter">578 K   </td><td class="markdownTableBodyCenter">~1 ms    </td></tr>
+<td class="markdownTableBodyNone">NetData   </td><td class="markdownTableBodyCenter">Off   </td><td class="markdownTableBodyCenter">8 threads   </td><td class="markdownTableBodyCenter">578 KB   </td><td class="markdownTableBodyCenter">~1 ms    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">NetData   </td><td class="markdownTableBodyCenter">Zlib   </td><td class="markdownTableBodyCenter">Off   </td><td class="markdownTableBodyCenter">300 K   </td><td class="markdownTableBodyCenter">~1 ms    </td></tr>
+<td class="markdownTableBodyNone">NetData   </td><td class="markdownTableBodyCenter">Zlib   </td><td class="markdownTableBodyCenter">Off   </td><td class="markdownTableBodyCenter">300 KB   </td><td class="markdownTableBodyCenter">~1 ms    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">NetData   </td><td class="markdownTableBodyCenter">Zlib   </td><td class="markdownTableBodyCenter">8 threads   </td><td class="markdownTableBodyCenter">778 K   </td><td class="markdownTableBodyCenter">~1 ms   </td></tr>
+<td class="markdownTableBodyNone">NetData   </td><td class="markdownTableBodyCenter">Zlib   </td><td class="markdownTableBodyCenter">8 threads   </td><td class="markdownTableBodyCenter">778 KB   </td><td class="markdownTableBodyCenter">~1 ms   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md29"></a>
+<h1><a class="anchor" id="autotoc_md41"></a>
 Additional Utilities</h1>
 <p>TEC bundles several small utilities and helpers:</p>
 <ul>
@@ -1517,10 +1527,10 @@ Additional Utilities</h1>
 <li><a href="https://olddeuteronomy.github.io/tec/html/tec__utils_8hpp.html">tec_utils.hpp</a> &mdash; Provides time-related utilities and system information functions.</li>
 <li><a href="https://olddeuteronomy.github.io/tec/html/tec__nd__compress_8hpp.html">net/tec_nd_compress.hpp</a> &mdash; Compression wrapper for NetData objects with pluggable backends.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md30"></a>
+<h1><a class="anchor" id="autotoc_md42"></a>
 gRPC</h1>
 <p>Historically, the TEC library was originally created to make working with gRPC servers and clients cleaner, more modular, and much less verbose.</p>
-<h2><a class="anchor" id="autotoc_md31"></a>
+<h2><a class="anchor" id="autotoc_md43"></a>
 Motivation</h2>
 <p><a href="https://grpc.io/">gRPC</a> is a powerful and performant RPC framework, but its generated code and service implementation tend to tightly couple business logic with gRPC-specific headers, stubs, completion queues, and low-level details. This leads to:</p>
 <ul>
@@ -1538,16 +1548,16 @@ Motivation</h2>
 <li>Remains platform-independent and easily extensible</li>
 </ul>
 <p>The result is a small set of <b>template-based</b> abstractions that can be used both with gRPC and in many other multithreaded scenarios (TCP servers/clients, message queues, background workers, etc.).</p>
-<h2><a class="anchor" id="autotoc_md32"></a>
+<h2><a class="anchor" id="autotoc_md44"></a>
 GrpcServerParams</h2>
 <p>Configuration parameters for gRPC server instances.</p>
 <p>See the complete documentation of <a href="https://olddeuteronomy.github.io/tec/html/structtec_1_1GrpcServerParams.html">GrpcServerParams</a>.</p>
-<h2><a class="anchor" id="autotoc_md33"></a>
+<h2><a class="anchor" id="autotoc_md45"></a>
 GrpcClientParams</h2>
 <p>Configuration parameters for gRPC client instances.</p>
 <p>Defines default timeouts and configuration options for gRPC client operations.</p>
 <p>See the complete documentation of <a href="https://olddeuteronomy.github.io/tec/html/structtec_1_1GrpcClientParams.html">GrpcClientParams</a>.</p>
-<h2><a class="anchor" id="autotoc_md34"></a>
+<h2><a class="anchor" id="autotoc_md46"></a>
 GrpcServer</h2>
 <p>Base class for actor-style gRPC servers. Declares a generic, actor-based gRPC server template that can be specialized for different gRPC services via template parameters.</p>
 <p><img src="img/GrpcServer.png" alt="" class="inline"/></p>
@@ -1565,7 +1575,7 @@ GrpcServer</h2>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1Actor.html">Actor</a></li>
 <li><a href="https://olddeuteronomy.github.io/tec/html/structtec_1_1GrpcServerParams.html">GrpcServerParams</a></li>
 </ul>
-<h3><a class="anchor" id="autotoc_md35"></a>
+<h3><a class="anchor" id="autotoc_md47"></a>
 Example: GrpcServer Declarations</h3>
 <p>Key points:</p>
 <ul>
@@ -1588,7 +1598,7 @@ Example: GrpcServer Declarations</h3>
 <div class="ttc" id="astructtec_1_1GrpcServerParams_html"><div class="ttname"><a href="structtec_1_1GrpcServerParams.html">tec::GrpcServerParams</a></div><div class="ttdoc">Configuration parameters for gRPC server instances.</div><div class="ttdef"><b>Definition</b> tec_grpc.hpp:71</div></div>
 <div class="ttc" id="atec__grpc_8hpp_html"><div class="ttname"><a href="tec__grpc_8hpp.html">tec_grpc.hpp</a></div><div class="ttdoc">Generic gRPC parameters.</div></div>
 </div><!-- fragment --><p>See the complete <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/grpc/server.hpp">example</a>.</p>
-<h3><a class="anchor" id="autotoc_md36"></a>
+<h3><a class="anchor" id="autotoc_md48"></a>
 Example: GrpcServer Implementation</h3>
 <div class="fragment"><div class="line"><span class="comment">// samples/grpc/server.cpp</span></div>
 <div class="line"> </div>
@@ -1626,7 +1636,7 @@ Example: GrpcServer Implementation</h3>
 <div class="line"><span class="comment">*                        Implement gRPC Service</span></div>
 <div class="line"><span class="comment"> *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keyword">static</span> <span class="keywordtype">int</span> count{0};</div>
+<div class="line"><span class="keyword">static</span> std::atomic_int count{0};</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Implement gRPC service -- logic and data behind the server&#39;s behavior.</span></div>
 <div class="line"><span class="keyword">class </span>TestService final : <span class="keyword">public</span> Greeter::Service {</div>
@@ -1660,9 +1670,9 @@ Example: GrpcServer Implementation</h3>
 <div class="line">    &gt;;</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Instantiate gRPC Server.</span></div>
-<div class="line"><span class="keyword">class </span>Server: <span class="keyword">public</span> <a class="code hl_class" href="classtec_1_1GrpcServer.html">tec::GrpcServer</a>&lt;ServerParams, ServerTraits&gt; {</div>
+<div class="line"><span class="keyword">class </span>Server final : <span class="keyword">public</span> <a class="code hl_class" href="classtec_1_1GrpcServer.html">tec::GrpcServer</a>&lt;ServerParams, ServerTraits&gt; {</div>
 <div class="line"><span class="keyword">public</span>:</div>
-<div class="line">    Server(<span class="keyword">const</span> ServerParams&amp; params)</div>
+<div class="line">    <span class="keyword">explicit</span> Server(<span class="keyword">const</span> ServerParams&amp; params)</div>
 <div class="line">        : tec::GrpcServer&lt;ServerParams, ServerTraits&gt;{params, grpc::InsecureServerCredentials()}</div>
 <div class="line">    {}</div>
 <div class="line">};</div>
@@ -1687,7 +1697,7 @@ Example: GrpcServer Implementation</h3>
 <div class="ttc" id="astructtec_1_1grpc__server__traits_html"><div class="ttname"><a href="structtec_1_1grpc__server__traits.html">tec::grpc_server_traits</a></div><div class="ttdoc">Type traits / type aliases collection for configuring a gRPC server.</div><div class="ttdef"><b>Definition</b> tec_grpc_server.hpp:73</div></div>
 <div class="ttc" id="atec__grpc__server_8hpp_html"><div class="ttname"><a href="tec__grpc__server_8hpp.html">tec_grpc_server.hpp</a></div><div class="ttdoc">gRPC server template.</div></div>
 </div><!-- fragment --><p>See the complete <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/grpc/server.cpp">example</a>.</p>
-<h3><a class="anchor" id="autotoc_md37"></a>
+<h3><a class="anchor" id="autotoc_md49"></a>
 Example: Run GrpcServer</h3>
 <p>Key points:</p>
 <ul>
@@ -1706,7 +1716,7 @@ Example: Run GrpcServer</h3>
 <div class="line"><a class="code hl_class" href="classtec_1_1Signal.html">tec::Signal</a> sig_quit;</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span></div>
-<div class="line"><span class="comment">*                          Run the server</span></div>
+<div class="line"><span class="comment">*             Run the gRPC server using TEC DAPI (Daemon API)</span></div>
 <div class="line"><span class="comment"> *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/</span></div>
 <div class="line"> </div>
 <div class="line"><a class="code hl_class" href="structtec_1_1TStatus.html">tec::Status</a> run() {</div>
@@ -1746,7 +1756,7 @@ Example: Run GrpcServer</h3>
 <div class="line">    <span class="keywordflow">return</span> status.code.value_or(0);</div>
 <div class="line">}</div>
 </div><!-- fragment --><p>See the complete <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/grpc/test_server.cpp">example</a>.</p>
-<h2><a class="anchor" id="autotoc_md38"></a>
+<h2><a class="anchor" id="autotoc_md50"></a>
 GrpcClient</h2>
 <p>Base class for actor-style asynchronous gRPC clients.</p>
 <p><img src="img/GrpcClient.png" alt="" class="inline"/></p>
@@ -1758,7 +1768,7 @@ GrpcClient</h2>
 <li><a href="https://olddeuteronomy.github.io/tec/html/classtec_1_1Actor.html">Actor</a></li>
 <li><a href="https://olddeuteronomy.github.io/tec/html/structtec_1_1GrpcClientParams.html">GrpcClientParams</a>.</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md39"></a>
+<h3><a class="anchor" id="autotoc_md51"></a>
 Example: GrpcClient Declarations</h3>
 <p>Key points:</p>
 <ul>
@@ -1789,7 +1799,7 @@ Example: GrpcClient Declarations</h3>
 <div class="line">std::unique_ptr&lt;tec::Daemon&gt; build_client(<span class="keyword">const</span> ClientParams&amp;);</div>
 <div class="ttc" id="astructtec_1_1GrpcClientParams_html"><div class="ttname"><a href="structtec_1_1GrpcClientParams.html">tec::GrpcClientParams</a></div><div class="ttdoc">Configuration parameters for gRPC client instances.</div><div class="ttdef"><b>Definition</b> tec_grpc.hpp:125</div></div>
 </div><!-- fragment --><p>See the complete <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/grpc/client.hpp">example</a>.</p>
-<h3><a class="anchor" id="autotoc_md40"></a>
+<h3><a class="anchor" id="autotoc_md52"></a>
 Example: GrpcClient Implementation</h3>
 <div class="fragment"><div class="line"><span class="comment">// samples/grpc/client.cpp</span></div>
 <div class="line"> </div>
@@ -1902,7 +1912,7 @@ Example: GrpcClient Implementation</h3>
 <div class="ttc" id="atec__grpc__client_8hpp_html"><div class="ttname"><a href="tec__grpc__client_8hpp.html">tec_grpc_client.hpp</a></div><div class="ttdoc">gRPC client template.</div></div>
 <div class="ttc" id="atec__print_8hpp_html_a9a8ea0398a13ec330d72d207d0bb46b2"><div class="ttname"><a href="tec__print_8hpp.html#a9a8ea0398a13ec330d72d207d0bb46b2">tec::format</a></div><div class="ttdeci">std::string format(const T &amp;arg)</div><div class="ttdoc">Formats a single argument into a string.</div><div class="ttdef"><b>Definition</b> tec_print.hpp:171</div></div>
 </div><!-- fragment --><p>See the complete <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/grpc/client.cpp">example</a>.</p>
-<h3><a class="anchor" id="autotoc_md41"></a>
+<h3><a class="anchor" id="autotoc_md53"></a>
 Example: Run GrpcClient</h3>
 <p>Key points:</p>
 <ul>
@@ -1967,7 +1977,7 @@ Example: Run GrpcClient</h3>
 <div class="line">}</div>
 <div class="ttc" id="astructtec_1_1Error_1_1Code_html"><div class="ttname"><a href="structtec_1_1Error_1_1Code.html">tec::Error::Code</a></div><div class="ttdoc">Defines error codes with a default unspecified value.</div><div class="ttdef"><b>Definition</b> tec_status.hpp:72</div></div>
 </div><!-- fragment --><p>See the complete <a href="https://github.com/olddeuteronomy/tec/blob/main/samples/grpc/test_client.cpp">example</a>.</p>
-<h1><a class="anchor" id="autotoc_md42"></a>
+<h1><a class="anchor" id="autotoc_md54"></a>
 Building Samples</h1>
 <p>The <code>samples/</code> directory contains a set of TEC usage examples, with each subdirectory including a corresponding Makefile.</p>
 <p>To force rebuild with <code>g++</code> (default, no optimization (<code>-O0</code>), w/debug info (<code>-g</code>)): </p><div class="fragment"><div class="line">make -k -B -j4</div>
@@ -1976,10 +1986,10 @@ Building Samples</h1>
 </div><!-- fragment --><p>To build a release (<code>g++</code>, <code>-O2</code>, no debug info) </p><div class="fragment"><div class="line">make -k -B -j4 REL=1</div>
 </div><!-- fragment --><p>These <code>make</code> flags can be combined: </p><div class="fragment"><div class="line"># To build a release with clang++ (-O2, no debug info, linked with Zlib)</div>
 <div class="line">make -k -B -j4 CLANG=1 REL=1 ZLIB=1</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md43"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md55"></a>
 LICENSE</h1>
 <pre>
-Copyright (C) 2020-2026 The Emacs Cat.
+Copyright 2020-2026 The Emacs Cat.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1992,22 +2002,27 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-</pre><h1><a class="anchor" id="autotoc_md44"></a>
+
+See the full license terms at
+
+  <a href="https://github.com/olddeuteronomy/tec/blob/main/LICENSE">https://github.com/olddeuteronomy/tec/blob/main/LICENSE</a>
+</pre><h1><a class="anchor" id="autotoc_md56"></a>
 NOTICE</h1>
-<h2><a class="anchor" id="autotoc_md45"></a>
+<h2><a class="anchor" id="autotoc_md57"></a>
 zlib</h2>
 <p>The following applies if zlib is optionally enabled in the TEC library's build configuration:</p>
 <pre>
 Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler.
 
 Licensed under the zlib License. See the full terms at
-<a href="https://zlib.net/zlib_license.html">https://zlib.net/zlib_license.html</a>.
+
+  <a href="https://zlib.net/zlib_license.html">https://zlib.net/zlib_license.html</a>.
 </pre><p>#</p>
-<h1><a class="anchor" id="autotoc_md46"></a>
+<h1><a class="anchor" id="autotoc_md58"></a>
 gRPC</h1>
 <p>The following applies if gRPC is optionally used in the TEC library:</p>
 <pre>
-Copyright (C) 2014-2023 The gRPC Authors.
+Copyright 2014-2023 The gRPC Authors.
 
 Licensed under the Apache License, Version 2.0.
 You may obtain a copy at

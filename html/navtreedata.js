@@ -25,69 +25,84 @@
 var NAVTREE =
 [
   [ "TEC", "index.html", [
+    [ "Contributing to TEC", "md_CONTRIBUTING.html", [
+      [ "Code of Conduct", "md_CONTRIBUTING.html#autotoc_md1", null ],
+      [ "How to Contribute", "md_CONTRIBUTING.html#autotoc_md2", [
+        [ "Reporting Bugs", "md_CONTRIBUTING.html#autotoc_md3", null ],
+        [ "Suggesting Enhancements", "md_CONTRIBUTING.html#autotoc_md4", null ],
+        [ "Pull Requests", "md_CONTRIBUTING.html#autotoc_md5", [
+          [ "First-Time Contributors", "md_CONTRIBUTING.html#autotoc_md6", null ]
+        ] ]
+      ] ],
+      [ "Development Setup", "md_CONTRIBUTING.html#autotoc_md7", null ],
+      [ "Style Guidelines", "md_CONTRIBUTING.html#autotoc_md8", null ],
+      [ "License", "md_CONTRIBUTING.html#autotoc_md9", null ],
+      [ "Acknowledgments", "md_CONTRIBUTING.html#autotoc_md10", null ]
+    ] ],
     [ "TEC: Header-Only, Template-Based C++ Library for Multithreaded Execution in Concurrent Environments", "md_README.html", [
-      [ "Contents", "md_README.html#autotoc_md1", null ],
-      [ "Introduction", "md_README.html#autotoc_md2", [
-        [ "Why C++17", "md_README.html#autotoc_md3", null ]
+      [ "Contents", "md_README.html#autotoc_md12", null ],
+      [ "Introduction", "md_README.html#autotoc_md13", [
+        [ "Typical Applications", "md_README.html#autotoc_md14", null ],
+        [ "Why C++17", "md_README.html#autotoc_md15", null ]
       ] ],
-      [ "Core Abstractions", "md_README.html#autotoc_md4", [
-        [ "Daemon", "md_README.html#autotoc_md5", null ],
-        [ "Worker", "md_README.html#autotoc_md6", [
-          [ "Example: TestWorker Common Header", "md_README.html#autotoc_md7", null ],
-          [ "Example: TestWorker Implementation", "md_README.html#autotoc_md8", null ],
-          [ "Example: Run TestWorker", "md_README.html#autotoc_md9", null ]
+      [ "Core Abstractions", "md_README.html#autotoc_md16", [
+        [ "Daemon", "md_README.html#autotoc_md17", null ],
+        [ "Worker", "md_README.html#autotoc_md18", [
+          [ "Example: TestWorker Common Header", "md_README.html#autotoc_md19", null ],
+          [ "Example: TestWorker Implementation", "md_README.html#autotoc_md20", null ],
+          [ "Example: Run TestWorker", "md_README.html#autotoc_md21", null ]
         ] ],
-        [ "Actor", "md_README.html#autotoc_md10", [
-          [ "Example: Actor implementation", "md_README.html#autotoc_md11", null ]
+        [ "Actor", "md_README.html#autotoc_md22", [
+          [ "Example: Actor implementation", "md_README.html#autotoc_md23", null ]
         ] ],
-        [ "ActorWorker", "md_README.html#autotoc_md12", null ]
+        [ "ActorWorker", "md_README.html#autotoc_md24", null ]
       ] ],
-      [ "General Purpose Building Blocks", "md_README.html#autotoc_md13", [
-        [ "NetData", "md_README.html#autotoc_md14", [
-          [ "Example: NetData Definitions", "md_README.html#autotoc_md15", null ],
-          [ "Example: The Use of NetData", "md_README.html#autotoc_md16", [
-            [ "NetData Dump", "md_README.html#autotoc_md17", null ]
+      [ "General Purpose Building Blocks", "md_README.html#autotoc_md25", [
+        [ "NetData", "md_README.html#autotoc_md26", [
+          [ "Example: NetData Definitions", "md_README.html#autotoc_md27", null ],
+          [ "Example: The Use of NetData", "md_README.html#autotoc_md28", [
+            [ "NetData Dump", "md_README.html#autotoc_md29", null ]
           ] ]
         ] ],
-        [ "BSD Socket Wrappers", "md_README.html#autotoc_md18", null ]
+        [ "BSD Socket Wrappers", "md_README.html#autotoc_md30", null ]
       ] ],
-      [ "Networking Layer", "md_README.html#autotoc_md19", [
-        [ "SocketServer", "md_README.html#autotoc_md20", [
-          [ "Example: TCP echo server", "md_README.html#autotoc_md21", null ]
+      [ "Networking Layer", "md_README.html#autotoc_md31", [
+        [ "SocketServer", "md_README.html#autotoc_md32", [
+          [ "Example: TCP echo server", "md_README.html#autotoc_md33", null ]
         ] ],
-        [ "SocketClient", "md_README.html#autotoc_md22", [
-          [ "Example: Socket Client", "md_README.html#autotoc_md23", null ]
+        [ "SocketClient", "md_README.html#autotoc_md34", [
+          [ "Example: Socket Client", "md_README.html#autotoc_md35", null ]
         ] ],
-        [ "SocketServerNd", "md_README.html#autotoc_md24", [
-          [ "Example: NetData Server", "md_README.html#autotoc_md25", null ]
+        [ "SocketServerNd", "md_README.html#autotoc_md36", [
+          [ "Example: NetData Server", "md_README.html#autotoc_md37", null ]
         ] ],
-        [ "SocketClientNd", "md_README.html#autotoc_md26", [
-          [ "Example: NetData Client", "md_README.html#autotoc_md27", null ]
+        [ "SocketClientNd", "md_README.html#autotoc_md38", [
+          [ "Example: NetData Client", "md_README.html#autotoc_md39", null ]
         ] ]
       ] ],
-      [ "Test Results", "md_README.html#autotoc_md28", null ],
-      [ "Additional Utilities", "md_README.html#autotoc_md29", null ],
-      [ "gRPC", "md_README.html#autotoc_md30", [
-        [ "Motivation", "md_README.html#autotoc_md31", null ],
-        [ "GrpcServerParams", "md_README.html#autotoc_md32", null ],
-        [ "GrpcClientParams", "md_README.html#autotoc_md33", null ],
-        [ "GrpcServer", "md_README.html#autotoc_md34", [
-          [ "Example: GrpcServer Declarations", "md_README.html#autotoc_md35", null ],
-          [ "Example: GrpcServer Implementation", "md_README.html#autotoc_md36", null ],
-          [ "Example: Run GrpcServer", "md_README.html#autotoc_md37", null ]
+      [ "Test Results", "md_README.html#autotoc_md40", null ],
+      [ "Additional Utilities", "md_README.html#autotoc_md41", null ],
+      [ "gRPC", "md_README.html#autotoc_md42", [
+        [ "Motivation", "md_README.html#autotoc_md43", null ],
+        [ "GrpcServerParams", "md_README.html#autotoc_md44", null ],
+        [ "GrpcClientParams", "md_README.html#autotoc_md45", null ],
+        [ "GrpcServer", "md_README.html#autotoc_md46", [
+          [ "Example: GrpcServer Declarations", "md_README.html#autotoc_md47", null ],
+          [ "Example: GrpcServer Implementation", "md_README.html#autotoc_md48", null ],
+          [ "Example: Run GrpcServer", "md_README.html#autotoc_md49", null ]
         ] ],
-        [ "GrpcClient", "md_README.html#autotoc_md38", [
-          [ "Example: GrpcClient Declarations", "md_README.html#autotoc_md39", null ],
-          [ "Example: GrpcClient Implementation", "md_README.html#autotoc_md40", null ],
-          [ "Example: Run GrpcClient", "md_README.html#autotoc_md41", null ]
+        [ "GrpcClient", "md_README.html#autotoc_md50", [
+          [ "Example: GrpcClient Declarations", "md_README.html#autotoc_md51", null ],
+          [ "Example: GrpcClient Implementation", "md_README.html#autotoc_md52", null ],
+          [ "Example: Run GrpcClient", "md_README.html#autotoc_md53", null ]
         ] ]
       ] ],
-      [ "Building Samples", "md_README.html#autotoc_md42", null ],
-      [ "LICENSE", "md_README.html#autotoc_md43", null ],
-      [ "NOTICE", "md_README.html#autotoc_md44", [
-        [ "zlib", "md_README.html#autotoc_md45", null ]
+      [ "Building Samples", "md_README.html#autotoc_md54", null ],
+      [ "LICENSE", "md_README.html#autotoc_md55", null ],
+      [ "NOTICE", "md_README.html#autotoc_md56", [
+        [ "zlib", "md_README.html#autotoc_md57", null ]
       ] ],
-      [ "gRPC", "md_README.html#autotoc_md46", null ]
+      [ "gRPC", "md_README.html#autotoc_md58", null ]
     ] ],
     [ "Topics", "topics.html", "topics" ],
     [ "Classes", "annotated.html", [
@@ -116,8 +131,8 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "annotated.html",
-"classtec_1_1Worker.html#a766637436bd62b722a7d1b0b35aa21de",
-"structtec_1_1SocketParams.html#a5c8741f879af508075b32de24db5f8ed"
+"classtec_1_1Worker.html#a848a3717a547e2c060232d5540b1e9c4",
+"structtec_1_1SocketNd.html#ada2d1d6efeb69e9f4458c8c870341509"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

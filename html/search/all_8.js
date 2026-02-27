@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['general_20purpose_20building_20blocks_0',['General Purpose Building Blocks',['../md_README.html#autotoc_md13',1,'']]],
+  ['general_20purpose_20building_20blocks_0',['General Purpose Building Blocks',['../md_README.html#autotoc_md25',1,'']]],
   ['generate_1',['generate',['../tec__guid_8hpp.html#a1e20be9cebf053263cc3563d01d6d006',1,'tec::guid']]],
   ['generate_5fv4_2',['generate_v4',['../tec__guid_8hpp.html#ab16e00245c87c2c4cf195e04885763b8',1,'tec::guid']]],
   ['get_5fbuffer_3',['get_buffer',['../classtec_1_1SocketClient.html#a4e2d1377ab7bc9992ad1901e27464dc8',1,'tec::SocketClient::get_buffer()'],['../classtec_1_1SocketThreadPool.html#a6ac60b7a352220af6f882be5c1ea2b4a',1,'tec::SocketThreadPool::get_buffer()'],['../classtec_1_1SocketServer.html#a183c62d70c0a81e41569beb538ed7e55',1,'tec::SocketServer::get_buffer()']]],
@@ -20,17 +20,18 @@ var searchData=
   ['get_5fsocket_5finfo_17',['get_socket_info',['../classtec_1_1SocketServer.html#a56dac921d620e6af092d0a18eae5a9ee',1,'tec::SocketServer']]],
   ['getcomputername_18',['getcomputername',['../tec__utils_8hpp.html#ad1b534d05235f581641561b459037be2',1,'tec']]],
   ['getusername_19',['getusername',['../tec__utils_8hpp.html#a09783699d44264d519231cfb771b6e86',1,'tec']]],
-  ['grpc_20',['grpc',['../md_README.html#autotoc_md46',1,'gRPC'],['../md_README.html#autotoc_md30',1,'gRPC']]],
+  ['grpc_20',['grpc',['../md_README.html#autotoc_md58',1,'gRPC'],['../md_README.html#autotoc_md42',1,'gRPC']]],
   ['grpc_5fclient_5ftraits_21',['grpc_client_traits',['../structtec_1_1grpc__client__traits.html',1,'tec']]],
   ['grpc_5fserver_5ftraits_22',['grpc_server_traits',['../structtec_1_1grpc__server__traits.html',1,'tec']]],
-  ['grpcclient_23',['grpcclient',['../md_README.html#autotoc_md41',1,'Example: Run GrpcClient'],['../classtec_1_1GrpcClient.html#a6be81d8c334527b1bd8ce9d44075719f',1,'tec::GrpcClient::GrpcClient()'],['../md_README.html#autotoc_md38',1,'GrpcClient'],['../classtec_1_1GrpcClient.html',1,'tec::GrpcClient&lt; TParams, Traits &gt;']]],
-  ['grpcclient_20declarations_24',['Example: GrpcClient Declarations',['../md_README.html#autotoc_md39',1,'']]],
-  ['grpcclient_20implementation_25',['Example: GrpcClient Implementation',['../md_README.html#autotoc_md40',1,'']]],
-  ['grpcclientparams_26',['grpcclientparams',['../structtec_1_1GrpcClientParams.html',1,'tec::GrpcClientParams'],['../md_README.html#autotoc_md33',1,'GrpcClientParams']]],
+  ['grpcclient_23',['grpcclient',['../md_README.html#autotoc_md53',1,'Example: Run GrpcClient'],['../classtec_1_1GrpcClient.html#a6be81d8c334527b1bd8ce9d44075719f',1,'tec::GrpcClient::GrpcClient()'],['../md_README.html#autotoc_md50',1,'GrpcClient'],['../classtec_1_1GrpcClient.html',1,'tec::GrpcClient&lt; TParams, Traits &gt;']]],
+  ['grpcclient_20declarations_24',['Example: GrpcClient Declarations',['../md_README.html#autotoc_md51',1,'']]],
+  ['grpcclient_20implementation_25',['Example: GrpcClient Implementation',['../md_README.html#autotoc_md52',1,'']]],
+  ['grpcclientparams_26',['grpcclientparams',['../structtec_1_1GrpcClientParams.html',1,'tec::GrpcClientParams'],['../md_README.html#autotoc_md45',1,'GrpcClientParams']]],
   ['grpchealthcheckbuilder_27',['GrpcHealthCheckBuilder',['../structtec_1_1GrpcHealthCheckBuilder.html',1,'tec']]],
   ['grpcreflectionbuilder_28',['GrpcReflectionBuilder',['../structtec_1_1GrpcReflectionBuilder.html',1,'tec']]],
-  ['grpcserver_29',['grpcserver',['../md_README.html#autotoc_md37',1,'Example: Run GrpcServer'],['../md_README.html#autotoc_md34',1,'GrpcServer'],['../classtec_1_1GrpcServer.html',1,'tec::GrpcServer&lt; TParams, Traits &gt;'],['../classtec_1_1GrpcServer.html#a15a921f79e0c026a82274e77c24cecec',1,'tec::GrpcServer::GrpcServer()']]],
-  ['grpcserver_20declarations_30',['Example: GrpcServer Declarations',['../md_README.html#autotoc_md35',1,'']]],
-  ['grpcserver_20implementation_31',['Example: GrpcServer Implementation',['../md_README.html#autotoc_md36',1,'']]],
-  ['grpcserverparams_32',['grpcserverparams',['../md_README.html#autotoc_md32',1,'GrpcServerParams'],['../structtec_1_1GrpcServerParams.html',1,'tec::GrpcServerParams']]]
+  ['grpcserver_29',['grpcserver',['../md_README.html#autotoc_md49',1,'Example: Run GrpcServer'],['../md_README.html#autotoc_md46',1,'GrpcServer'],['../classtec_1_1GrpcServer.html',1,'tec::GrpcServer&lt; TParams, Traits &gt;'],['../classtec_1_1GrpcServer.html#a15a921f79e0c026a82274e77c24cecec',1,'tec::GrpcServer::GrpcServer()']]],
+  ['grpcserver_20declarations_30',['Example: GrpcServer Declarations',['../md_README.html#autotoc_md47',1,'']]],
+  ['grpcserver_20implementation_31',['Example: GrpcServer Implementation',['../md_README.html#autotoc_md48',1,'']]],
+  ['grpcserverparams_32',['grpcserverparams',['../md_README.html#autotoc_md44',1,'GrpcServerParams'],['../structtec_1_1GrpcServerParams.html',1,'tec::GrpcServerParams']]],
+  ['guidelines_33',['Style Guidelines',['../md_CONTRIBUTING.html#autotoc_md8',1,'']]]
 ];
