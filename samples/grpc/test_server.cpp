@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-08 00:46:30 by magnolia>
+// Time-stamp: <Last changed 2026-02-28 01:19:42 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -29,7 +29,7 @@ tec::Signal sig_quit;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 *
-*                          Run the server
+*             Run the gRPC server using TEC DAPI (Daemon API)
 *
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 

@@ -42,7 +42,15 @@ We love pull requests! Follow these steps:
 1. Fork the repository and create a new branch from `main` (e.g., `feature/my-new-feature` or `fix/my-bug-fix`).
 2. Make your changes, ensuring they follow the project's coding style.
 3. Add or update tests if applicable.
-4. Commit your changes with clear, descriptive messages.
+4. Commit your changes with clear, descriptive messages. Prefix your
+   commit title with (from [Udacity Git Commit Message Style Guide](http://udacity.github.io/git-styleguide/)):
+   - **feat**: A new feature
+   - **fix**: A bug fix
+   - **docs**: Changes to documentation
+   - **style**: Formatting, missing semi colons, etc; no code change
+   - **refactor**: Refactoring production code
+   - **test**: Adding tests, refactoring test; no production code change
+   - **chore**: Updating build tasks, package manager configs, etc; no production code change
 5. Push to your fork and submit a pull request to the `main` branch.
 6. In the PR description, reference any related issues (e.g., "Closes #123").
 

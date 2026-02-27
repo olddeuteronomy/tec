@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-03 15:56:30 by magnolia>
+// Time-stamp: <Last changed 2026-02-25 14:53:02 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -149,8 +149,7 @@ tec::Status test_daemon() {
     // Wait for daemon is finished.
     daemon->sig_terminated().wait();
 
-    // This call to `terminate()` is not required
-    // if we don't want to get the status of daemon termination.
+    // Optional.
     return daemon->terminate();
 }
 

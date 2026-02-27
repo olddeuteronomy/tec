@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-16 23:48:49 by magnolia>
+// Time-stamp: <Last changed 2026-02-27 22:48:07 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -50,7 +50,7 @@ namespace tec {
 class NetData;
 
 /**
- * @brief Base interface for objects that support binary and JSON serialization.
+ * @brief Base interface for objects that support binary serialization.
  *
  * This is a pure abstract interface. Derived classes must
  * implement all pure virtual methods to be instantiable.

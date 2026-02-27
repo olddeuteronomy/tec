@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-20 15:54:33 by magnolia>
+// Time-stamp: <Last changed 2026-02-25 14:49:21 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -81,6 +81,7 @@ public:
      * @details Stops the daemon's background process or thread. Must be implemented
      * by derived classes.
      * @return Status The result of the termination operation.
+     * @see sig_terminated()
      */
     virtual Status terminate() = 0;
 
@@ -91,22 +92,6 @@ public:
      * @param message The message to send.
      */
     virtual void send(Message&& msg) = 0;
-
-    /**
-     * @brief Retrieves the signal indicating the daemon is running.
-     * @details Returns a reference to the signal that indicates the daemon has started
-     * and is operational. Must be implemented by derived classes.
-     * @return const Signal& The running signal.
-     */
-    virtual const Signal& sig_running() const = 0;
-
-    /**
-     * @brief Retrieves the signal indicating the daemon is initialized.
-     * @details Returns a reference to the signal that indicates the daemon has completed
-     * initialization, possibly with an error. Must be implemented by derived classes.
-     * @return const Signal& The initialization signal.
-     */
-    virtual const Signal& sig_inited() const = 0;
 
     /**
      * @brief Retrieves the signal indicating the daemon is terminated.

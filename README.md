@@ -76,22 +76,25 @@ requiring third-party libraries or tools.
 
 ### Typical Applications
 
-TEC is a versatile library well-suited for scenarios demanding
-efficiency, portability, and minimal overhead. Its header-only design
-ensures seamless integration without compilation dependencies, making
-it ideal for rapid prototyping and deployment across platforms. Below
-are some common applications:
+TEC is a small and versatile library well-suited for scenarios demanding
+efficiency, portability, and minimal overhead. Below are some common
+applications:
 
-- **Embedded Systems**: Leveraging its lightweight nature for
-    resource-constrained environments like IoT devices,
-    microcontrollers, and real-time systems where low overhead is
-    crucial.
-- **Networking Tools**: Building efficient TCP servers and clients
+- **Networking Tools**: Building efficient BSD socket based servers and clients
     with minimal memory usage, suitable for communication protocols in
     distributed applications.
 - **System Utilities**: Implementing daemons and background processes
     via the universal Daemon API (DAPI), enabling cross-platform service
     management.
+- **gRPC Ecosystem**: The TEC library streamlines the development of
+    gRPC servers and clients by leveraging the universal TEC's Daemon
+    API (DAPI). Developers can focus on business logic while DAPI
+    provides an interface for invoking services, pub/sub messaging,
+    state management, and other distributed system primitives.
+- **Embedded Systems**: Leveraging its lightweight nature for
+    resource-constrained environments like IoT devices,
+    microcontrollers, and real-time systems where low overhead is
+    crucial.
 
 TEC excels in creating **lightweight microservices**, which can be easily
 containerized. Its header-only structure simplifies inclusion in
@@ -104,7 +107,7 @@ footprint—particularly for TCP servers and clients (see
 [TestResults](#test-results))—combined with its universal Daemon API,
 facilitates simulation and implementation of complex, interconnected
 architectures. This enables handling high volumes of connections with
-minimal resource consumption, ideal for cloud-based or edge computing
+minimal resource consumption, suitable for cloud-based or edge computing
 scenarios.
 
 ### Why C++17
@@ -166,8 +169,6 @@ public:
     virtual Status run() = 0;
     virtual Status terminate() = 0;
 
-    virtual const Signal& sig_running() const = 0;
-    virtual const Signal& sig_inited() const = 0;
     virtual const Signal& sig_terminated() const = 0;
 
     virtual void send(Message&& msg) = 0
@@ -1752,7 +1753,7 @@ Key points:
 tec::Signal sig_quit;
 
 /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*                          Run the server
+*             Run the gRPC server using TEC DAPI (Daemon API)
  *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
 tec::Status run() {

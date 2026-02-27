@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-04 16:54:31 by magnolia>
+// Time-stamp: <Last changed 2026-02-25 16:20:43 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -35,6 +35,12 @@ Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
 #include "tec/tec_utils.hpp"
 
 
+// Default time resolution for tracing.
+#if !defined(_TEC_TRACE_RES)
+#define _TEC_TRACE_RES MilliSec
+#endif
+
+
 namespace tec {
 
 namespace details {
@@ -67,7 +73,7 @@ struct trace_mutex {
  * @tparam Duration The duration type for timestamps (defaults to MilliSec).
  * @snippet snp_tracer.cpp tr
  */
-template <typename Duration = MilliSec>
+template <typename Duration = _TEC_TRACE_RES>
 class Tracer {
 private:
     std::string name_; ///< The name of the tracer (e.g., function or context name).
@@ -150,6 +156,15 @@ public:
  * @brief Macros for enabling and controlling tracing functionality.
  * @details These macros provide a convenient interface for tracing when _TEC_TRACE_ON
  * is defined. They are disabled otherwise to avoid performance overhead.
+ * @par Example
+ * @code
+ * void func_name(int param) {
+ *     TEC_ENTER("func_name");
+ *     TEC_TRACE("called with `param`={}", param);
+ *     tec::Status status = call_some_func(param);
+ *     TEC_TRACE("call_some_func({}) returned {}.", param, status);
+ * }
+ * @endcode
  * @{
  */
 
@@ -183,19 +198,29 @@ public:
 #define TEC_TRACE(...) tracer__.trace(__VA_ARGS__)
 
 #else
+// _TEC_TRACE_ON undefined.
+
 /**
  * @def TEC_ENTER(name)
- * @brief Disabled tracing macro for entry logging.
- * @details Does nothing when _TEC_TRACE_ON is not defined.
+ * @brief Logs an entry message for a named context (e.g., function).
+ * @details Creates a Tracer object and calls its enter() method to log a timestamped
+ * entry message.
+ * @param name The name of the context to trace (e.g., function name).
+ * @note Does nothing when _TEC_TRACE_ON is not defined.
  */
 #define TEC_ENTER(name)
 
 /**
- * @def TEC_TRACE(...)
- * @brief Disabled tracing macro for formatted messages.
- * @details Does nothing when _TEC_TRACE_ON is not defined.
+ * @def TEC_TRACE(format_string, args...)
+ * @brief Logs a formatted trace message.
+ * @details Calls the trace() method on a Tracer object to log a timestamped message
+ * with the provided format string and arguments.
+ * @param format_string The format string containing "{}" placeholders.
+ * @param args The arguments to include in the trace message.
+ * @note Does nothing when _TEC_TRACE_ON is not defined.
  */
 #define TEC_TRACE(...)
+
 #endif
 
 /// @}

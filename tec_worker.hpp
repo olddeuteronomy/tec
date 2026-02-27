@@ -1,4 +1,4 @@
-// Time-stamp: <Last changed 2026-02-20 16:15:23 by magnolia>
+// Time-stamp: <Last changed 2026-02-25 16:21:42 by magnolia>
 /*----------------------------------------------------------------------
 ------------------------------------------------------------------------
 Copyright (c) 2020-2026 The Emacs Cat (https://github.com/olddeuteronomy/tec).
@@ -49,8 +49,8 @@ namespace tec {
  * @brief A class implementing message processing as a daemon.
  * @details Implements the Daemon interface to manage a worker thread that processes
  * messages from a SafeQueue. It supports registering callbacks for specific message types,
- * provides default initialization and exit callbacks, and manages thread lifecycle with
- * signals for running, initialization, and termination.
+ * provides default initialization and exit callbacks, and controls thread lifecycle with
+ * a signal for termination.
  * @tparam TParams The type of parameters used to configure the worker.
  * @note Workers are **non-copyable** and **non-movable** to ensure unique ownership.
  * @see Daemon
@@ -124,7 +124,7 @@ private:
 
 public:
     /**
-     * @brief Constructs a worker in a suspended state.
+     * @brief Constructs a worker.
      * @details Initializes the worker with the provided parameters.
      * The worker thread is created by calling run().
      * @param params The configuration parameters for the worker.
@@ -161,20 +161,6 @@ public:
     constexpr const Params& params() const { return params_; }
 
     /**
-     * @brief Retrieves the signal indicating the worker is running.
-     * @return const Signal& The running signal.
-     * @see Daemon::sig_running()
-     */
-    const Signal& sig_running() const override { return sig_running_; }
-
-    /**
-     * @brief Retrieves the signal indicating the worker is initialized.
-     * @return const Signal& The initialization signal.
-     * @see Daemon::sig_inited()
-     */
-    const Signal& sig_inited() const override { return sig_inited_; }
-
-    /**
      * @brief Retrieves the signal indicating the worker has terminated.
      * @return const Signal& The termination signal.
      * @see Daemon::sig_terminated()
@@ -190,8 +176,8 @@ public:
      */
     void send(Message&& msg) override {
         TEC_ENTER("Worker::send");
-        mq_.enqueue(std::move(msg));
         TEC_TRACE("Message [{}] sent.", name(msg));
+        mq_.enqueue(std::move(msg));
     }
 
     /**
@@ -297,7 +283,7 @@ private:
             // Signal termination on exit.
             Signal::OnExit on_terminating{&wt.sig_terminated_};
             //
-            // Obtain thread ID and wait for the running signal.
+            // Obtains thread ID and waits for the running signal.
             //
             wt.thread_id_ = std::this_thread::get_id();
             TEC_TRACE("thread {} created.", wt.id());
@@ -366,6 +352,15 @@ protected:
      */
     virtual Status on_exit() { return {}; }
 
+protected:
+    /**
+     * @brief Create the Daemon's thread in suspended state.
+     */
+    virtual Status create_thread() {
+        thread_ = std::thread(details<Params>::thread_proc, std::ref(*this));
+        return {};
+    }
+
 public:
     /**
      * @brief Starts the worker thread's message polling.
@@ -377,15 +372,10 @@ public:
     Status run() override {
         Lock lk{mtx_thread_proc_};
         TEC_ENTER("Worker::run");
-        //
-        // Create a new thread.
-        //
-        if (!thread_.joinable()) {
-            thread_ = std::thread(details<Params>::thread_proc, std::ref(*this));
-        }
-        else {
-            TEC_TRACE("`Worker::thread_proc' is already running.");
-            return {};
+        // Create the Daemon's thread in suspended state.
+        auto status = create_thread();
+        if (!status) {
+            return status;
         }
         //
         // Resume the thread.
